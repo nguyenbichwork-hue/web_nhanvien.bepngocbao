@@ -1,0 +1,5 @@
+# Tệp riêng của Cloudflare/local — không cần (và không nên) đưa lên Vercel.
+.dev.vars
+.open-next
+.wrangler
+wrangler.jsonc

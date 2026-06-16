@@ -1,0 +1,600 @@
+// BNB · Kho dữ liệu các phân hệ bán hàng (in-memory seed + swap Supabase).
+// Mô hình giống store HR: dev mode dùng seed in-memory; khi cấu hình Supabase
+// thì pull/persist qua helper persist.ts (bảng JSONB: id text + data jsonb).
+
+import { cache } from "react";
+import {
+  isSupabaseStoreConfigured,
+  pullCollection,
+  upsertRow,
+  deleteRow,
+} from "@/lib/org/persist";
+import {
+  STUB_PRODUCTS, fetchProducts, fetchCustomers, fetchOrders,
+  fetchOrderById, fetchCustomerById, fetchInventory,
+  createHaravanCustomer, createHaravanOrder, haravanConfigured,
+} from "@/lib/haravan/client";
+import type {
+  Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
+  InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
+  Quote, Review, ShiftReport, Survey, WarrantyTicket,
+} from "./types";
+import { CARE_MILESTONES } from "./types";
+import { sendCareZNS } from "@/lib/zalo/zns";
+import { seedBNB } from "./seed";
+
+const dayKeyOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86400000);
+
+export type BNBDB = {
+  leads: Lead[];
+  customers: Customer[];
+  activities: Activity[];
+  surveys: Survey[];
+  quotes: Quote[];
+  orders: Order[];
+  deliveries: DeliveryJob[];
+  warranties: WarrantyTicket[];
+  shiftReports: ShiftReport[];
+  tasks: InternalTask[];
+  npsResponses: NpsResponse[];
+  pillars: ContentPillar[];
+  calendarItems: CalendarItem[];
+  adCampaigns: AdCampaign[];
+  purchaseOrders: PurchaseOrder[];
+  bankTxns: BankTxn[];
+  reviews: Review[];
+  products: Product[];
+  seq: number;
+};
+
+type Coll = Exclude<keyof BNBDB, "seq">;
+
+// Bản đồ collection ↔ bảng Supabase.
+const TABLE: Record<Coll, string> = {
+  leads: "bnb_leads",
+  customers: "bnb_customers",
+  activities: "bnb_activities",
+  surveys: "bnb_surveys",
+  quotes: "bnb_quotes",
+  orders: "bnb_orders",
+  deliveries: "bnb_deliveries",
+  warranties: "bnb_warranties",
+  shiftReports: "bnb_shift_reports",
+  tasks: "bnb_tasks",
+  npsResponses: "bnb_nps_responses",
+  pillars: "bnb_pillars",
+  calendarItems: "bnb_calendar_items",
+  adCampaigns: "bnb_ad_campaigns",
+  purchaseOrders: "bnb_purchase_orders",
+  bankTxns: "bnb_bank_txns",
+  reviews: "bnb_reviews",
+  products: "bnb_products",
+};
+
+function freshDB(): BNBDB {
+  return { ...seedBNB(), products: [...STUB_PRODUCTS], seq: 1000 };
+}
+
+// Singleton tồn tại qua HMR của dev server.
+const g = globalThis as unknown as { __bnbSalesDB?: BNBDB };
+function db(): BNBDB {
+  if (!g.__bnbSalesDB) g.__bnbSalesDB = freshDB();
+  return g.__bnbSalesDB;
+}
+
+// Theo dõi collection đã nạp từ Supabase trong request hiện tại (tránh nạp lại).
+const reqLoaded = cache(() => new Set<Coll>());
+
+async function ensureLoaded(keys: Coll[]): Promise<void> {
+  if (!isSupabaseStoreConfigured) return;
+  const loaded = reqLoaded();
+  const dbo = db();
+  await Promise.all(
+    keys
+      .filter((k) => !loaded.has(k))
+      .map(async (k) => {
+        const rows = await pullCollection<BNBDB[Coll][number]>(TABLE[k]);
+        // Supabase là nguồn chân lý khi đã cấu hình.
+        (dbo[k] as unknown[]) = rows;
+        loaded.add(k);
+      }),
+  );
+}
+
+async function getDb(...keys: Coll[]): Promise<BNBDB> {
+  await ensureLoaded(keys);
+  return db();
+}
+
+const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
+const now = () => new Date().toISOString();
+
+function nextId(prefix: string): string {
+  const dbo = db();
+  dbo.seq += 1;
+  return `${prefix}-${dbo.seq}`;
+}
+
+/** Sinh mã hiển thị dạng PREFIX + số tăng dần (vd LD-1042). */
+function nextCode(prefix: string): string {
+  const dbo = db();
+  return `${prefix}-${dbo.seq + 1}`;
+}
+
+/* ============ Đọc danh sách ============ */
+export async function listLeads(): Promise<Lead[]> {
+  return clone((await getDb("leads")).leads);
+}
+export async function listCustomers(): Promise<Customer[]> {
+  const local = clone((await getDb("customers")).customers);
+  if (haravanConfigured()) {
+    try {
+      const live = await fetchCustomers(100);
+      if (live.length) return [...live, ...local];
+    } catch (err) {
+      console.error("[bnb] listCustomers Haravan lỗi:", err);
+    }
+  }
+  return local;
+}
+export async function listSurveys(): Promise<Survey[]> {
+  return clone((await getDb("surveys")).surveys);
+}
+export async function listQuotes(): Promise<Quote[]> {
+  return clone((await getDb("quotes")).quotes);
+}
+export async function listOrders(): Promise<Order[]> {
+  const local = clone((await getDb("orders")).orders);
+  if (haravanConfigured()) {
+    try {
+      const live = await fetchOrders(50);
+      if (live.length) return [...live, ...local].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    } catch (err) {
+      console.error("[bnb] listOrders Haravan lỗi:", err);
+    }
+  }
+  return local;
+}
+export async function listDeliveries(): Promise<DeliveryJob[]> {
+  return clone((await getDb("deliveries")).deliveries);
+}
+export async function listWarranties(): Promise<WarrantyTicket[]> {
+  return clone((await getDb("warranties")).warranties);
+}
+export async function listShiftReports(): Promise<ShiftReport[]> {
+  return clone((await getDb("shiftReports")).shiftReports);
+}
+export async function listTasks(): Promise<InternalTask[]> {
+  return clone((await getDb("tasks")).tasks);
+}
+export async function listProducts(): Promise<Product[]> {
+  // Khi có token Haravan → dùng catalog THẬT (cache 5') + giữ SKU demo (cho Fit Diagnostic)
+  // mà catalog live chưa có. Lỗi/thiếu token → quay về collection seed (stub).
+  if (haravanConfigured()) {
+    try {
+      const live = await fetchProducts(150);
+      if (live.length) {
+        const liveSkus = new Set(live.map((p) => p.sku).filter(Boolean));
+        const fallback = STUB_PRODUCTS.filter((s) => s.sku && !liveSkus.has(s.sku));
+        return [...live, ...fallback];
+      }
+    } catch (err) {
+      console.error("[bnb] listProducts Haravan lỗi, dùng stub:", err);
+    }
+  }
+  return clone((await getDb("products")).products);
+}
+/** Tồn kho real-time (lấy tươi từ Haravan, không cache). */
+export async function listInventory(): Promise<Product[]> {
+  if (haravanConfigured()) {
+    try {
+      const live = await fetchInventory(150);
+      if (live.length) return live;
+    } catch (err) {
+      console.error("[bnb] listInventory Haravan lỗi:", err);
+    }
+  }
+  return clone((await getDb("products")).products);
+}
+
+export async function listActivities(refId: string): Promise<Activity[]> {
+  const dbo = await getDb("activities");
+  return clone(
+    dbo.activities
+      .filter((a) => a.leadId === refId || a.customerId === refId)
+      .sort((x, y) => (x.at < y.at ? 1 : -1)),
+  );
+}
+
+/* ============ Lấy 1 bản ghi ============ */
+export async function getLead(id: string): Promise<Lead | undefined> {
+  return clone((await getDb("leads")).leads.find((x) => x.id === id));
+}
+export async function getCustomer(id: string): Promise<Customer | undefined> {
+  const local = (await getDb("customers")).customers.find((x) => x.id === id);
+  if (local) return clone(local);
+  if (haravanConfigured() && id.startsWith("hrv-cus-")) {
+    return (await fetchCustomerById(id.replace("hrv-cus-", ""))) || undefined;
+  }
+  return undefined;
+}
+export async function getQuote(id: string): Promise<Quote | undefined> {
+  return clone((await getDb("quotes")).quotes.find((x) => x.id === id));
+}
+export async function getOrder(id: string): Promise<Order | undefined> {
+  const local = (await getDb("orders")).orders.find((x) => x.id === id);
+  if (local) return clone(local);
+  if (haravanConfigured() && id.startsWith("hrv-ord-")) {
+    return (await fetchOrderById(id.replace("hrv-ord-", ""))) || undefined;
+  }
+  return undefined;
+}
+
+/* ============ Ghi (write-through) ============ */
+async function put<K extends Coll>(key: K, row: BNBDB[K][number] & { id: string }): Promise<void> {
+  const dbo = db();
+  const arr = dbo[key] as (typeof row)[];
+  const i = arr.findIndex((x) => x.id === row.id);
+  if (i >= 0) arr[i] = row;
+  else arr.push(row);
+  await upsertRow(TABLE[key], row.id, row);
+}
+
+export async function createLead(input: Omit<Lead, "id" | "code" | "createdAt" | "updatedAt">): Promise<Lead> {
+  await getDb("leads");
+  const lead: Lead = { ...input, id: nextId("lead"), code: nextCode("LD"), createdAt: now(), updatedAt: now() };
+  await put("leads", lead);
+  await logActivity({ leadId: lead.id, type: "note", content: `Tạo lead từ nguồn ${lead.source}`, byId: lead.assigneeId });
+  return clone(lead);
+}
+
+export async function updateLead(id: string, patch: Partial<Lead>): Promise<Lead | undefined> {
+  const dbo = await getDb("leads");
+  const cur = dbo.leads.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: Lead = { ...cur, ...patch, updatedAt: now() };
+  await put("leads", next);
+  return clone(next);
+}
+
+export async function setLeadStage(id: string, stage: Lead["stage"], byId?: string): Promise<Lead | undefined> {
+  const updated = await updateLead(id, { stage, lastContactAt: now() });
+  if (updated) await logActivity({ leadId: id, type: "stage", content: `Chuyển trạng thái → ${stage}`, byId });
+  return updated;
+}
+
+export async function createCustomer(input: Omit<Customer, "id" | "code" | "createdAt" | "updatedAt">): Promise<Customer> {
+  await getDb("customers");
+  const c: Customer = { ...input, id: nextId("cus"), code: nextCode("KH"), createdAt: now(), updatedAt: now() };
+  await put("customers", c);
+  return clone(c);
+}
+
+export async function updateCustomer(id: string, patch: Partial<Customer>): Promise<Customer | undefined> {
+  const dbo = await getDb("customers");
+  const cur = dbo.customers.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: Customer = { ...cur, ...patch, updatedAt: now() };
+  await put("customers", next);
+  return clone(next);
+}
+
+export async function createSurvey(input: Omit<Survey, "id" | "code" | "createdAt">): Promise<Survey> {
+  await getDb("surveys");
+  const s: Survey = { ...input, id: nextId("svy"), code: nextCode("KS"), createdAt: now() };
+  await put("surveys", s);
+  if (s.leadId) await logActivity({ leadId: s.leadId, type: "survey", content: `Khảo sát ${s.code}`, byId: s.byId });
+  return clone(s);
+}
+
+export async function createQuote(input: Omit<Quote, "id" | "code" | "createdAt" | "updatedAt">): Promise<Quote> {
+  await getDb("quotes");
+  const q: Quote = { ...input, id: nextId("qte"), code: nextCode("BG"), createdAt: now(), updatedAt: now() };
+  await put("quotes", q);
+  if (q.leadId) await logActivity({ leadId: q.leadId, type: "quote", content: `Tạo báo giá ${q.code}`, byId: q.byId });
+  return clone(q);
+}
+
+export async function updateQuote(id: string, patch: Partial<Quote>): Promise<Quote | undefined> {
+  const dbo = await getDb("quotes");
+  const cur = dbo.quotes.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: Quote = { ...cur, ...patch, updatedAt: now() };
+  await put("quotes", next);
+  return clone(next);
+}
+
+export async function createOrder(input: Omit<Order, "id" | "code" | "createdAt" | "updatedAt">): Promise<Order> {
+  await getDb("orders");
+  const o: Order = { ...input, id: nextId("ord"), code: nextCode("DH"), createdAt: now(), updatedAt: now() };
+  await put("orders", o);
+  if (o.customerId) await logActivity({ customerId: o.customerId, type: "order", content: `Tạo đơn ${o.code}`, byId: o.assigneeId });
+  return clone(o);
+}
+
+export async function updateOrder(id: string, patch: Partial<Order>): Promise<Order | undefined> {
+  const dbo = await getDb("orders");
+  const cur = dbo.orders.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: Order = { ...cur, ...patch, updatedAt: now() };
+  await put("orders", next);
+  return clone(next);
+}
+
+/* ===== Ghi ngược lên Haravan ===== */
+/** Đẩy 1 khách local lên Haravan, lưu haravanId. Trả Haravan id (hoặc null). */
+export async function pushCustomerToHaravan(customerId: string): Promise<string | null> {
+  if (!haravanConfigured()) return null;
+  if (customerId.startsWith("hrv-cus-")) return customerId.replace("hrv-cus-", "");
+  const c = (await getDb("customers")).customers.find((x) => x.id === customerId);
+  if (!c) return null;
+  if (c.haravanId) return c.haravanId;
+  const hid = await createHaravanCustomer({ name: c.name, phone: c.phone, email: c.email, address: c.address });
+  if (hid) await updateCustomer(customerId, { haravanId: hid });
+  return hid;
+}
+
+/** Đẩy 1 đơn local lên Haravan (kèm tạo khách nếu cần), lưu haravanId. */
+export async function pushOrderToHaravan(orderId: string): Promise<{ haravanId: string; code: string } | null> {
+  if (!haravanConfigured()) return null;
+  const o = (await getDb("orders")).orders.find((x) => x.id === orderId);
+  if (!o || o.id.startsWith("hrv-ord-")) return null;
+  if (o.haravanId) return { haravanId: o.haravanId, code: o.code };
+  let customerHid: string | undefined;
+  if (o.customerId) customerHid = (await pushCustomerToHaravan(o.customerId)) || undefined;
+  const res = await createHaravanOrder(o, customerHid);
+  if (res) await updateOrder(orderId, { haravanId: res.haravanId });
+  return res;
+}
+
+export async function createDelivery(input: Omit<DeliveryJob, "id" | "code" | "createdAt" | "updatedAt">): Promise<DeliveryJob> {
+  await getDb("deliveries");
+  const d: DeliveryJob = { ...input, id: nextId("dlv"), code: nextCode("GL"), createdAt: now(), updatedAt: now() };
+  await put("deliveries", d);
+  return clone(d);
+}
+
+export async function updateDelivery(id: string, patch: Partial<DeliveryJob>): Promise<DeliveryJob | undefined> {
+  const dbo = await getDb("deliveries");
+  const cur = dbo.deliveries.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: DeliveryJob = { ...cur, ...patch, updatedAt: now() };
+  await put("deliveries", next);
+  return clone(next);
+}
+
+export async function createWarranty(input: Omit<WarrantyTicket, "id" | "code" | "createdAt" | "updatedAt">): Promise<WarrantyTicket> {
+  await getDb("warranties");
+  const w: WarrantyTicket = { ...input, id: nextId("wty"), code: nextCode("BH"), createdAt: now(), updatedAt: now() };
+  await put("warranties", w);
+  return clone(w);
+}
+
+export async function updateWarranty(id: string, patch: Partial<WarrantyTicket>): Promise<WarrantyTicket | undefined> {
+  const dbo = await getDb("warranties");
+  const cur = dbo.warranties.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: WarrantyTicket = { ...cur, ...patch, updatedAt: now() };
+  await put("warranties", next);
+  return clone(next);
+}
+
+/** Quét bảo hành → nhắc chăm sóc các mốc 1/7/30/90 ngày đã đến hạn nhưng chưa nhắc.
+ * Mỗi mốc: tạo việc nội bộ cho người phụ trách + gửi ZNS cho khách + đánh dấu đã nhắc. */
+export async function runWarrantyReminders(today = new Date()): Promise<{
+  scanned: number;
+  reminded: { code: string; milestone: number; znsOk: boolean }[];
+}> {
+  const dbo = await getDb("warranties");
+  const todayKey = dayKeyOf(today);
+  const reminded: { code: string; milestone: number; znsOk: boolean }[] = [];
+
+  for (const w of dbo.warranties) {
+    if (!w.installedAt || w.status === "resolved" || w.status === "expired") continue;
+    const installed = new Date(`${w.installedAt}T00:00:00`);
+    const daysSince = Math.floor((today.getTime() - installed.getTime()) / 86400000);
+    const done = new Set(w.careDone || []);
+    const already = new Set(w.remindedMilestones || []);
+    const due = CARE_MILESTONES.filter((m) => daysSince >= m && !done.has(m) && !already.has(m));
+    if (!due.length) continue;
+
+    const m = due[0];
+    const cust = w.customerId ? await getCustomer(w.customerId) : undefined;
+
+    await createTask({
+      title: `Chăm sóc KH bảo hành ${w.code} — mốc ${m} ngày${cust ? ` · ${cust.name}` : ""}`,
+      detail: `${w.productName || "Thiết bị"} · SĐT ${cust?.phone || "—"}`,
+      type: "task",
+      category: "ops",
+      status: "open",
+      priority: m <= 7 ? "high" : "normal",
+      assigneeId: w.assigneeId,
+      dueAt: todayKey,
+    });
+
+    let znsOk = false;
+    if (cust?.phone) {
+      const r = await sendCareZNS({
+        phone: cust.phone,
+        customerName: cust.name,
+        productName: w.productName || "thiết bị bếp",
+        milestone: m,
+      });
+      znsOk = r.ok;
+    }
+
+    const nextUpcoming = CARE_MILESTONES.find((x) => x > m && !done.has(x));
+    await updateWarranty(w.id, {
+      status: "due",
+      remindedMilestones: [...(w.remindedMilestones || []), m],
+      nextCareAt: nextUpcoming ? dayKeyOf(addDays(installed, nextUpcoming)) : undefined,
+    });
+    reminded.push({ code: w.code, milestone: m, znsOk });
+  }
+
+  return { scanned: dbo.warranties.length, reminded };
+}
+
+export async function createShiftReport(input: Omit<ShiftReport, "id" | "code" | "createdAt">): Promise<ShiftReport> {
+  await getDb("shiftReports");
+  const r: ShiftReport = { ...input, id: nextId("shr"), code: nextCode("BC"), createdAt: now() };
+  await put("shiftReports", r);
+  return clone(r);
+}
+
+export async function createTask(input: Omit<InternalTask, "id" | "code" | "createdAt" | "updatedAt">): Promise<InternalTask> {
+  await getDb("tasks");
+  const t: InternalTask = { ...input, id: nextId("tsk"), code: nextCode("CV"), createdAt: now(), updatedAt: now() };
+  await put("tasks", t);
+  return clone(t);
+}
+
+export async function updateTask(id: string, patch: Partial<InternalTask>): Promise<InternalTask | undefined> {
+  const dbo = await getDb("tasks");
+  const cur = dbo.tasks.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: InternalTask = { ...cur, ...patch, updatedAt: now() };
+  await put("tasks", next);
+  return clone(next);
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const dbo = await getDb("tasks");
+  dbo.tasks = dbo.tasks.filter((x) => x.id !== id);
+  await deleteRow(TABLE.tasks, id);
+}
+
+export async function listNpsResponses(): Promise<NpsResponse[]> {
+  const dbo = await getDb("npsResponses");
+  return clone([...dbo.npsResponses].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
+}
+
+export async function createNpsResponse(input: Omit<NpsResponse, "id" | "createdAt">): Promise<NpsResponse> {
+  await getDb("npsResponses");
+  const r: NpsResponse = { ...input, id: nextId("nps"), createdAt: now() };
+  await put("npsResponses", r);
+  if (input.customerId) await logActivity({ customerId: input.customerId, type: "note", content: `NPS ${input.score}/10${input.comment ? ` — ${input.comment}` : ""}`, byId: input.byId });
+  return clone(r);
+}
+
+/* ===== Marketing ===== */
+export async function listPillars(): Promise<ContentPillar[]> {
+  return clone((await getDb("pillars")).pillars);
+}
+export async function createPillar(input: Omit<ContentPillar, "id" | "createdAt">): Promise<ContentPillar> {
+  await getDb("pillars");
+  const p: ContentPillar = { ...input, id: nextId("pil"), createdAt: now() };
+  await put("pillars", p);
+  return clone(p);
+}
+export async function listCalendarItems(): Promise<CalendarItem[]> {
+  return clone((await getDb("calendarItems")).calendarItems);
+}
+export async function createCalendarItem(input: Omit<CalendarItem, "id" | "createdAt">): Promise<CalendarItem> {
+  await getDb("calendarItems");
+  const c: CalendarItem = { ...input, id: nextId("cal"), createdAt: now() };
+  await put("calendarItems", c);
+  return clone(c);
+}
+export async function updateCalendarItem(id: string, patch: Partial<CalendarItem>): Promise<CalendarItem | undefined> {
+  const dbo = await getDb("calendarItems");
+  const cur = dbo.calendarItems.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: CalendarItem = { ...cur, ...patch };
+  await put("calendarItems", next);
+  return clone(next);
+}
+export async function listAdCampaigns(): Promise<AdCampaign[]> {
+  return clone((await getDb("adCampaigns")).adCampaigns);
+}
+export async function createAdCampaign(input: Omit<AdCampaign, "id" | "createdAt">): Promise<AdCampaign> {
+  await getDb("adCampaigns");
+  const a: AdCampaign = { ...input, id: nextId("ad"), createdAt: now() };
+  await put("adCampaigns", a);
+  return clone(a);
+}
+
+/* ===== Mua hàng / Nhập kho (PO) ===== */
+export async function listPurchaseOrders(): Promise<PurchaseOrder[]> {
+  return clone((await getDb("purchaseOrders")).purchaseOrders);
+}
+export async function getPurchaseOrder(id: string): Promise<PurchaseOrder | undefined> {
+  return clone((await getDb("purchaseOrders")).purchaseOrders.find((x) => x.id === id));
+}
+export async function createPurchaseOrder(
+  input: Omit<PurchaseOrder, "id" | "code" | "createdAt" | "updatedAt">,
+): Promise<PurchaseOrder> {
+  await getDb("purchaseOrders");
+  const po: PurchaseOrder = { ...input, id: nextId("po"), code: nextCode("PO"), createdAt: now(), updatedAt: now() };
+  await put("purchaseOrders", po);
+  return clone(po);
+}
+export async function updatePurchaseOrder(id: string, patch: Partial<PurchaseOrder>): Promise<PurchaseOrder | undefined> {
+  const dbo = await getDb("purchaseOrders");
+  const cur = dbo.purchaseOrders.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: PurchaseOrder = { ...cur, ...patch, updatedAt: now() };
+  await put("purchaseOrders", next);
+  return clone(next);
+}
+
+/* ===== Tài chính · Ngân hàng ===== */
+export async function listBankTxns(): Promise<BankTxn[]> {
+  const dbo = await getDb("bankTxns");
+  return clone([...dbo.bankTxns].sort((a, b) => (a.date < b.date ? 1 : -1)));
+}
+export async function createBankTxn(input: Omit<BankTxn, "id" | "createdAt">): Promise<BankTxn> {
+  await getDb("bankTxns");
+  const t: BankTxn = { ...input, id: nextId("btx"), createdAt: now() };
+  await put("bankTxns", t);
+  return clone(t);
+}
+export async function matchBankTxn(id: string, orderId: string | undefined): Promise<BankTxn | undefined> {
+  const dbo = await getDb("bankTxns");
+  const cur = dbo.bankTxns.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: BankTxn = { ...cur, matchedOrderId: orderId };
+  await put("bankTxns", next);
+  return clone(next);
+}
+/** Bản đồ sku → giá vốn (đơn giá nhập gần nhất từ PO chưa huỷ). Dùng tính COGS/lãi gộp. */
+export async function costBySku(): Promise<Record<string, number>> {
+  const dbo = await getDb("purchaseOrders");
+  const map: Record<string, number> = {};
+  const pos = [...dbo.purchaseOrders].sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+  for (const po of pos) {
+    if (po.status === "cancelled") continue;
+    for (const it of po.items) if (it.sku) map[it.sku] = it.unitCost;
+  }
+  return map;
+}
+
+/* ===== Đánh giá (Reviews) ===== */
+export async function listReviews(): Promise<Review[]> {
+  const dbo = await getDb("reviews");
+  return clone([...dbo.reviews].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
+}
+export async function createReview(input: Omit<Review, "id" | "createdAt">): Promise<Review> {
+  await getDb("reviews");
+  const r: Review = { ...input, id: nextId("rev"), createdAt: now() };
+  await put("reviews", r);
+  return clone(r);
+}
+export async function respondReview(id: string, response: string, byId?: string): Promise<Review | undefined> {
+  const dbo = await getDb("reviews");
+  const cur = dbo.reviews.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: Review = { ...cur, response, status: "responded", byId: byId ?? cur.byId };
+  await put("reviews", next);
+  return clone(next);
+}
+
+export async function logActivity(input: Omit<Activity, "id" | "at">): Promise<Activity> {
+  const dbo = db();
+  const a: Activity = { ...input, id: nextId("act"), at: now() };
+  dbo.activities.push(a);
+  await upsertRow(TABLE.activities, a.id, a);
+  return clone(a);
+}

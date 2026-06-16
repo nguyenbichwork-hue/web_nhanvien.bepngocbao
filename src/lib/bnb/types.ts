@@ -1,0 +1,523 @@
+// BNB · Kiểu dữ liệu các phân hệ bán hàng & vận hành cửa hàng.
+// Lưu theo mô hình JSONB collection (id text + data jsonb) như store HR.
+// Badge class dùng đúng hệ design: b-green / b-amber / b-rose / b-indigo / b-sky / b-gray.
+
+export type Badge = "b-green" | "b-amber" | "b-rose" | "b-indigo" | "b-sky" | "b-gray";
+
+/* ============ Lead & CRM ============ */
+export type LeadStage = "new" | "consulting" | "quoted" | "won" | "lost";
+export const LEAD_STAGE_LABEL: Record<LeadStage, string> = {
+  new: "Mới",
+  consulting: "Đang tư vấn",
+  quoted: "Đã báo giá",
+  won: "Chốt đơn",
+  lost: "Đã mất",
+};
+export const LEAD_STAGE_BADGE: Record<LeadStage, Badge> = {
+  new: "b-sky",
+  consulting: "b-indigo",
+  quoted: "b-amber",
+  won: "b-green",
+  lost: "b-rose",
+};
+export const LEAD_STAGES: LeadStage[] = ["new", "consulting", "quoted", "won", "lost"];
+
+export type LeadSource =
+  | "website" | "facebook" | "tiktok" | "zalo" | "hotline" | "showroom" | "review" | "referral" | "other";
+export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = {
+  website: "Website",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  zalo: "Zalo OA",
+  hotline: "Hotline",
+  showroom: "Showroom",
+  review: "Đánh giá",
+  referral: "Giới thiệu",
+  other: "Khác",
+};
+export const LEAD_SOURCES = Object.keys(LEAD_SOURCE_LABEL) as LeadSource[];
+
+export type Lead = {
+  id: string;
+  code: string;
+  name: string;
+  phone: string;
+  email?: string;
+  source: LeadSource;
+  stage: LeadStage;
+  customerId?: string;
+  assigneeId?: string;
+  need?: string;
+  budget?: number;
+  address?: string;
+  note?: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+  lastContactAt?: string;
+  nextFollowUpAt?: string;
+};
+
+export type Customer = {
+  id: string;
+  code: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  haravanId?: string;
+  source?: LeadSource;
+  totalSpent?: number;
+  orderCount?: number;
+  firstOrderAt?: string;
+  lastOrderAt?: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ActivityType = "call" | "zalo" | "meeting" | "survey" | "quote" | "order" | "stage" | "note";
+export const ACTIVITY_LABEL: Record<ActivityType, string> = {
+  call: "Gọi điện",
+  zalo: "Nhắn Zalo",
+  meeting: "Gặp mặt",
+  survey: "Khảo sát",
+  quote: "Báo giá",
+  order: "Đơn hàng",
+  stage: "Đổi trạng thái",
+  note: "Ghi chú",
+};
+export type Activity = {
+  id: string;
+  leadId?: string;
+  customerId?: string;
+  type: ActivityType;
+  content: string;
+  byId?: string;
+  at: string;
+};
+
+/* ============ Khảo sát nhà khách ============ */
+export type KitchenLayout = "I" | "L" | "U" | "G" | "island" | "parallel";
+export const LAYOUT_LABEL: Record<KitchenLayout, string> = {
+  I: "Chữ I (1 vách)",
+  L: "Chữ L",
+  U: "Chữ U",
+  G: "Chữ G",
+  island: "Có đảo bếp",
+  parallel: "Song song",
+};
+export type Survey = {
+  id: string;
+  code: string;
+  leadId?: string;
+  customerId?: string;
+  address?: string;
+  layout?: KitchenLayout;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  currentStatus?: string;
+  needs?: string;
+  photos?: string[];
+  byId?: string;
+  note?: string;
+  createdAt: string;
+};
+
+/* ============ Báo giá ============ */
+export type QuoteTier = "basic" | "balanced" | "premium";
+export const TIER_LABEL: Record<QuoteTier, string> = {
+  basic: "Cơ bản",
+  balanced: "Cân bằng",
+  premium: "Cao cấp",
+};
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
+export const QUOTE_STATUS_LABEL: Record<QuoteStatus, string> = {
+  draft: "Nháp",
+  sent: "Đã gửi",
+  accepted: "Đã chốt",
+  rejected: "Từ chối",
+  expired: "Hết hạn",
+};
+export const QUOTE_STATUS_BADGE: Record<QuoteStatus, Badge> = {
+  draft: "b-gray",
+  sent: "b-sky",
+  accepted: "b-green",
+  rejected: "b-rose",
+  expired: "b-amber",
+};
+export type QuoteLine = {
+  sku?: string;
+  productId?: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+  discount?: number;
+};
+export type Quote = {
+  id: string;
+  code: string;
+  customerId?: string;
+  leadId?: string;
+  tier?: QuoteTier;
+  lines: QuoteLine[];
+  discount?: number;
+  note?: string;
+  status: QuoteStatus;
+  byId?: string;
+  createdAt: string;
+  updatedAt: string;
+  sentAt?: string;
+  validUntil?: string;
+};
+
+/* ============ Đơn hàng ============ */
+export type OrderStatus =
+  | "pending" | "confirmed" | "paid" | "delivering" | "installing" | "completed" | "cancelled";
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: "Chờ xác nhận",
+  confirmed: "Đã chốt",
+  paid: "Đã thanh toán",
+  delivering: "Đang giao",
+  installing: "Đang lắp",
+  completed: "Hoàn tất",
+  cancelled: "Đã huỷ",
+};
+export const ORDER_STATUS_BADGE: Record<OrderStatus, Badge> = {
+  pending: "b-amber",
+  confirmed: "b-indigo",
+  paid: "b-sky",
+  delivering: "b-sky",
+  installing: "b-indigo",
+  completed: "b-green",
+  cancelled: "b-rose",
+};
+export const ORDER_FLOW: OrderStatus[] = ["pending", "confirmed", "paid", "delivering", "installing", "completed"];
+export type PaymentMethod = "cash" | "transfer" | "card" | "cod";
+export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
+  cash: "Tiền mặt",
+  transfer: "Chuyển khoản",
+  card: "Thẻ",
+  cod: "COD",
+};
+export type Payment = { id: string; amount: number; method: PaymentMethod; at: string; note?: string };
+export type Order = {
+  id: string;
+  code: string;
+  customerId?: string;
+  quoteId?: string;
+  haravanId?: string;
+  lines: QuoteLine[];
+  total: number;
+  paid: number;
+  status: OrderStatus;
+  assigneeId?: string;
+  address?: string;
+  deliveryDate?: string;
+  payments?: Payment[];
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+  confirmedAt?: string;
+};
+
+/* ============ Giao – Lắp đặt ============ */
+export type DeliveryStatus = "scheduled" | "enroute" | "installing" | "done" | "failed" | "rescheduled";
+export const DELIVERY_STATUS_LABEL: Record<DeliveryStatus, string> = {
+  scheduled: "Đã xếp lịch",
+  enroute: "Đang giao",
+  installing: "Đang lắp",
+  done: "Nghiệm thu",
+  failed: "Thất bại",
+  rescheduled: "Dời lịch",
+};
+export const DELIVERY_STATUS_BADGE: Record<DeliveryStatus, Badge> = {
+  scheduled: "b-sky",
+  enroute: "b-amber",
+  installing: "b-indigo",
+  done: "b-green",
+  failed: "b-rose",
+  rescheduled: "b-amber",
+};
+export type DeliveryJob = {
+  id: string;
+  code: string;
+  orderId?: string;
+  customerId?: string;
+  scheduledAt: string;
+  address?: string;
+  teamId?: string;
+  status: DeliveryStatus;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+  doneAt?: string;
+};
+
+/* ============ Bảo hành & Hậu mãi ============ */
+export type WarrantyStatus = "active" | "due" | "contacted" | "resolved" | "expired";
+export const WARRANTY_STATUS_LABEL: Record<WarrantyStatus, string> = {
+  active: "Đang theo dõi",
+  due: "Đến hạn chăm sóc",
+  contacted: "Đã liên hệ",
+  resolved: "Đã xử lý",
+  expired: "Hết hạn",
+};
+export const WARRANTY_STATUS_BADGE: Record<WarrantyStatus, Badge> = {
+  active: "b-sky",
+  due: "b-amber",
+  contacted: "b-indigo",
+  resolved: "b-green",
+  expired: "b-gray",
+};
+export const CARE_MILESTONES = [1, 7, 30, 90] as const;
+export type WarrantyTicket = {
+  id: string;
+  code: string;
+  customerId?: string;
+  orderId?: string;
+  productName?: string;
+  installedAt?: string;
+  status: WarrantyStatus;
+  nextCareAt?: string;
+  careDone?: number[];
+  remindedMilestones?: number[];
+  assigneeId?: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ============ Báo cáo ca ============ */
+export type ShiftKind = "morning" | "afternoon" | "full";
+export const SHIFT_LABEL: Record<ShiftKind, string> = {
+  morning: "Ca sáng",
+  afternoon: "Ca chiều",
+  full: "Cả ngày",
+};
+export type ShiftReport = {
+  id: string;
+  code: string;
+  date: string;
+  shift: ShiftKind;
+  byId?: string;
+  showroom?: string;
+  revenue?: number;
+  orders?: number;
+  leads?: number;
+  visitors?: number;
+  issues?: string;
+  handover?: string;
+  createdAt: string;
+};
+
+/* ============ Việc nội bộ & Sự cố ============ */
+export type TaskStatus = "open" | "doing" | "done" | "cancelled";
+export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
+  open: "Mới",
+  doing: "Đang làm",
+  done: "Hoàn tất",
+  cancelled: "Đã huỷ",
+};
+export const TASK_STATUS_BADGE: Record<TaskStatus, Badge> = {
+  open: "b-sky",
+  doing: "b-amber",
+  done: "b-green",
+  cancelled: "b-gray",
+};
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+export const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  low: "Thấp",
+  normal: "Bình thường",
+  high: "Cao",
+  urgent: "Khẩn",
+};
+export const PRIORITY_BADGE: Record<TaskPriority, Badge> = {
+  low: "b-gray",
+  normal: "b-sky",
+  high: "b-amber",
+  urgent: "b-rose",
+};
+export type TaskCategory = "ops" | "it" | "showroom" | "other";
+export const TASK_CAT_LABEL: Record<TaskCategory, string> = {
+  ops: "Vận hành",
+  it: "IT",
+  showroom: "Showroom",
+  other: "Khác",
+};
+export type InternalTask = {
+  id: string;
+  code: string;
+  title: string;
+  detail?: string;
+  type: "task" | "incident";
+  category: TaskCategory;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assigneeId?: string;
+  createdById?: string;
+  dueAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  doneAt?: string;
+};
+
+/* ============ CX · NPS ============ */
+export type NpsCategory = "promoter" | "passive" | "detractor";
+export const NPS_LABEL: Record<NpsCategory, string> = {
+  promoter: "Khuyến nghị (9–10)",
+  passive: "Trung lập (7–8)",
+  detractor: "Không hài lòng (0–6)",
+};
+export const NPS_BADGE: Record<NpsCategory, Badge> = {
+  promoter: "b-green",
+  passive: "b-amber",
+  detractor: "b-rose",
+};
+export const npsCategory = (score: number): NpsCategory =>
+  score >= 9 ? "promoter" : score >= 7 ? "passive" : "detractor";
+
+export type NpsChannel = "zalo" | "call" | "email" | "showroom" | "web";
+export const NPS_CHANNEL_LABEL: Record<NpsChannel, string> = {
+  zalo: "Zalo", call: "Gọi điện", email: "Email", showroom: "Showroom", web: "Web",
+};
+export type NpsResponse = {
+  id: string;
+  customerId?: string;
+  customerName: string;
+  score: number; // 0..10
+  comment?: string;
+  channel?: NpsChannel;
+  orderId?: string;
+  byId?: string;
+  createdAt: string;
+};
+
+/* ============ Marketing ============ */
+export type MktChannel = "facebook" | "tiktok" | "zalo" | "google" | "website" | "email" | "other";
+export const MKT_CHANNEL_LABEL: Record<MktChannel, string> = {
+  facebook: "Facebook", tiktok: "TikTok", zalo: "Zalo", google: "Google Ads",
+  website: "Website", email: "Email", other: "Khác",
+};
+export const MKT_CHANNELS = Object.keys(MKT_CHANNEL_LABEL) as MktChannel[];
+
+export type ContentStatus = "planned" | "in_progress" | "published" | "cancelled";
+export const CONTENT_STATUS_LABEL: Record<ContentStatus, string> = {
+  planned: "Lên lịch", in_progress: "Đang làm", published: "Đã đăng", cancelled: "Huỷ",
+};
+export const CONTENT_STATUS_BADGE: Record<ContentStatus, Badge> = {
+  planned: "b-sky", in_progress: "b-amber", published: "b-green", cancelled: "b-gray",
+};
+
+export type ContentPillar = { id: string; name: string; desc?: string; color?: string; createdAt: string };
+
+export type CalendarItem = {
+  id: string;
+  title: string;
+  channel: MktChannel;
+  pillarId?: string;
+  status: ContentStatus;
+  scheduledAt: string;
+  byId?: string;
+  note?: string;
+  createdAt: string;
+};
+
+export type AdStatus = "active" | "paused" | "ended";
+export const AD_STATUS_LABEL: Record<AdStatus, string> = { active: "Đang chạy", paused: "Tạm dừng", ended: "Kết thúc" };
+export const AD_STATUS_BADGE: Record<AdStatus, Badge> = { active: "b-green", paused: "b-amber", ended: "b-gray" };
+export type AdCampaign = {
+  id: string;
+  name: string;
+  channel: MktChannel;
+  spend: number;
+  leads: number;
+  clicks?: number;
+  startAt?: string;
+  endAt?: string;
+  status: AdStatus;
+  createdAt: string;
+};
+
+/* ============ Mua hàng / Nhập kho (PO) ============ */
+export type POStatus = "draft" | "ordered" | "received" | "cancelled";
+export const PO_STATUS_LABEL: Record<POStatus, string> = {
+  draft: "Nháp", ordered: "Đã đặt", received: "Đã nhận", cancelled: "Huỷ",
+};
+export const PO_STATUS_BADGE: Record<POStatus, Badge> = {
+  draft: "b-gray", ordered: "b-amber", received: "b-green", cancelled: "b-rose",
+};
+export type POItem = { name: string; sku?: string; qty: number; unitCost: number };
+export type PurchaseOrder = {
+  id: string;
+  code: string;
+  supplierName: string;
+  items: POItem[];
+  total: number;
+  status: POStatus;
+  expectedAt?: string;
+  note?: string;
+  byId?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ============ Tài chính · Ngân hàng ============ */
+export type TxnDirection = "in" | "out";
+export const TXN_DIR_LABEL: Record<TxnDirection, string> = { in: "Tiền vào", out: "Tiền ra" };
+export type BankTxn = {
+  id: string;
+  date: string;
+  amount: number;
+  direction: TxnDirection;
+  bank?: string;
+  ref?: string;
+  counterparty?: string;
+  matchedOrderId?: string;
+  note?: string;
+  createdAt: string;
+};
+
+/* ============ Đánh giá (Reviews) ============ */
+export type ReviewChannel = "google" | "facebook" | "shopee" | "lazada" | "zalo" | "web" | "showroom";
+export const REVIEW_CHANNEL_LABEL: Record<ReviewChannel, string> = {
+  google: "Google", facebook: "Facebook", shopee: "Shopee", lazada: "Lazada",
+  zalo: "Zalo", web: "Website", showroom: "Showroom",
+};
+export const REVIEW_CHANNELS = Object.keys(REVIEW_CHANNEL_LABEL) as ReviewChannel[];
+export type ReviewStatus = "new" | "responded" | "flagged";
+export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
+  new: "Mới", responded: "Đã phản hồi", flagged: "Cần xử lý",
+};
+export const REVIEW_STATUS_BADGE: Record<ReviewStatus, Badge> = {
+  new: "b-sky", responded: "b-green", flagged: "b-rose",
+};
+export type Review = {
+  id: string;
+  customerName: string;
+  channel: ReviewChannel;
+  rating: number; // 1..5
+  content?: string;
+  status: ReviewStatus;
+  response?: string;
+  orderId?: string;
+  byId?: string;
+  createdAt: string;
+};
+
+/* ============ Sản phẩm (cache Haravan) ============ */
+export type Product = {
+  id: string;
+  haravanId?: string;
+  sku?: string;
+  name: string;
+  brand?: string;
+  category?: string;
+  price: number;
+  compareAtPrice?: number;
+  image?: string;
+  available?: boolean;
+  stock?: number;
+  tags?: string[];
+};
