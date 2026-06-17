@@ -2,6 +2,7 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { CountUp } from "@/components/charts";
 import { TableFilter } from "@/components/table-filter";
+import { ProductThumb } from "@/components/product-thumb";
 import { listInventory } from "@/lib/bnb/store";
 import { haravanConfigured } from "@/lib/haravan/client";
 import { fmtVnd } from "@/lib/bnb/util";
@@ -54,7 +55,15 @@ export default async function InventoryPage() {
         <div className="card-h">
           <h3>Danh sách tồn kho ({products.length})</h3>
         </div>
-        <TableFilter targetId="inv-table" placeholder="Tìm sản phẩm, hãng, SKU…" />
+        <TableFilter
+          targetId="inv-table"
+          placeholder="Tìm sản phẩm, hãng, SKU…"
+          filters={[{ key: "stock", label: "Tồn kho", options: [
+            { value: "ok", label: "Còn hàng" },
+            { value: "low", label: `Sắp hết (≤${LOW})` },
+            { value: "out", label: "Hết hàng" },
+          ] }]}
+        />
         <table id="inv-table" style={{ marginTop: 14 }}>
           <thead>
             <tr>
@@ -71,9 +80,15 @@ export default async function InventoryPage() {
               const st = p.stock ?? 0;
               const badge = st <= 0 ? "b-rose" : st <= LOW ? "b-amber" : "b-green";
               const label = st <= 0 ? "Hết hàng" : st <= LOW ? "Sắp hết" : "Còn hàng";
+              const stockKey = st <= 0 ? "out" : st <= LOW ? "low" : "ok";
               return (
-                <tr key={p.id}>
-                  <td className="small" style={{ fontWeight: 600, maxWidth: 320 }}>{p.name}</td>
+                <tr key={p.id} data-stock={stockKey} data-search={`${p.name} ${p.sku || ""} ${p.brand || ""}`}>
+                  <td className="small" style={{ fontWeight: 600, maxWidth: 340 }}>
+                    <div className="flex aic" style={{ gap: 10 }}>
+                      <ProductThumb src={p.image} name={p.name} />
+                      <span>{p.name}</span>
+                    </div>
+                  </td>
                   <td className="small muted">{p.sku || "—"}</td>
                   <td className="small">{p.brand || "—"}</td>
                   <td className="small" style={{ textAlign: "right" }}>{fmtVnd(p.price)}</td>

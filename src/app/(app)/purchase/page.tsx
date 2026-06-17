@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { TableFilter } from "@/components/table-filter";
 import { listPurchaseOrders } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate } from "@/lib/bnb/util";
 import { PO_STATUS_LABEL, PO_STATUS_BADGE } from "@/lib/bnb/types";
@@ -51,7 +52,12 @@ export default async function PurchasePage() {
       {/* Danh sách PO */}
       <div className="card mt">
         <div className="card-h"><h3>Tất cả PO ({pos.length})</h3></div>
-        <table>
+        <TableFilter
+          targetId="po-tbl"
+          placeholder="Tìm mã PO, nhà cung cấp…"
+          filters={[{ key: "status", label: "Trạng thái", options: (Object.keys(PO_STATUS_LABEL) as (keyof typeof PO_STATUS_LABEL)[]).map((s) => ({ value: s, label: PO_STATUS_LABEL[s] })) }]}
+        />
+        <table id="po-tbl">
           <thead>
             <tr>
               <th>Mã PO</th><th>Nhà cung cấp</th>
@@ -62,7 +68,7 @@ export default async function PurchasePage() {
           </thead>
           <tbody>
             {sorted.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.id} data-status={p.status} data-search={`${p.code} ${p.supplierName}`}>
                 <td>
                   <div className="uname">{p.code}</div>
                   <div className="urole">{fmtDate(p.createdAt)}</div>

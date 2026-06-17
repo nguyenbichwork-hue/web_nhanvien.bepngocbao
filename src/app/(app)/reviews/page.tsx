@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { CountUp, HBars } from "@/components/charts";
+import { TableFilter } from "@/components/table-filter";
 import { listReviews } from "@/lib/bnb/store";
 import { employeeNameMap, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
 import {
@@ -135,7 +136,17 @@ export default async function ReviewsPage() {
         {reviews.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có đánh giá nào.</p>
         ) : (
-          <table>
+          <>
+          <TableFilter
+            targetId="rev-tbl"
+            placeholder="Tìm khách, nội dung…"
+            filters={[
+              { key: "status", label: "Trạng thái", options: (Object.keys(REVIEW_STATUS_LABEL) as (keyof typeof REVIEW_STATUS_LABEL)[]).map((s) => ({ value: s, label: REVIEW_STATUS_LABEL[s] })) },
+              { key: "channel", label: "Kênh", options: REVIEW_CHANNELS.map((c) => ({ value: c, label: REVIEW_CHANNEL_LABEL[c] })) },
+              { key: "rating", label: "Số sao", options: [5,4,3,2,1].map((n) => ({ value: String(n), label: `${n} sao` })) },
+            ]}
+          />
+          <table id="rev-tbl">
             <thead>
               <tr>
                 <th>Khách</th>
@@ -148,7 +159,7 @@ export default async function ReviewsPage() {
             </thead>
             <tbody>
               {reviews.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} data-status={r.status} data-channel={r.channel} data-rating={String(Math.round(r.rating))} data-search={`${r.customerName} ${r.content || ""} ${REVIEW_CHANNEL_LABEL[r.channel]}`}>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span className="av" style={{ background: avatarBg(r.customerName) }}>{initials(r.customerName)}</span>
@@ -180,6 +191,7 @@ export default async function ReviewsPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

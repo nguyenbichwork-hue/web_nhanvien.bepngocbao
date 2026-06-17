@@ -16,6 +16,7 @@ export default async function POSPage() {
     sku: p.sku,
     price: p.price,
     brand: p.brand,
+    image: p.image,
   }));
   const customerLite = customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }));
 

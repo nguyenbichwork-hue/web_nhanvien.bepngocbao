@@ -2,11 +2,12 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { haravanConfigured, listHaravanWebhooks, HARAVAN_WEBHOOK_TOPICS } from "@/lib/haravan/client";
 import { isSupabaseStoreConfigured } from "@/lib/org/persist";
-import { registerWebhooksAction } from "./actions";
+import { getGroup } from "@/lib/org/store";
+import { registerWebhooksAction, updateSystemConfigAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-type SP = { reg?: string; err?: string };
+type SP = { reg?: string; err?: string; cfg?: string };
 
 function StatusRow({ label, on, hint }: { label: string; on: boolean; hint: string }) {
   return (
@@ -28,7 +29,10 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
-  const webhooks = haravanConfigured() ? await listHaravanWebhooks() : [];
+  const [webhooks, group] = await Promise.all([
+    haravanConfigured() ? listHaravanWebhooks() : Promise.resolve([]),
+    getGroup(),
+  ]);
 
   let regMsg: string | null = null;
   if (sp.reg) {
@@ -47,7 +51,28 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
       </div>
 
       {regMsg && <div className="card mt" style={{ borderColor: "var(--c-green)" }}><p className="small" style={{ margin: 0 }}><Icon name="check" /> {regMsg}</p></div>}
+      {sp.cfg && <div className="card mt" style={{ borderColor: "var(--c-green)" }}><p className="small" style={{ margin: 0 }}><Icon name="check" /> Đã lưu cấu hình hệ thống.</p></div>}
       {sp.err && <div className="card mt" style={{ borderColor: "var(--c-rose)" }}><p className="small" style={{ margin: 0 }}><Icon name="alert" /> {sp.err}</p></div>}
+
+      {/* Cấu hình hệ thống — sửa trực tiếp, không cần đụng code */}
+      <div className="card mt">
+        <div className="card-h">
+          <div><h3>Cấu hình hệ thống</h3><div className="sub">Thông tin doanh nghiệp &amp; tham số chung — dùng cho hoá đơn, email, tính lương.</div></div>
+        </div>
+        <form action={updateSystemConfigAction} style={{ display: "grid", gap: 12 }}>
+          <div className="grid-k g-2" style={{ gap: 12 }}>
+            <div className="field" style={{ margin: 0 }}><label>Tên doanh nghiệp</label><input name="name" defaultValue={group.name ?? ""} placeholder="Bếp Ngọc Bảo" /></div>
+            <div className="field" style={{ margin: 0 }}><label>Chủ sở hữu</label><input name="owner" defaultValue={group.owner ?? ""} /></div>
+            <div className="field" style={{ margin: 0 }}><label>Email hệ thống</label><input name="systemEmail" type="email" defaultValue={group.systemEmail ?? ""} /></div>
+            <div className="field" style={{ margin: 0 }}><label>Điện thoại</label><input name="phone" defaultValue={group.phone ?? ""} /></div>
+            <div className="field" style={{ margin: 0 }}><label>Website</label><input name="website" defaultValue={group.website ?? ""} /></div>
+            <div className="field" style={{ margin: 0 }}><label>Giờ làm chuẩn</label><input name="standardHours" defaultValue={group.standardHours ?? ""} placeholder="09:00–18:00…" /></div>
+            <div className="field" style={{ margin: 0 }}><label>Ngày chốt công (1–31)</label><input name="payCutoffDay" type="number" min={1} max={31} defaultValue={group.payCutoffDay ?? ""} /></div>
+            <div className="field" style={{ margin: 0 }}><label>Ngày trả lương (1–31)</label><input name="payDay" type="number" min={1} max={31} defaultValue={group.payDay ?? ""} /></div>
+          </div>
+          <button type="submit" className="btn primary" style={{ justifySelf: "start" }}><Icon name="check" /> Lưu cấu hình</button>
+        </form>
+      </div>
 
       {/* Trạng thái cấu hình */}
       <div className="card mt">

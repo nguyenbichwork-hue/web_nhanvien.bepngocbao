@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
+import { ProductThumb } from "@/components/product-thumb";
 import { fmtVnd } from "@/lib/bnb/util";
 import { PAYMENT_LABEL, type PaymentMethod } from "@/lib/bnb/types";
 import { checkoutAction } from "./actions";
 
-type ProductLite = { id: string; name: string; sku?: string; price: number; brand?: string };
+type ProductLite = { id: string; name: string; sku?: string; price: number; brand?: string; image?: string };
 type CustomerLite = { id: string; name: string; phone: string };
 
 type CartLine = {
@@ -87,6 +88,9 @@ export function POSTerminal({
               className="pos-prod"
               onClick={() => addProduct(p)}
             >
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                <ProductThumb src={p.image} name={p.name} size={64} />
+              </div>
               <div className="small" style={{ fontWeight: 700, lineHeight: 1.25 }}>{p.name}</div>
               <div className="urole" style={{ marginTop: 3 }}>{p.brand || p.sku || "—"}</div>
               <div className="small" style={{ marginTop: 6, fontWeight: 700, color: "var(--brand-1)" }}>{fmtVnd(p.price)}</div>
