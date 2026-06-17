@@ -1,5 +1,7 @@
-// Logo Bếp Ngọc Bảo (ảnh thật ở /public/logo.png — đỏ crimson + chữ slate).
-// Dùng ở thanh bên và các trang đăng nhập/quên-mật-khẩu.
+// Logo Bếp Ngọc Bảo.
+// - Mặc định (thanh bên, nền sáng): dùng ảnh logo ngang đầy đủ /logo.png.
+// - onDark (trang đăng nhập, nền tối): monogram crimson /logo-mark.png (nền trong suốt)
+//   + tên thương hiệu render bằng chữ sáng → sạch, không cần tấm nền trắng.
 
 export function BrandLogo({
   height = 30,
@@ -10,9 +12,28 @@ export function BrandLogo({
   height?: number;
   centered?: boolean;
   subtitle?: string | null;
-  /** Trên nền tối (trang đăng nhập…) — đặt logo lên tấm nền sáng để chữ không bị chìm. */
+  /** Trên nền tối (trang đăng nhập…) — dùng monogram + chữ sáng cho gọn gàng. */
   onDark?: boolean;
 }) {
+  if (onDark) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-mark.png"
+          alt="Bếp Ngọc Bảo"
+          style={{ height: height * 1.18, width: "auto", display: "block", filter: "drop-shadow(0 4px 14px rgba(200,32,63,.35))" }}
+        />
+        <div style={{ textAlign: "center", lineHeight: 1.15 }}>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 17, letterSpacing: 2.5 }}>BẾP NGỌC BẢO</div>
+          <div style={{ color: "rgba(255,255,255,.5)", fontSize: 10, letterSpacing: 0.6, marginTop: 3, textTransform: "uppercase" }}>
+            An tâm vận hành · Trọn vẹn cảm xúc
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -26,15 +47,7 @@ export function BrandLogo({
       <img
         src="/logo.png"
         alt="Bếp Ngọc Bảo"
-        style={{
-          height,
-          width: "auto",
-          display: "block",
-          maxWidth: "100%",
-          ...(onDark
-            ? { background: "#fff", padding: "12px 18px", borderRadius: 16, boxShadow: "0 6px 20px rgba(0,0,0,.28)" }
-            : {}),
-        }}
+        style={{ height, width: "auto", display: "block", maxWidth: "100%" }}
       />
       {subtitle && (
         <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tx-soft)", letterSpacing: 0.2 }}>
