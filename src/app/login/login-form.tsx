@@ -31,6 +31,14 @@ function LoginInner({ demoAccounts }: { demoAccounts: DemoAccount[] }) {
   const [error, setError] = useState<string | null>(
     urlError ? "Email hoặc mật khẩu không đúng." : null,
   );
+  // Bước thử thách 2FA (khi tài khoản đã bật TOTP).
+  const [mfa, setMfa] = useState<{ factorId: string } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+
+  function done() {
+    router.push(next);
+    router.refresh();
+  }
 
   // Nhánh Supabase: đăng nhập thật qua supabase-js ở client.
   async function onSupabaseSubmit(e: React.FormEvent) {
@@ -39,13 +47,34 @@ function LoginInner({ demoAccounts }: { demoAccounts: DemoAccount[] }) {
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setError(error.message);
       return;
     }
-    router.push(next);
-    router.refresh();
+    // Tài khoản có bật 2FA? → cần nâng lên aal2 bằng mã TOTP.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totp = factors?.totp?.[0]; // `totp` chỉ gồm factor đã verified
+      setLoading(false);
+      if (totp) { setMfa({ factorId: totp.id }); return; }
+    }
+    setLoading(false);
+    done();
+  }
+
+  // Xác minh mã 2FA → nâng phiên lên aal2.
+  async function onVerifyMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfa) return;
+    setError(null);
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: mfa.factorId, code: mfaCode.trim() });
+    setLoading(false);
+    if (error) { setError("Mã 2FA không đúng hoặc đã hết hạn."); return; }
+    done();
   }
 
   return (
@@ -61,7 +90,7 @@ function LoginInner({ demoAccounts }: { demoAccounts: DemoAccount[] }) {
     >
       <div className="card" style={{ width: "100%", maxWidth: 410, padding: 32 }}>
         <div style={{ paddingBottom: 22, display: "flex", justifyContent: "center" }}>
-          <BrandLogo height={46} centered />
+          <BrandLogo height={46} centered onDark />
         </div>
 
         <h1 style={{ fontSize: 21, fontWeight: 800, marginBottom: 4 }}>Đăng nhập</h1>
@@ -75,7 +104,32 @@ function LoginInner({ demoAccounts }: { demoAccounts: DemoAccount[] }) {
           </div>
         )}
 
-        {/* Form: dùng server action ở dev; supabase-js khi đã cấu hình. */}
+        {/* Bước 2FA: nhập mã từ app xác thực để hoàn tất đăng nhập. */}
+        {mfa ? (
+          <form onSubmit={onVerifyMfa}>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              <Icon name="shield" /> Tài khoản này bật xác thực 2 lớp. Nhập mã 6 số từ app xác thực.
+            </p>
+            <div className="field">
+              <label>Mã 2FA</label>
+              <input
+                inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" autoFocus
+                value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                style={{ fontFamily: "monospace", letterSpacing: 6, fontSize: 20, textAlign: "center" }}
+              />
+            </div>
+            {error && (
+              <div className="badge b-rose" style={{ width: "100%", justifyContent: "center", marginBottom: 14 }}>{error}</div>
+            )}
+            <button className="btn primary" type="submit" disabled={loading || mfaCode.length !== 6} style={{ width: "100%", justifyContent: "center", padding: 13 }}>
+              <Icon name="check" /> {loading ? "Đang xác minh..." : "Xác minh & vào hệ thống"}
+            </button>
+            <button type="button" className="btn" onClick={() => { setMfa(null); setMfaCode(""); setError(null); }} style={{ width: "100%", justifyContent: "center", marginTop: 8 }}>
+              Quay lại
+            </button>
+          </form>
+        ) : (
+        /* Form: dùng server action ở dev; supabase-js khi đã cấu hình. */
         <form
           action={isSupabaseAuthEnabled ? undefined : devLoginAction}
           onSubmit={isSupabaseAuthEnabled ? onSupabaseSubmit : undefined}
@@ -127,6 +181,7 @@ function LoginInner({ demoAccounts }: { demoAccounts: DemoAccount[] }) {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
+        )}
 
         {/* Đăng nhập nhanh — chỉ ở chế độ dev (chưa nối Supabase). */}
         {!isSupabaseAuthEnabled && demoAccounts.length > 0 && (

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { MfaSetup } from "@/components/mfa-setup";
 import { changePasswordAction } from "@/lib/auth/actions";
+import { isSupabaseAuthEnabled } from "@/lib/supabase/env";
 import { SCOPE_LABEL } from "@/lib/org/types";
 import type { Session } from "@/lib/auth/session";
 
@@ -94,6 +96,9 @@ export function AccountPanel({
           <button type="submit" className="btn primary"><Icon name="check" /> Đổi mật khẩu</button>
         </form>
       </div>
+
+      {/* 2FA — chỉ khi đã bật Supabase Auth (MFA là tính năng của Supabase Auth) */}
+      {isSupabaseAuthEnabled && <MfaSetup />}
     </>
   );
 }

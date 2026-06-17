@@ -32,7 +32,7 @@ export default async function ChangePasswordPage({ searchParams }: { searchParam
     >
       <div className="card" style={{ width: "100%", maxWidth: 430, padding: 32 }}>
         <div style={{ paddingBottom: 18, display: "flex", justifyContent: "center" }}>
-          <BrandLogo height={46} centered />
+          <BrandLogo height={46} centered onDark />
         </div>
 
         <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Đặt mật khẩu mới</h1>
