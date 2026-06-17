@@ -13,6 +13,12 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   if (!isSupabaseAuthEnabled || !SUPABASE_URL || !SUPABASE_ANON_KEY) return response;
 
+  // Bỏ qua prefetch của Next (hover Link) → không gọi mạng làm tươi token cho mỗi prefetch,
+  // giảm mạnh số request tới Supabase Auth → chuyển trang mượt hơn.
+  if (request.headers.get("next-router-prefetch") || request.headers.get("purpose") === "prefetch") {
+    return response;
+  }
+
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {
@@ -26,28 +32,9 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Bắt buộc gọi để xoay token; KHÔNG chèn logic giữa createServerClient và getUser.
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Thực thi 2FA: tài khoản đã bật TOTP nhưng phiên mới ở aal1 (chưa nhập mã) →
-  // buộc về trang đăng nhập để hoàn tất. Fail-open (lỗi → cho qua) để không khoá nhầm.
-  if (user) {
-    const path = request.nextUrl.pathname;
-    const exempt = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/forbidden");
-    if (!exempt) {
-      try {
-        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
-          const url = request.nextUrl.clone();
-          url.pathname = "/login";
-          url.searchParams.set("mfa", "1");
-          return NextResponse.redirect(url);
-        }
-      } catch {
-        /* fail-open */
-      }
-    }
-  }
+  // Chỉ làm tươi token (1 lượt) — KHÔNG chèn logic giữa createServerClient và getUser.
+  // 2FA được thực thi ở bước đăng nhập (login-form challenge), không kiểm AAL mỗi request.
+  await supabase.auth.getUser();
   return response;
 }
 

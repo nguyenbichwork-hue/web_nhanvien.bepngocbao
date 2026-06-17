@@ -77,13 +77,13 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (isSupabaseAuthEnabled) {
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email) {
-      const match = (await listUsers()).find(
-        (u) => u.email.toLowerCase() === user.email!.toLowerCase(),
-      );
+    // getClaims() xác minh JWT CỤC BỘ bằng JWKS (cache) — KHÔNG gọi mạng mỗi request
+    // như getUser(). Token đã được proxy làm tươi nên claims đáng tin. → giảm trễ chuyển trang.
+    const { data } = await supabase.auth.getClaims();
+    const email = (data?.claims as { email?: string } | undefined)?.email;
+    if (email) {
+      const lower = email.toLowerCase();
+      const match = (await listUsers()).find((u) => u.email.toLowerCase() === lower);
       if (match) return resolveByUserId(match.id);
     }
   }
