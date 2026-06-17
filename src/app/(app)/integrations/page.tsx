@@ -76,8 +76,20 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
         ) : (
           <>
             <p className="small muted">Các topic BNB lắng nghe: {HARAVAN_WEBHOOK_TOPICS.join(", ")}.</p>
-            {webhooks.length > 0 && (
-              <table>
+            <table>
+              <tbody>
+                <tr>
+                  <td><b className="small">URL nhận webhook</b><div className="urole">Khai báo địa chỉ này trong Haravan admin cho mỗi topic.</div></td>
+                  <td className="small muted" style={{ wordBreak: "break-all", textAlign: "right" }}><code>{defaultBase || "<domain>"}/api/haravan/webhook</code></td>
+                </tr>
+                <tr>
+                  <td><b className="small">Xác thực chữ ký (HMAC)</b><div className="urole">HARAVAN_WEBHOOK_SECRET = chuỗi “Tất cả webhook đánh dấu với…”.</div></td>
+                  <td style={{ textAlign: "right" }}><span className={`badge ${env("HARAVAN_WEBHOOK_SECRET") ? "b-green" : "b-amber"}`}>{env("HARAVAN_WEBHOOK_SECRET") ? "Đã bật" : "Chưa bật"}</span></td>
+                </tr>
+              </tbody>
+            </table>
+            {webhooks.length > 0 ? (
+              <table style={{ marginTop: 10 }}>
                 <thead><tr><th>Topic</th><th>Địa chỉ</th></tr></thead>
                 <tbody>
                   {webhooks.map((w) => (
@@ -85,17 +97,19 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
                   ))}
                 </tbody>
               </table>
+            ) : (
+              <p className="small muted" style={{ marginTop: 10 }}>
+                <Icon name="alert" /> Token hiện chưa có scope <code>com.*webhooks</code> nên không liệt kê/đăng ký tự động được —
+                hãy <b>thêm webhook thủ công</b> trong Haravan admin (Cấu hình → Webhook) với URL ở trên. Nút dưới chỉ hoạt động khi token có scope webhook.
+              </p>
             )}
             <form action={registerWebhooksAction} style={{ display: "grid", gap: 10, marginTop: 14 }}>
               <div className="field" style={{ margin: 0 }}>
                 <label>Domain public (đã deploy)</label>
                 <input name="baseUrl" defaultValue={defaultBase} placeholder="https://bnb.vercel.app" required />
               </div>
-              <p className="small muted" style={{ margin: 0 }}>
-                Sẽ đăng ký webhook trỏ về <code>{defaultBase || "<domain>"}/api/haravan/webhook</code> (bỏ qua topic đã có).
-              </p>
               <button type="submit" className="btn primary" style={{ justifySelf: "start" }}>
-                <Icon name="settings" /> Đăng ký / đồng bộ webhook
+                <Icon name="settings" /> Thử đăng ký tự động (cần scope webhook)
               </button>
             </form>
           </>
