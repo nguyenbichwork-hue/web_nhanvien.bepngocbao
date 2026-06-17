@@ -298,7 +298,7 @@ export type Role = {
 export type ScopeType = "GROUP" | "ENTITY" | "DEPARTMENT" | "SELF";
 
 export const SCOPE_LABEL: Record<ScopeType, string> = {
-  GROUP: "Toàn tập đoàn",
+  GROUP: "Toàn hệ thống",
   ENTITY: "Một pháp nhân",
   DEPARTMENT: "Theo phòng ban",
   SELF: "Chỉ cá nhân",

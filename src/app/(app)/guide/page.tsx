@@ -272,7 +272,7 @@ export default async function GuidePage() {
       >
         <Block title="Khái niệm cốt lõi">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Đa pháp nhân:</b> Tập đoàn → Pháp nhân (công ty, có MST/BHXH/vùng lương riêng) → Phòng ban (dạng cây) → Nhân viên. Dữ liệu tách theo pháp nhân.</li>
+            <li><b>Đa pháp nhân:</b> Pháp nhân (công ty, có MST/BHXH/vùng lương riêng) → Phòng ban (dạng cây) → Nhân viên. Dữ liệu tách theo pháp nhân.</li>
             <li><b>Phân quyền (RBAC):</b> mỗi tài khoản gắn <i>Vai trò</i> (tập hợp quyền) + <i>Phạm vi dữ liệu</i>. Chi tiết ở mục <a href="#settings">Cài đặt &amp; phân quyền</a>.</li>
             <li><b>Tích hợp chéo:</b> Hồ sơ NV cấp dữ liệu lương cho <a href="#payroll">Tính lương</a>; đơn nghỉ đã duyệt hiện trên <a href="#schedule">Lịch làm việc</a>; nghỉ không lương trừ vào <a href="#payroll">lương</a>.</li>
             <li><b>Dữ liệu demo:</b> hiện lưu trong bộ nhớ máy chủ (in-memory) — thao tác đầy đủ nhưng <b>mất khi khởi động lại server</b>; sẽ lưu bền khi nối Supabase.</li>
@@ -332,7 +332,7 @@ export default async function GuidePage() {
         purpose="Cấp & bảo mật tài khoản: HR cấp tài khoản cho nhân viên mới, nhân viên tự đổi mật khẩu và cập nhật thông tin cá nhân của mình.">
         <Block title="Cấp tài khoản (chỉ HR trở lên)">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li>Chỉ người có quyền <b>sửa hồ sơ nhân viên</b> (HR, HR Tập đoàn, Quản trị) mới cấp được tài khoản — trong hồ sơ nhân viên, thẻ <b>“Tài khoản đăng nhập”</b>.</li>
+            <li>Chỉ người có quyền <b>sửa hồ sơ nhân viên</b> (HR, HR Toàn hệ thống, Quản trị) mới cấp được tài khoản — trong hồ sơ nhân viên, thẻ <b>“Tài khoản đăng nhập”</b>.</li>
             <li>HR cấp tài khoản với <b>mật khẩu tạm</b> (<code>123456</code>) rồi gửi cho nhân viên qua Zalo/Gmail. Tài khoản mới luôn bị <b>buộc đổi mật khẩu</b> ở lần đăng nhập đầu.</li>
             <li>Nếu nhân viên mất mật khẩu, HR bấm <b>“Đặt lại mật khẩu”</b> trong hồ sơ → mật khẩu về tạm &amp; buộc đổi lại.</li>
           </ul>
@@ -1166,11 +1166,10 @@ export default async function GuidePage() {
       </Section>
 
       {/* ===== Settings ===== */}
-      <Section id="settings" icon="settings" title="Cài đặt & phân quyền" routes="/settings (Tập đoàn · Pháp nhân · Phòng ban · Chức danh · Phụ cấp & Khấu trừ · Ngày lễ · Quy trình duyệt · Vai trò & quyền · Nhật ký)"
+      <Section id="settings" icon="settings" title="Cài đặt & phân quyền" routes="/settings (Pháp nhân · Phòng ban · Chức danh · Phụ cấp & Khấu trừ · Ngày lễ · Quy trình duyệt · Vai trò & quyền · Nhật ký)"
         purpose="Cấu hình cây tổ chức và hệ thống phân quyền (RBAC). Truy cập ở góc dưới thanh bên.">
         <Block title="Các tab">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Tập đoàn:</b> thông tin chung &amp; tham số mặc định (chủ sở hữu, email/SĐT/website hệ thống, ngày chốt công, ngày trả lương, giờ làm chuẩn).</li>
             <li><b>Pháp nhân:</b> thêm/sửa công ty (MST, số ĐKKD, mã BHXH, vùng lương, ngân hàng chi lương &amp; số TK công ty, cờ công ty mẹ…).</li>
             <li><b>Phòng ban:</b> cây phân cấp theo từng pháp nhân; thêm/xoá.</li>
             <li><b>Chức danh:</b> danh mục dùng chung; thêm, bật/tắt.</li>
@@ -1181,10 +1180,10 @@ export default async function GuidePage() {
             <li><b>Nhật ký:</b> xem lịch sử thao tác nhạy cảm (thêm/sửa/xoá NV, duyệt đơn, chốt lương, đổi quyền…).</li>
           </ul>
         </Block>
-        <Block title="Cấu hình tập đoàn hiện tại">
+        <Block title="Cấu hình hệ thống hiện tại">
           <table>
             <tbody>
-              <tr><td><b>Tên tập đoàn</b></td><td>{group.name}</td></tr>
+              <tr><td><b>Tên hệ thống</b></td><td>{group.name}</td></tr>
               <tr><td><b>Chủ sở hữu</b></td><td>{group.owner ?? "—"}</td></tr>
               <tr><td><b>Email hệ thống</b></td><td>{group.systemEmail ?? "—"}</td></tr>
               <tr><td><b>Điện thoại</b></td><td>{group.phone ?? "—"}</td></tr>

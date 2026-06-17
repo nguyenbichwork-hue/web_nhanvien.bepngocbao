@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { TableFilter } from "@/components/table-filter";
 import { listQuotes, listCustomers, listLeads } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, quoteTotal } from "@/lib/bnb/util";
 import {
@@ -62,7 +63,13 @@ export default async function QuotePage() {
             Chưa có báo giá nào. {canManage && <Link href="/quote/new" className="badge b-indigo">Tạo báo giá đầu tiên</Link>}
           </p>
         ) : (
-          <table>
+          <>
+          <TableFilter
+            targetId="quote-tbl"
+            placeholder="Tìm mã, khách/lead…"
+            filters={[{ key: "status", label: "Trạng thái", options: (Object.keys(QUOTE_STATUS_LABEL) as (keyof typeof QUOTE_STATUS_LABEL)[]).map((s) => ({ value: s, label: QUOTE_STATUS_LABEL[s] })) }]}
+          />
+          <table id="quote-tbl">
             <thead>
               <tr><th>Mã</th><th>Khách / Lead</th><th>Phương án</th><th>Trạng thái</th><th style={{ textAlign: "right" }}>Tổng tiền</th><th>Ngày tạo</th><th></th></tr>
             </thead>
@@ -70,7 +77,7 @@ export default async function QuotePage() {
               {sorted.map((q) => {
                 const who = q.customerId ? cusName[q.customerId] : q.leadId ? leadName[q.leadId] : undefined;
                 return (
-                  <tr key={q.id}>
+                  <tr key={q.id} data-status={q.status} data-search={`${q.code} ${who || ""} ${q.tier ? TIER_LABEL[q.tier] : ""}`}>
                     <td><b className="small">{q.code}</b></td>
                     <td className="small">{who || <span className="muted">— khách lẻ —</span>}</td>
                     <td className="small">{q.tier ? <span className="badge b-gray">{TIER_LABEL[q.tier]}</span> : "—"}</td>
@@ -85,6 +92,7 @@ export default async function QuotePage() {
               })}
             </tbody>
           </table>
+          </>
         )}
         {sorted[0] && <p className="muted small mt">Cập nhật lần cuối {fmtDate(sorted[0].updatedAt)}.</p>}
       </div>

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 const TABS: { href: string; label: string; need?: "org" | "rbac" | "admin" }[] = [
   { href: "/settings", label: "Tổng quan", need: "admin" },
-  { href: "/settings/group", label: "Tập đoàn", need: "org" },
   { href: "/settings/entities", label: "Pháp nhân", need: "org" },
   { href: "/settings/departments", label: "Phòng ban", need: "org" },
   { href: "/settings/positions", label: "Chức danh", need: "org" },

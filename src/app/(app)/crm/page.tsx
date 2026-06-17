@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { TableFilter } from "@/components/table-filter";
 import { listLeads } from "@/lib/bnb/store";
 import { employeeNameMap, fmtVnd, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
 import {
@@ -70,13 +71,21 @@ export default async function CrmPage() {
       {/* Danh sách */}
       <div className="card mt">
         <div className="card-h"><h3>Tất cả lead ({total})</h3></div>
-        <table>
+        <TableFilter
+          targetId="leads-tbl"
+          placeholder="Tìm tên, SĐT, nhu cầu, phụ trách…"
+          filters={[
+            { key: "stage", label: "Trạng thái", options: LEAD_STAGES.map((s) => ({ value: s, label: LEAD_STAGE_LABEL[s] })) },
+            { key: "source", label: "Nguồn", options: LEAD_SOURCES.map((s) => ({ value: s, label: LEAD_SOURCE_LABEL[s] })) },
+          ]}
+        />
+        <table id="leads-tbl">
           <thead>
             <tr><th>Khách hàng</th><th>Nguồn</th><th>Nhu cầu</th><th>Ngân sách</th><th>Phụ trách</th><th>Trạng thái</th><th></th></tr>
           </thead>
           <tbody>
             {sorted.map((l) => (
-              <tr key={l.id}>
+              <tr key={l.id} data-stage={l.stage} data-source={l.source} data-search={`${l.name} ${l.phone} ${l.need || ""} ${l.assigneeId ? names[l.assigneeId] || "" : ""} ${LEAD_SOURCE_LABEL[l.source]} ${LEAD_STAGE_LABEL[l.stage]}`}>
                 <td>
                   <div className="urow">
                     <div className="av" style={{ background: avatarBg(l.name) }}>{initials(l.name)}</div>

@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { CountUp } from "@/components/charts";
+import { TableFilter } from "@/components/table-filter";
 import { listWarranties, listOrders, listCustomers } from "@/lib/bnb/store";
 import { employeeNameMap, fmtDate } from "@/lib/bnb/util";
 import {
@@ -166,13 +167,19 @@ export default async function WarrantyPage() {
         {warranties.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phiếu bảo hành nào.</p>
         ) : (
-          <table>
+          <>
+          <TableFilter
+            targetId="wty-tbl"
+            placeholder="Tìm mã, khách, sản phẩm…"
+            filters={[{ key: "status", label: "Trạng thái", options: (Object.keys(WARRANTY_STATUS_LABEL) as (keyof typeof WARRANTY_STATUS_LABEL)[]).map((s) => ({ value: s, label: WARRANTY_STATUS_LABEL[s] })) }]}
+          />
+          <table id="wty-tbl">
             <thead>
               <tr><th>Mã</th><th>Khách hàng</th><th>Sản phẩm</th><th>Ngày lắp</th><th>Mốc chăm sóc</th><th>Trạng thái</th><th>Chăm kế</th><th></th></tr>
             </thead>
             <tbody>
               {sorted.map((w) => (
-                <tr key={w.id} style={w.status === "due" ? { background: "var(--surface-2)" } : undefined}>
+                <tr key={w.id} data-status={w.status} data-search={`${w.code} ${cusName(w.customerId) || ""} ${w.productName || ""} ${w.assigneeId ? names[w.assigneeId] || "" : ""}`} style={w.status === "due" ? { background: "var(--surface-2)" } : undefined}>
                   <td className="small"><b>{w.code}</b></td>
                   <td>
                     <div className="uname">{cusName(w.customerId) || "Khách lẻ"}</div>
@@ -188,6 +195,7 @@ export default async function WarrantyPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

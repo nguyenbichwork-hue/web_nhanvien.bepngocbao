@@ -219,7 +219,7 @@ type DB = {
 
 function seed(): DB {
   const group: Group = {
-    id: "g1", code: "K-HOMES", name: "Tập đoàn K-Homes", shortName: "K-Homes",
+    id: "g1", code: "BNB", name: "Bếp Ngọc Bảo", shortName: "BNB",
     owner: "Đoàn Vinh Phú", systemEmail: "op.dept@khomes.vn", phone: "028-7774-8885",
     website: "khomes.vn", standardHours: "09:00–18:00, nghỉ trưa 12:00–13:30",
     payCutoffDay: 26, payDay: 30,
@@ -334,7 +334,7 @@ function seed(): DB {
   const roles: Role[] = [
     { id: "r-admin", code: "ADMIN", name: "Quản trị hệ thống", description: "Toàn quyền hệ thống, cấu hình & phân quyền", isSystem: true, permissions: [...ALL] },
     { id: "r-bod", code: "BOD", name: "Chủ cửa hàng / BOD", description: "Xem toàn cảnh doanh thu, lead, vận hành; phê duyệt cấp cao", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "leave.read", "leave.approve", "payroll.read", "report.read", "report.export", "recruit.read", "performance.read", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve", "lead.read", "customer.read", "fit.read", "survey.read", "quote.read", "order.read", "delivery.read", "warranty.read", "shiftreport.read", "task.read", "bizdash.read", "design.read", "cx.read", "marketing.read", "purchase.read", "finance.read", "finance.manage", "review.read", "inbox.read"] },
-    { id: "r-hrg", code: "HRG", name: "HR Tập đoàn", description: "Nhân sự cấp tập đoàn — xem/sửa mọi pháp nhân", isSystem: true, permissions: except("system.rbac") },
+    { id: "r-hrg", code: "HRG", name: "HR Toàn hệ thống", description: "Nhân sự cấp cao — xem/sửa mọi pháp nhân", isSystem: true, permissions: except("system.rbac") },
     { id: "r-hr", code: "HR", name: "HR Pháp nhân", description: "Nhân sự trong phạm vi một pháp nhân", isSystem: true, permissions: except("system.rbac", "org.manage") },
     { id: "r-rec", code: "REC", name: "Recruiter", description: "Quản lý tuyển dụng, ứng viên, phỏng vấn", isSystem: true, permissions: ["org.read", "employee.read", "recruit.read", "recruit.manage", "report.read"] },
     { id: "r-mgr", code: "MGR", name: "Quản lý trực tiếp", description: "Trưởng đơn vị — xếp lịch, duyệt đơn, xem nhân sự phòng ban", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "schedule.manage", "leave.read", "leave.approve", "report.read", "recruit.read", "performance.read", "performance.manage", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve"] },

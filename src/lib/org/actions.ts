@@ -85,7 +85,6 @@ import {
   updateDepartment,
   updateEmployee,
   updateEntity,
-  updateGroup,
   updateJobTitle,
   createPayItem,
   updatePayItem,
@@ -818,30 +817,6 @@ export async function deleteHolidayAction(fd: FormData) {
   revalidatePath("/schedule");
 }
 
-// ---------------- Cấu hình tập đoàn ----------------
-function dayOrUndef(fd: FormData, k: string): number | undefined {
-  const n = num(fd, k);
-  return n && n >= 1 && n <= 31 ? Math.round(n) : undefined;
-}
-export async function updateGroupAction(fd: FormData) {
-  const session = await requireSession();
-  await requirePermission("org.manage");
-  await updateGroup({
-    name: str(fd, "name") || undefined,
-    shortName: str(fd, "shortName") || undefined,
-    owner: str(fd, "owner") || undefined,
-    systemEmail: str(fd, "systemEmail") || undefined,
-    phone: str(fd, "phone") || undefined,
-    website: str(fd, "website") || undefined,
-    standardHours: str(fd, "standardHours") || undefined,
-    payCutoffDay: dayOrUndef(fd, "payCutoffDay"),
-    payDay: dayOrUndef(fd, "payDay"),
-  });
-  await audit(session, "Cập nhật cấu hình tập đoàn", "org", str(fd, "name"));
-  revalidatePath("/settings/group");
-  revalidatePath("/settings");
-  redirect("/settings/group");
-}
 
 // ---------------- Phụ cấp & Khấu trừ ----------------
 const PAY_ITEM_KINDS: PayItemKind[] = ["allowance", "deduction"];

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { listOrders } from "@/lib/bnb/store";
+import { TableFilter } from "@/components/table-filter";
 import { employeeNameMap, fmtVnd, fmtDate, orderRemaining } from "@/lib/bnb/util";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_BADGE } from "@/lib/bnb/types";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_BADGE, type OrderStatus } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,16 @@ export default async function OrdersPage() {
       {/* Danh sách đơn */}
       <div className="card mt">
         <div className="card-h"><h3>Tất cả đơn ({orders.length})</h3></div>
-        <table>
+        <TableFilter
+          targetId="orders-tbl"
+          placeholder="Tìm mã đơn, khách, phụ trách…"
+          filters={[{
+            key: "status",
+            label: "Trạng thái",
+            options: (Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => ({ value: s, label: ORDER_STATUS_LABEL[s] })),
+          }]}
+        />
+        <table id="orders-tbl">
           <thead>
             <tr>
               <th>Mã đơn</th><th>Khách</th><th>Trạng thái</th>
@@ -61,7 +71,7 @@ export default async function OrdersPage() {
           </thead>
           <tbody>
             {sorted.map((o) => (
-              <tr key={o.id}>
+              <tr key={o.id} data-status={o.status} data-search={`${o.code} ${o.customerId || ""} ${ORDER_STATUS_LABEL[o.status]} ${o.assigneeId ? names[o.assigneeId] || "" : ""}`}>
                 <td>
                   <div className="uname">{o.code}</div>
                   <div className="urole">{fmtDate(o.createdAt)}</div>
