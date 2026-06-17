@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { EmployeeForm, type ExistingAccount } from "@/components/employee-form";
+import { AssignRoleRow } from "@/components/assign-role-row";
 import { createDependentAction, deleteDependentAction, deleteEmployeeAction, resetEmployeePasswordAction, updateEmployeeAction } from "@/lib/org/actions";
 import {
   getEmployee,
@@ -55,16 +56,17 @@ export default async function EmployeeEditPage({
     canSeeSalary ? listSalaryRecords(id) : Promise.resolve([]),
   ]);
 
+  const accountAsg = account ? assignments.find((a) => a.userId === account.id) : undefined;
   let existingAccount: ExistingAccount | null = null;
   if (account) {
-    const asg = assignments.find((a) => a.userId === account.id);
-    const roleName = roles.find((r) => r.id === asg?.roleId)?.name ?? "(chưa gán vai trò)";
+    const roleName = roles.find((r) => r.id === accountAsg?.roleId)?.name ?? "(chưa gán vai trò)";
     existingAccount = {
       email: account.email,
       roleName,
-      scopeLabel: asg ? SCOPE_LABEL[asg.scopeType] : "—",
+      scopeLabel: accountAsg ? SCOPE_LABEL[accountAsg.scopeType] : "—",
     };
   }
+  const canManageRbac = can(session, "system.rbac");
 
   return (
     <div className="view-in">
@@ -144,6 +146,30 @@ export default async function EmployeeEditPage({
           <p className="muted small" style={{ marginTop: 14, marginBottom: 0 }}>
             Bạn chỉ có quyền xem hồ sơ này. Thông tin lương/thuế/bảo hiểm chỉ hiển thị với bộ phận Nhân sự.
           </p>
+        </div>
+      )}
+
+      {/* Vai trò & phân quyền — gán/đổi trực tiếp (chỉ Quản trị hệ thống) */}
+      {account && canManageRbac && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <div className="card-h">
+            <div>
+              <h3><Icon name="shield" /> Vai trò &amp; phân quyền</h3>
+              <div className="sub">Gán vai trò &amp; phạm vi dữ liệu cho tài khoản của nhân viên này. Áp dụng ngay.</div>
+            </div>
+            <Link href="/settings/roles" className="badge b-indigo">Ma trận quyền</Link>
+          </div>
+          <table>
+            <tbody>
+              <AssignRoleRow
+                user={{ id: account.id, fullName: employee.fullName, email: account.email }}
+                roles={roles.map((r) => ({ id: r.id, code: r.code, name: r.name }))}
+                entities={entities.map((e) => ({ id: e.id, name: e.name }))}
+                departments={departments.map((d) => ({ id: d.id, name: d.name }))}
+                current={accountAsg ? { roleId: accountAsg.roleId, scopeType: accountAsg.scopeType, scopeEntityId: accountAsg.scopeEntityId, scopeDepartmentId: accountAsg.scopeDepartmentId } : undefined}
+              />
+            </tbody>
+          </table>
         </div>
       )}
 
