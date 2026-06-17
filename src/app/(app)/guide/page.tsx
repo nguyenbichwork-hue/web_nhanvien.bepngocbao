@@ -80,6 +80,7 @@ import {
   TIER_LABEL,
   WARRANTY_STATUS_BADGE,
   WARRANTY_STATUS_LABEL,
+  ZALO_CONV_STATUS_LABEL,
   type DeliveryStatus,
   type KitchenLayout,
   type LeadSource,
@@ -188,6 +189,7 @@ export default async function GuidePage() {
     { id: "today", icon: "today", label: "Hôm nay (Dashboard)" },
     { id: "crm", icon: "customer", label: "CRM & Lead" },
     { id: "customers", icon: "users", label: "Khách hàng 360" },
+    { id: "inbox", icon: "chat", label: "Hộp thoại Zalo OA" },
     { id: "fit", icon: "fit", label: "Fit Diagnostic" },
     { id: "design", icon: "sparkle", label: "Thiết kế bếp AI" },
     { id: "survey", icon: "survey", label: "Khảo sát nhà khách" },
@@ -203,6 +205,8 @@ export default async function GuidePage() {
     { id: "pos", icon: "cart", label: "POS quầy" },
     { id: "finance", icon: "wallet", label: "Tài chính – Kế toán" },
     { id: "bizdash", icon: "crown", label: "Dashboard quản trị" },
+    { id: "bi", icon: "chart", label: "BI · Phân tích kinh doanh" },
+    { id: "integrations", icon: "settings", label: "Tích hợp & Kết nối" },
     { id: "dashboard", icon: "grid", label: "Bảng điều khiển (HR)" },
     { id: "employees", icon: "users", label: "Nhân viên" },
     { id: "contracts", icon: "doc", label: "Hợp đồng lao động" },
@@ -415,6 +419,26 @@ export default async function GuidePage() {
           <ol style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
             <li>Mở <b>Khách hàng 360</b>, tìm khách theo tên/SĐT → bấm <b>“Hồ sơ 360”</b> để xem toàn cảnh.</li>
             <li>Khách mới sinh ra khi <a href="#crm">chốt lead</a>, tạo đơn, hoặc đồng bộ từ Haravan — không cần nhập tay trùng lặp.</li>
+          </ol>
+        </Block>
+      </Section>
+
+      {/* ===== Hộp thoại Zalo OA ===== */}
+      <Section id="inbox" icon="chat" title="Hộp thoại Zalo OA" routes="/inbox · /api/zalo/webhook"
+        purpose="Chat hai chiều với khách qua Zalo Official Account ngay trong hệ thống — nhận tin khách gửi, trả lời, gán trạng thái xử lý và liên kết về hồ sơ khách 360.">
+        <Block title="Chức năng & logic">
+          <ul>
+            <li><b>Nhận tin tự động:</b> Zalo đẩy sự kiện <code>user_send_text</code> tới <code>/api/zalo/webhook</code> (xác thực chữ ký bằng <code>ZALO_OA_SECRET_KEY</code>). Khách lạ được tạo hội thoại mới (lấy tên/ảnh qua API hồ sơ OA), tin được chống trùng theo <code>msg_id</code>.</li>
+            <li><b>Trả lời:</b> soạn tin → gửi qua Zalo OA Message API (cửa sổ tương tác 7 ngày). Chưa cắm <code>ZALO_OA_ACCESS_TOKEN</code> thì tin chỉ lưu nội bộ (chế độ xem trước).</li>
+            <li><b>Trạng thái hội thoại:</b> {Object.values(ZALO_CONV_STATUS_LABEL).join(" · ")}. Tin mới của khách tự mở lại hội thoại đã đóng và tăng số <i>chưa đọc</i>.</li>
+            <li><b>Liên kết:</b> hội thoại gắn được <a href="#customers">Khách hàng 360</a> qua <code>customerId</code>; khác với <b>ZNS</b> (tin template chăm sóc tự động ở <a href="#warranty">Bảo hành</a>).</li>
+          </ul>
+        </Block>
+        <Block title="Cách dùng">
+          <ol>
+            <li>Mở <b>Hộp thoại Zalo</b> ở nhóm Bán hàng → chọn hội thoại bên trái để xem dòng tin.</li>
+            <li>Nhập nội dung và bấm <b>Gửi</b>; đổi trạng thái hoặc bấm <b>Đã đọc</b> khi xử lý xong.</li>
+            <li>Cấu hình token OA và đăng ký webhook ở mục <a href="#integrations">Tích hợp &amp; Kết nối</a>.</li>
           </ol>
         </Block>
       </Section>
@@ -713,6 +737,32 @@ export default async function GuidePage() {
             <li>Tổng hợp <b>doanh thu &amp; đơn hàng</b> theo kỳ, <b>tỷ lệ chuyển đổi phễu lead</b> ({LEAD_STAGES.map((s) => LEAD_STAGE_LABEL[s]).join(" → ")}), nguồn lead hiệu quả.</li>
             <li>Theo dõi <b>tiến độ giao–lắp</b>, <b>hậu mãi</b> (mốc chăm sóc đến hạn / đã làm) và năng suất theo nhân viên/showroom.</li>
             <li>Lấy số từ Báo cáo ca, Đơn hàng, CRM, Giao–Lắp, Bảo hành. Cần quyền <code>bizdash.read</code> (BOD / Quản lý Showroom / Quản trị).</li>
+          </ul>
+        </Block>
+      </Section>
+
+      {/* ===== BI · Phân tích kinh doanh ===== */}
+      <Section id="bi" icon="chart" title="BI · Phân tích kinh doanh" routes="/bi"
+        purpose="Lớp phân tích chuyên sâu đa phân hệ — bổ trợ Dashboard quản trị bằng các chỉ số tài chính và hiệu quả marketing tính toán liên kết.">
+        <Block title="Chức năng & logic">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>Tài chính:</b> doanh thu đã thu, <b>lãi gộp ước tính</b> = doanh số − giá vốn (theo SKU trong <a href="#purchase">PO</a>), biên lãi gộp, AOV, công nợ phải thu.</li>
+            <li><b>Xu hướng:</b> doanh thu thu được theo <b>6 tháng</b> (từ payments của đơn) và <b>phễu lead</b> ({LEAD_STAGES.map((s) => LEAD_STAGE_LABEL[s]).join(" → ")}).</li>
+            <li><b>Marketing ROI:</b> chi phí / lead / <b>CPL</b> theo kênh ({MKT_CHANNELS.map((c) => MKT_CHANNEL_LABEL[c]).join(" · ")}) và CPL hợp nhất, lấy từ chiến dịch ở <a href="#marketing">Marketing</a>.</li>
+            <li><b>Chất lượng &amp; dòng tiền:</b> cơ cấu <b>NPS</b> (từ <a href="#customers">CX</a>), <b>tuổi nợ công nợ</b> (AR aging) và dòng tiền vào/ra từ đối soát ngân hàng (<a href="#finance">Tài chính</a>).</li>
+            <li>Top sản phẩm theo doanh số (gộp theo dòng đơn). Chỉ đọc, cần quyền <code>bizdash.read</code>.</li>
+          </ul>
+        </Block>
+      </Section>
+
+      {/* ===== Tích hợp & Kết nối ===== */}
+      <Section id="integrations" icon="settings" title="Tích hợp & Kết nối" routes="/integrations"
+        purpose="Trang quản trị trạng thái các kết nối bên ngoài và công cụ đăng ký webhook — chỉ Quản trị hệ thống truy cập (quyền system.rbac).">
+        <Block title="Chức năng & logic">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>Trạng thái cấu hình:</b> kiểm tra nhanh các biến môi trường đã cắm chưa — Haravan, Zalo OA/ZNS, AI thiết kế, Cron, Supabase.</li>
+            <li><b>Đăng ký webhook Haravan:</b> một nút đăng ký (idempotent) các topic <code>inventory_levels/update · products/update · orders/create · orders/updated</code> trỏ về <code>/api/haravan/webhook</code>; bỏ qua topic đã có.</li>
+            <li>Cần URL public (sau khi deploy) — nhập domain rồi bấm đăng ký; danh sách webhook hiện hành hiển thị ngay bên trên.</li>
           </ul>
         </Block>
       </Section>
@@ -1127,7 +1177,7 @@ export default async function GuidePage() {
             <li><b>Phụ cấp &amp; Khấu trừ:</b> danh mục khoản cộng/trừ vào lương (kèm cờ chịu thuế / đóng BHXH).</li>
             <li><b>Ngày lễ:</b> khai báo ngày nghỉ lễ trong năm (ảnh hưởng lịch &amp; tính công).</li>
             <li><b>Quy trình duyệt:</b> đặt số cấp phê duyệt đơn nghỉ phép (1–3 cấp).</li>
-            <li><b>Vai trò &amp; quyền:</b> ma trận bật/tắt quyền cho từng vai trò; gán vai trò + phạm vi cho tài khoản.</li>
+            <li><b>Vai trò &amp; quyền:</b> ma trận bật/tắt quyền cho từng vai trò; bảng <b>Phân quyền người dùng</b> cho <b>gán/đổi/gỡ vai trò + phạm vi dữ liệu</b> ({Object.values(SCOPE_LABEL).join(" · ")}) cho từng tài khoản, áp dụng ngay. Không thể tự gỡ vai trò của chính mình (chống khoá ngoài).</li>
             <li><b>Nhật ký:</b> xem lịch sử thao tác nhạy cảm (thêm/sửa/xoá NV, duyệt đơn, chốt lương, đổi quyền…).</li>
           </ul>
         </Block>

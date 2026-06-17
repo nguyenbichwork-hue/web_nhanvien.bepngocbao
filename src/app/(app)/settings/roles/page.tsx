@@ -1,5 +1,6 @@
 import { Icon } from "@/components/icon";
 import { RoleMatrix } from "@/components/role-matrix";
+import { AssignRoleRow } from "@/components/assign-role-row";
 import { createRoleAction } from "@/lib/org/actions";
 import {
   MODULE_LABEL,
@@ -10,11 +11,11 @@ import {
   listRoles,
   listUsers,
 } from "@/lib/org/store";
-import { SCOPE_LABEL } from "@/lib/org/types";
 import { requirePermission } from "@/lib/auth/session";
 
-export default async function RolesPage() {
+export default async function RolesPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   await requirePermission("system.rbac");
+  const { err } = await searchParams;
   const [roles, users, assignments, entities, departments] = await Promise.all([
     listRoles(),
     listUsers(),
@@ -32,17 +33,13 @@ export default async function RolesPage() {
     perms: PERMISSIONS.filter((p) => p.module === m),
   }));
 
-  const roleById = (id: string) => roles.find((r) => r.id === id);
-  const scopeText = (a: (typeof assignments)[number]) => {
-    if (a.scopeType === "ENTITY")
-      return `${SCOPE_LABEL.ENTITY}: ${entities.find((e) => e.id === a.scopeEntityId)?.name ?? "—"}`;
-    if (a.scopeType === "DEPARTMENT")
-      return `${SCOPE_LABEL.DEPARTMENT}: ${departments.find((d) => d.id === a.scopeDepartmentId)?.name ?? "—"}`;
-    return SCOPE_LABEL[a.scopeType];
-  };
-
   return (
     <>
+      {err && (
+        <div className="card" style={{ marginBottom: 16, borderColor: "var(--c-rose)" }}>
+          <p className="small" style={{ margin: 0 }}><Icon name="alert" /> {err}</p>
+        </div>
+      )}
       <div className="card hover" style={{ marginBottom: 20 }}>
         <div className="card-h">
           <div>
@@ -55,37 +52,39 @@ export default async function RolesPage() {
       </div>
 
       <div className="grid-k g-2 stagger">
-        {/* Người dùng & phạm vi */}
+        {/* Người dùng & phạm vi — gán/đổi vai trò trực tiếp */}
         <div className="card hover">
           <div className="card-h">
-            <h3>Người dùng & phạm vi</h3>
-            <span className="badge b-gray">{assignments.length} gán quyền</span>
+            <div>
+              <h3>Phân quyền người dùng</h3>
+              <div className="sub">Gán vai trò &amp; phạm vi dữ liệu cho từng tài khoản. Lưu là áp dụng ngay.</div>
+            </div>
+            <span className="badge b-gray">{assignments.length}/{users.length} đã gán</span>
           </div>
           <table>
             <thead>
               <tr>
                 <th>Người dùng</th>
-                <th>Vai trò</th>
-                <th>Phạm vi</th>
+                <th colSpan={2}>Vai trò &amp; phạm vi</th>
+                <th style={{ textAlign: "right" }}>Gỡ</th>
               </tr>
             </thead>
             <tbody>
-              {assignments.map((a) => {
-                const u = users.find((x) => x.id === a.userId);
-                const r = roleById(a.roleId);
-                return (
-                  <tr key={a.id}>
-                    <td>
-                      <div className="uname">{u?.fullName ?? "—"}</div>
-                      <div className="small muted">{u?.email}</div>
-                    </td>
-                    <td>
-                      <span className="badge b-indigo">{r?.code}</span>
-                    </td>
-                    <td className="small">{scopeText(a)}</td>
-                  </tr>
-                );
-              })}
+              {users
+                .filter((u) => u.isActive)
+                .map((u) => {
+                  const a = assignments.find((x) => x.userId === u.id);
+                  return (
+                    <AssignRoleRow
+                      key={u.id}
+                      user={{ id: u.id, fullName: u.fullName, email: u.email }}
+                      roles={roles.map((r) => ({ id: r.id, code: r.code, name: r.name }))}
+                      entities={entities.map((e) => ({ id: e.id, name: e.name }))}
+                      departments={departments.map((d) => ({ id: d.id, name: d.name }))}
+                      current={a ? { roleId: a.roleId, scopeType: a.scopeType, scopeEntityId: a.scopeEntityId, scopeDepartmentId: a.scopeDepartmentId } : undefined}
+                    />
+                  );
+                })}
             </tbody>
           </table>
         </div>

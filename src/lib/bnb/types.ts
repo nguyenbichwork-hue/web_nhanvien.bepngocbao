@@ -506,6 +506,48 @@ export type Review = {
   createdAt: string;
 };
 
+/* ============ Zalo OA · Hộp thoại tin nhắn ============ */
+export type ZaloMsgDirection = "in" | "out";
+export type ZaloConvStatus = "open" | "pending" | "closed";
+export const ZALO_CONV_STATUS_LABEL: Record<ZaloConvStatus, string> = {
+  open: "Đang mở",
+  pending: "Chờ xử lý",
+  closed: "Đã đóng",
+};
+export const ZALO_CONV_STATUS_BADGE: Record<ZaloConvStatus, Badge> = {
+  open: "b-green",
+  pending: "b-amber",
+  closed: "b-gray",
+};
+/** Một tin nhắn trong hội thoại Zalo OA (vào: khách gửi, ra: OA trả lời). */
+export type ZaloMessage = {
+  id: string;
+  conversationId: string;
+  direction: ZaloMsgDirection;
+  text: string;
+  msgId?: string;       // id tin từ Zalo (chống trùng webhook)
+  byId?: string;        // nhân viên gửi (tin ra)
+  at: string;
+};
+/** Một hội thoại với 1 người dùng Zalo (định danh bằng user_id của OA). */
+export type ZaloConversation = {
+  id: string;
+  zaloUserId: string;
+  name: string;
+  avatar?: string;
+  phone?: string;
+  customerId?: string;
+  leadId?: string;
+  status: ZaloConvStatus;
+  assigneeId?: string;
+  lastText?: string;
+  lastDirection?: ZaloMsgDirection;
+  lastAt?: string;
+  unread?: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /* ============ Sản phẩm (cache Haravan) ============ */
 export type Product = {
   id: string;

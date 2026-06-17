@@ -34,6 +34,8 @@ import {
   clearScheduleEntry,
   createAsset,
   createAssignment,
+  setUserAssignment,
+  removeUserAssignment,
   createCandidate,
   createContract,
   createCourse,
@@ -764,6 +766,39 @@ export async function createRoleAction(fd: FormData) {
   });
   await audit(session, "Tạo vai trò", "system", str(fd, "name"));
   revalidatePath("/settings/roles");
+}
+
+/** Gán/đổi vai trò + phạm vi cho một người dùng (RBAC). */
+export async function assignRoleAction(fd: FormData) {
+  const session = await requirePermission("system.rbac");
+  const userId = str(fd, "userId");
+  const roleId = str(fd, "roleId");
+  const scopeType = (str(fd, "scopeType") || "SELF") as ScopeType;
+  if (!userId || !roleId) return;
+  await setUserAssignment({
+    userId,
+    roleId,
+    scopeType,
+    scopeEntityId: str(fd, "scopeEntityId") || undefined,
+    scopeDepartmentId: str(fd, "scopeDepartmentId") || undefined,
+  });
+  await audit(session, "Gán vai trò", "system", `user ${userId} → vai trò ${roleId} (${scopeType})`);
+  revalidatePath("/settings/roles");
+  revalidatePath("/employees");
+}
+
+/** Gỡ vai trò của một người dùng (về "chưa gán vai trò"). Chặn tự gỡ chính mình để tránh khoá ngoài. */
+export async function unassignRoleAction(fd: FormData) {
+  const session = await requirePermission("system.rbac");
+  const userId = str(fd, "userId");
+  if (!userId) return;
+  if (userId === session.user.id) {
+    redirect("/settings/roles?err=" + encodeURIComponent("Không thể tự gỡ vai trò của chính bạn."));
+  }
+  await removeUserAssignment(userId);
+  await audit(session, "Gỡ vai trò", "system", `user ${userId}`);
+  revalidatePath("/settings/roles");
+  revalidatePath("/employees");
 }
 
 // ---------------- Ngày lễ ----------------

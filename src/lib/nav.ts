@@ -15,6 +15,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/crm", label: "Khách hàng & Lead", icon: "customer", perm: "lead.read" },
       { href: "/customers", label: "Khách hàng 360", icon: "users", perm: "customer.read" },
+      { href: "/inbox", label: "Hộp thoại Zalo", icon: "chat", perm: "inbox.read" },
       { href: "/cx", label: "CX · Hành trình & NPS", icon: "award", perm: "cx.read" },
       { href: "/reviews", label: "Đánh giá", icon: "chat", perm: "review.read" },
       { href: "/fit", label: "Fit Diagnostic", icon: "fit", perm: "fit.read" },
@@ -57,8 +58,10 @@ export const NAV: NavGroup[] = [
     label: "Quản trị",
     items: [
       { href: "/admin", label: "Dashboard quản trị", icon: "crown", perm: "bizdash.read" },
+      { href: "/bi", label: "BI · Phân tích KD", icon: "chart", perm: "bizdash.read" },
       { href: "/finance", label: "Tài chính – Kế toán", icon: "wallet", perm: "finance.read" },
       { href: "/reports", label: "Báo cáo", icon: "chart", perm: "report.read" },
+      { href: "/integrations", label: "Tích hợp & Kết nối", icon: "settings", perm: "system.rbac" },
     ],
   },
 ];

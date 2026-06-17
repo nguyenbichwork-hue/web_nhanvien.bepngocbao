@@ -40,6 +40,7 @@ import type {
   RewardDiscipline,
   Role,
   RoleAssignment,
+  ScopeType,
   ScheduleConfig,
   ScheduleEntry,
   TrainingCourse,
@@ -129,6 +130,8 @@ export const PERMISSIONS: Permission[] = [
   { code: "finance.manage", module: "finance", action: "manage", description: "Đối soát ngân hàng, xuất kế toán" },
   { code: "review.read", module: "review", action: "read", description: "Xem đánh giá khách hàng" },
   { code: "review.manage", module: "review", action: "manage", description: "Phản hồi & xử lý đánh giá" },
+  { code: "inbox.read", module: "inbox", action: "read", description: "Xem hộp thoại Zalo OA" },
+  { code: "inbox.manage", module: "inbox", action: "manage", description: "Trả lời & xử lý hội thoại Zalo OA" },
 ];
 
 export const MODULE_LABEL: Record<string, string> = {
@@ -164,6 +167,7 @@ export const MODULE_LABEL: Record<string, string> = {
   purchase: "Mua hàng / Nhập kho",
   finance: "Tài chính – Kế toán",
   review: "Đánh giá khách hàng",
+  inbox: "Hộp thoại Zalo OA",
 };
 
 const ALL = PERMISSIONS.map((p) => p.code);
@@ -329,17 +333,17 @@ function seed(): DB {
 
   const roles: Role[] = [
     { id: "r-admin", code: "ADMIN", name: "Quản trị hệ thống", description: "Toàn quyền hệ thống, cấu hình & phân quyền", isSystem: true, permissions: [...ALL] },
-    { id: "r-bod", code: "BOD", name: "Chủ cửa hàng / BOD", description: "Xem toàn cảnh doanh thu, lead, vận hành; phê duyệt cấp cao", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "leave.read", "leave.approve", "payroll.read", "report.read", "report.export", "recruit.read", "performance.read", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve", "lead.read", "customer.read", "fit.read", "survey.read", "quote.read", "order.read", "delivery.read", "warranty.read", "shiftreport.read", "task.read", "bizdash.read", "design.read", "cx.read", "marketing.read", "purchase.read", "finance.read", "finance.manage", "review.read"] },
+    { id: "r-bod", code: "BOD", name: "Chủ cửa hàng / BOD", description: "Xem toàn cảnh doanh thu, lead, vận hành; phê duyệt cấp cao", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "leave.read", "leave.approve", "payroll.read", "report.read", "report.export", "recruit.read", "performance.read", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve", "lead.read", "customer.read", "fit.read", "survey.read", "quote.read", "order.read", "delivery.read", "warranty.read", "shiftreport.read", "task.read", "bizdash.read", "design.read", "cx.read", "marketing.read", "purchase.read", "finance.read", "finance.manage", "review.read", "inbox.read"] },
     { id: "r-hrg", code: "HRG", name: "HR Tập đoàn", description: "Nhân sự cấp tập đoàn — xem/sửa mọi pháp nhân", isSystem: true, permissions: except("system.rbac") },
     { id: "r-hr", code: "HR", name: "HR Pháp nhân", description: "Nhân sự trong phạm vi một pháp nhân", isSystem: true, permissions: except("system.rbac", "org.manage") },
     { id: "r-rec", code: "REC", name: "Recruiter", description: "Quản lý tuyển dụng, ứng viên, phỏng vấn", isSystem: true, permissions: ["org.read", "employee.read", "recruit.read", "recruit.manage", "report.read"] },
     { id: "r-mgr", code: "MGR", name: "Quản lý trực tiếp", description: "Trưởng đơn vị — xếp lịch, duyệt đơn, xem nhân sự phòng ban", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "schedule.manage", "leave.read", "leave.approve", "report.read", "recruit.read", "performance.read", "performance.manage", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve"] },
     { id: "r-emp", code: "EMP", name: "Nhân viên", description: "Tự phục vụ — xem lịch, gửi đơn, xem phiếu lương & KPI của bản thân", isSystem: true, permissions: ["schedule.read", "leave.read", "leave.request", "payroll.read", "performance.read", "overtime.read", "overtime.request"] },
     // ===== BNB · Vai trò bán hàng & vận hành cửa hàng =====
-    { id: "r-sale", code: "SALE", name: "Tư vấn bán hàng (Sales)", description: "Chăm lead, tư vấn, khảo sát, báo giá, chốt đơn", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "lead.manage", "fit.read", "survey.read", "survey.manage", "quote.read", "quote.manage", "order.read", "order.manage", "delivery.read", "warranty.read", "shiftreport.read", "shiftreport.manage", "task.read", "task.manage", "report.read", "design.read", "design.manage", "cx.read", "cx.manage", "review.read", "review.manage"] },
-    { id: "r-cskh", code: "CSKH", name: "Chăm sóc khách hàng / Hậu mãi", description: "Hậu mãi, bảo hành, nhắc chăm sóc 1/7/30/90 ngày", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "order.read", "warranty.read", "warranty.manage", "task.read", "task.manage", "shiftreport.read", "cx.read", "cx.manage"] },
+    { id: "r-sale", code: "SALE", name: "Tư vấn bán hàng (Sales)", description: "Chăm lead, tư vấn, khảo sát, báo giá, chốt đơn", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "lead.manage", "fit.read", "survey.read", "survey.manage", "quote.read", "quote.manage", "order.read", "order.manage", "delivery.read", "warranty.read", "shiftreport.read", "shiftreport.manage", "task.read", "task.manage", "report.read", "design.read", "design.manage", "cx.read", "cx.manage", "review.read", "review.manage", "inbox.read", "inbox.manage"] },
+    { id: "r-cskh", code: "CSKH", name: "Chăm sóc khách hàng / Hậu mãi", description: "Hậu mãi, bảo hành, nhắc chăm sóc 1/7/30/90 ngày", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "order.read", "warranty.read", "warranty.manage", "task.read", "task.manage", "shiftreport.read", "cx.read", "cx.manage", "inbox.read", "inbox.manage"] },
     { id: "r-tech", code: "TECH", name: "Kỹ thuật giao – lắp", description: "Nhận lịch giao – lắp, nghiệm thu, xử lý hiện trường", isSystem: true, permissions: ["order.read", "survey.read", "delivery.read", "delivery.manage", "warranty.read", "warranty.manage", "task.read", "task.manage", "shiftreport.read", "shiftreport.manage"] },
-    { id: "r-sroom", code: "SROOM", name: "Quản lý Showroom", description: "Điều phối bán hàng – vận hành tại showroom", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "lead.manage", "fit.read", "fit.manage", "survey.read", "survey.manage", "quote.read", "quote.manage", "order.read", "order.manage", "delivery.read", "delivery.manage", "warranty.read", "warranty.manage", "shiftreport.read", "shiftreport.manage", "task.read", "task.manage", "report.read", "bizdash.read", "design.read", "design.manage", "cx.read", "cx.manage", "marketing.read", "marketing.manage", "purchase.read", "purchase.manage", "finance.read", "finance.manage", "review.read", "review.manage", "employee.read", "schedule.read", "schedule.manage"] },
+    { id: "r-sroom", code: "SROOM", name: "Quản lý Showroom", description: "Điều phối bán hàng – vận hành tại showroom", isSystem: true, permissions: ["customer.read", "customer.manage", "lead.read", "lead.manage", "fit.read", "fit.manage", "survey.read", "survey.manage", "quote.read", "quote.manage", "order.read", "order.manage", "delivery.read", "delivery.manage", "warranty.read", "warranty.manage", "shiftreport.read", "shiftreport.manage", "task.read", "task.manage", "report.read", "bizdash.read", "design.read", "design.manage", "cx.read", "cx.manage", "marketing.read", "marketing.manage", "purchase.read", "purchase.manage", "finance.read", "finance.manage", "review.read", "review.manage", "employee.read", "schedule.read", "schedule.manage", "inbox.read", "inbox.manage"] },
   ];
 
   const users: UserAccount[] = [
@@ -1127,6 +1131,39 @@ export async function createAssignment(input: Omit<RoleAssignment, "id">): Promi
   dbo.assignments.push(a);
   await upsertRow("role_assignments", a.id, a);
   return clone(a);
+}
+
+/** Gán/đổi vai trò + phạm vi cho MỘT người dùng (mỗi user chỉ 1 assignment). Upsert theo userId. */
+export async function setUserAssignment(input: {
+  userId: string;
+  roleId: string;
+  scopeType: ScopeType;
+  scopeEntityId?: string | null;
+  scopeDepartmentId?: string | null;
+}): Promise<RoleAssignment> {
+  const dbo = await getDb("assignments");
+  // Phạm vi chỉ giữ id liên quan tới loại scope (tránh dữ liệu thừa).
+  const scopeEntityId = input.scopeType === "ENTITY" ? input.scopeEntityId || undefined : undefined;
+  const scopeDepartmentId = input.scopeType === "DEPARTMENT" ? input.scopeDepartmentId || undefined : undefined;
+  const cur = dbo.assignments.find((a) => a.userId === input.userId);
+  if (cur) {
+    cur.roleId = input.roleId;
+    cur.scopeType = input.scopeType;
+    cur.scopeEntityId = scopeEntityId;
+    cur.scopeDepartmentId = scopeDepartmentId;
+    await upsertRow("role_assignments", cur.id, cur);
+    return clone(cur);
+  }
+  return createAssignment({ userId: input.userId, roleId: input.roleId, scopeType: input.scopeType, scopeEntityId, scopeDepartmentId });
+}
+
+/** Gỡ toàn bộ assignment của một người dùng (về trạng thái chưa gán vai trò). */
+export async function removeUserAssignment(userId: string): Promise<void> {
+  const dbo = await getDb("assignments");
+  const victims = dbo.assignments.filter((a) => a.userId === userId);
+  if (!victims.length) return;
+  dbo.assignments = dbo.assignments.filter((a) => a.userId !== userId);
+  await Promise.all(victims.map((a) => deleteRow("role_assignments", a.id)));
 }
 
 /** Chuẩn hoá số điện thoại VN để so khớp (bỏ ký tự thừa, +84/84 → 0). */

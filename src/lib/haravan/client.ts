@@ -357,6 +357,53 @@ export async function createHaravanOrder(
   return { haravanId: String(res.order.id), code: res.order.name || `#${res.order.id}` };
 }
 
+/* ===================== Webhook (đăng ký tự động) ===================== */
+export type HaravanWebhook = { id: number; topic: string; address: string; format?: string };
+
+/** Các topic BNB cần lắng nghe để đồng bộ real-time. */
+export const HARAVAN_WEBHOOK_TOPICS = [
+  "inventory_levels/update",
+  "products/update",
+  "orders/create",
+  "orders/updated",
+] as const;
+
+/** Liệt kê webhook đã đăng ký trên shop. */
+export async function listHaravanWebhooks(): Promise<HaravanWebhook[]> {
+  if (!haravanConfigured()) return [];
+  try {
+    const data = await haravanGet<{ webhooks: HaravanWebhook[] }>(`/webhooks.json`, { fresh: true });
+    return data.webhooks ?? [];
+  } catch (err) {
+    console.error("[haravan] listWebhooks lỗi:", err);
+    return [];
+  }
+}
+
+export type RegisterResult = { topic: string; status: "created" | "exists" | "error"; detail?: string };
+
+/** Đăng ký (idempotent) toàn bộ webhook BNB trỏ về `${baseUrl}/api/haravan/webhook`.
+ *  Bỏ qua topic đã tồn tại đúng địa chỉ. baseUrl phải là URL public (sau khi deploy). */
+export async function registerHaravanWebhooks(baseUrl: string): Promise<RegisterResult[]> {
+  if (!haravanConfigured()) return HARAVAN_WEBHOOK_TOPICS.map((topic) => ({ topic, status: "error", detail: "chưa cấu hình token" }));
+  const address = `${baseUrl.replace(/\/+$/, "")}/api/haravan/webhook`;
+  const existing = await listHaravanWebhooks();
+  const out: RegisterResult[] = [];
+  for (const topic of HARAVAN_WEBHOOK_TOPICS) {
+    if (existing.some((w) => w.topic === topic && w.address === address)) {
+      out.push({ topic, status: "exists" });
+      continue;
+    }
+    try {
+      await haravanSend("POST", "/webhooks.json", { webhook: { topic, address, format: "json" } });
+      out.push({ topic, status: "created" });
+    } catch (err) {
+      out.push({ topic, status: "error", detail: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return out;
+}
+
 // ---- Dữ liệu mẫu offline (giống danh mục BNB: bếp từ, hút mùi, lò...) ----
 export const STUB_PRODUCTS: Product[] = [
   { id: "hrv-1", sku: "BT-BOSCH-PXY875DE3E", name: "Bếp từ Bosch PXY875DE3E (4 vùng nấu)", brand: "Bosch", category: "Bếp từ", price: 38900000, compareAtPrice: 45900000, image: "", available: true, tags: ["bếp từ", "nhập khẩu", "Đức"] },

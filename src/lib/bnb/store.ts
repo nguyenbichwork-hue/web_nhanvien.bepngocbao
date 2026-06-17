@@ -18,6 +18,7 @@ import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
+  ZaloConversation, ZaloMessage, ZaloMsgDirection,
 } from "./types";
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
@@ -45,6 +46,8 @@ export type BNBDB = {
   purchaseOrders: PurchaseOrder[];
   bankTxns: BankTxn[];
   reviews: Review[];
+  zaloConversations: ZaloConversation[];
+  zaloMessages: ZaloMessage[];
   products: Product[];
   seq: number;
 };
@@ -70,6 +73,8 @@ const TABLE: Record<Coll, string> = {
   purchaseOrders: "bnb_purchase_orders",
   bankTxns: "bnb_bank_txns",
   reviews: "bnb_reviews",
+  zaloConversations: "bnb_zalo_conversations",
+  zaloMessages: "bnb_zalo_messages",
   products: "bnb_products",
 };
 
@@ -589,6 +594,85 @@ export async function respondReview(id: string, response: string, byId?: string)
   const next: Review = { ...cur, response, status: "responded", byId: byId ?? cur.byId };
   await put("reviews", next);
   return clone(next);
+}
+
+/* ===== Zalo OA · Hộp thoại ===== */
+export async function listConversations(): Promise<ZaloConversation[]> {
+  const dbo = await getDb("zaloConversations");
+  return clone([...dbo.zaloConversations].sort((a, b) => ((a.lastAt || a.updatedAt) < (b.lastAt || b.updatedAt) ? 1 : -1)));
+}
+export async function getConversation(id: string): Promise<ZaloConversation | undefined> {
+  return clone((await getDb("zaloConversations")).zaloConversations.find((x) => x.id === id));
+}
+/** Tìm hội thoại theo zaloUserId (dùng cho webhook). */
+export async function findConversationByZaloUser(zaloUserId: string): Promise<ZaloConversation | undefined> {
+  return clone((await getDb("zaloConversations")).zaloConversations.find((x) => x.zaloUserId === zaloUserId));
+}
+export async function listMessages(conversationId: string): Promise<ZaloMessage[]> {
+  const dbo = await getDb("zaloMessages");
+  return clone(
+    dbo.zaloMessages
+      .filter((m) => m.conversationId === conversationId)
+      .sort((a, b) => (a.at < b.at ? -1 : 1)),
+  );
+}
+
+/** Tạo hội thoại mới (webhook khi gặp user lạ). */
+export async function createConversation(
+  input: Omit<ZaloConversation, "id" | "createdAt" | "updatedAt">,
+): Promise<ZaloConversation> {
+  await getDb("zaloConversations");
+  const c: ZaloConversation = { ...input, id: nextId("zconv"), createdAt: now(), updatedAt: now() };
+  await put("zaloConversations", c);
+  return clone(c);
+}
+export async function updateConversation(id: string, patch: Partial<ZaloConversation>): Promise<ZaloConversation | undefined> {
+  const dbo = await getDb("zaloConversations");
+  const cur = dbo.zaloConversations.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: ZaloConversation = { ...cur, ...patch, updatedAt: now() };
+  await put("zaloConversations", next);
+  return clone(next);
+}
+
+/** Ghi 1 tin nhắn vào hội thoại + cập nhật tóm tắt (lastText/unread). */
+export async function appendMessage(input: {
+  conversationId: string;
+  direction: ZaloMsgDirection;
+  text: string;
+  msgId?: string;
+  byId?: string;
+}): Promise<ZaloMessage> {
+  const dbo = await getDb("zaloMessages", "zaloConversations");
+  // Chống trùng webhook theo msgId.
+  if (input.msgId) {
+    const dup = dbo.zaloMessages.find((m) => m.msgId === input.msgId);
+    if (dup) return clone(dup);
+  }
+  const m: ZaloMessage = { ...input, id: nextId("zmsg"), at: now() };
+  dbo.zaloMessages.push(m);
+  await upsertRow(TABLE.zaloMessages, m.id, m);
+
+  const conv = dbo.zaloConversations.find((c) => c.id === input.conversationId);
+  if (conv) {
+    const next: ZaloConversation = {
+      ...conv,
+      lastText: input.text,
+      lastDirection: input.direction,
+      lastAt: m.at,
+      unread: input.direction === "in" ? (conv.unread || 0) + 1 : 0,
+      status: input.direction === "in" && conv.status === "closed" ? "open" : conv.status,
+      updatedAt: now(),
+    };
+    await put("zaloConversations", next);
+  }
+  return clone(m);
+}
+
+/** Đánh dấu đã đọc (đặt unread = 0). */
+export async function markConversationRead(id: string): Promise<void> {
+  const conv = (await getDb("zaloConversations")).zaloConversations.find((x) => x.id === id);
+  if (conv && conv.unread) await put("zaloConversations", { ...conv, unread: 0 });
 }
 
 export async function logActivity(input: Omit<Activity, "id" | "at">): Promise<Activity> {

@@ -3,6 +3,7 @@ import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
   InternalTask, Lead, NpsResponse, Order, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
+  ZaloConversation, ZaloMessage,
 } from "./types";
 
 // Hôm nay (demo) = 2026-06-16. Một số mốc tương đối để dashboard "hôm nay" có dữ liệu.
@@ -27,6 +28,8 @@ export type BNBSeed = {
   purchaseOrders: PurchaseOrder[];
   bankTxns: BankTxn[];
   reviews: Review[];
+  zaloConversations: ZaloConversation[];
+  zaloMessages: ZaloMessage[];
 };
 
 export function seedBNB(): BNBSeed {
@@ -148,9 +151,24 @@ export function seedBNB(): BNBSeed {
     { id: "rev-3", customerName: "Khách ẩn danh", channel: "shopee", rating: 2, content: "Đóng gói chưa kỹ", status: "flagged", createdAt: D("13") },
   ];
 
+  const zaloConversations: ZaloConversation[] = [
+    { id: "zconv-1", zaloUserId: "zu-1001", name: "Anh Trần Quốc Bảo", phone: "0903123456", customerId: "cus-1", status: "open", assigneeId: "e24", lastText: "Bếp lắp xong rồi, cảm ơn shop nhé!", lastDirection: "in", lastAt: D("15"), unread: 1, createdAt: D("10"), updatedAt: D("15") },
+    { id: "zconv-2", zaloUserId: "zu-1002", name: "Chị Phương Anh", phone: "0912988777", status: "pending", lastText: "Cho mình hỏi bếp từ Bosch còn hàng không ạ?", lastDirection: "in", lastAt: D("16"), unread: 2, createdAt: D("16"), updatedAt: D("16") },
+    { id: "zconv-3", zaloUserId: "zu-1003", name: "Anh Minh Hoàng", status: "closed", lastText: "Dạ em cảm ơn anh đã quan tâm BNB ạ.", lastDirection: "out", lastAt: D("13"), unread: 0, assigneeId: "e30", createdAt: D("11"), updatedAt: D("13") },
+  ];
+  const zaloMessages: ZaloMessage[] = [
+    { id: "zmsg-1", conversationId: "zconv-1", direction: "in", text: "Chào shop, mình đặt bếp tuần trước đã lắp chưa ạ?", at: D("10") },
+    { id: "zmsg-2", conversationId: "zconv-1", direction: "out", text: "Dạ kỹ thuật sẽ qua lắp chiều nay anh nhé!", byId: "e24", at: D("10") },
+    { id: "zmsg-3", conversationId: "zconv-1", direction: "in", text: "Bếp lắp xong rồi, cảm ơn shop nhé!", at: D("15") },
+    { id: "zmsg-4", conversationId: "zconv-2", direction: "in", text: "Cho mình hỏi bếp từ Bosch còn hàng không ạ?", at: D("16") },
+    { id: "zmsg-5", conversationId: "zconv-2", direction: "in", text: "Mình ở Thủ Đức, có ship lắp tận nơi không?", at: D("16") },
+    { id: "zmsg-6", conversationId: "zconv-3", direction: "in", text: "Bên mình tư vấn combo bếp giúp em với", at: D("11") },
+    { id: "zmsg-7", conversationId: "zconv-3", direction: "out", text: "Dạ em cảm ơn anh đã quan tâm BNB ạ.", byId: "e30", at: D("13") },
+  ];
+
   return {
     leads, customers, activities, surveys, quotes, orders, deliveries, warranties,
     shiftReports, tasks, npsResponses, pillars, calendarItems, adCampaigns, purchaseOrders,
-    bankTxns, reviews,
+    bankTxns, reviews, zaloConversations, zaloMessages,
   };
 }
