@@ -4,8 +4,9 @@ import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
 import {
-  listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports,
+  listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports, listCxJourneys,
 } from "@/lib/bnb/store";
+import { CX_JOURNEY_STAGES } from "@/lib/bnb/types";
 import { fmtVnd, fmtDate, fmtDateTime, isSameDay } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
@@ -28,9 +29,13 @@ function Kpi({ icon, tone, value, label, sub }: { icon: string; tone: string; va
 
 export default async function TodayPage() {
   const session = await requireSession();
-  const [leads, deliveries, warranties, orders, tasks, shifts, names] = await Promise.all([
-    listLeads(), listDeliveries(), listWarranties(), listOrders(), listTasks(), listShiftReports(), employeeNameMap(),
+  const [leads, deliveries, warranties, orders, tasks, shifts, journeys, names] = await Promise.all([
+    listLeads(), listDeliveries(), listWarranties(), listOrders(), listTasks(), listShiftReports(), listCxJourneys(), employeeNameMap(),
   ]);
+  const STAGE_LABEL = Object.fromEntries(CX_JOURNEY_STAGES.map((s) => [s.key, s.label]));
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const cxFollowUps = journeys.filter((j) => j.nextFollowUpAt && j.nextFollowUpAt <= todayStr && j.stage !== "community");
+  const cxBlocked = journeys.filter((j) => j.blocker && j.blocker.trim());
 
   const greet = (() => {
     const h = new Date().getHours();
@@ -186,6 +191,33 @@ export default async function TodayPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* CX · cần follow-up theo hành trình */}
+      <div className="card mt">
+        <div className="card-h">
+          <h3>CX · Cần follow-up hôm nay ({cxFollowUps.length})</h3>
+          <Link href="/journey" className="badge b-indigo">Hành trình CX</Link>
+        </div>
+        {cxFollowUps.length === 0 ? (
+          <p className="muted small" style={{ padding: "14px 0" }}>Không có khách cần follow-up theo hành trình. {cxBlocked.length > 0 && <Link href="/journey" className="badge b-rose">{cxBlocked.length} đang vướng</Link>}</p>
+        ) : (
+          <table>
+            <tbody>
+              {cxFollowUps.map((j) => (
+                <tr key={j.id}>
+                  <td>
+                    <div className="uname">{j.name}</div>
+                    <div className="urole">{j.phone || "—"} · bước: {STAGE_LABEL[j.stage] || j.stage}{j.ownerId ? ` · ${names[j.ownerId] || "—"}` : ""}</div>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {j.blocker ? <span className="badge b-rose">⚠ {j.blocker}</span> : <Link href="/journey" className="badge b-amber">Follow-up</Link>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Đơn đang xử lý nhanh */}

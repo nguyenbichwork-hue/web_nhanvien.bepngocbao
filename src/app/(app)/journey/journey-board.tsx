@@ -16,9 +16,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 const fmt = (s?: string) => (s ? new Date(s).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "");
 
 type Owner = { id: string; name: string };
+type Ops = { leads: number; conv: number; revenue: string; pipeline: string; aov: string };
 type Filter = "all" | "followup" | "referral" | "blocked" | JourneyPhase;
 
-export function JourneyBoard({ journeys, owners }: { journeys: CxJourney[]; owners: Owner[] }) {
+const fmtFull = (s?: string) =>
+  s ? new Date(s).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+
+export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[]; owners: Owner[]; ops: Ops }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
@@ -79,6 +83,15 @@ export function JourneyBoard({ journeys, owners }: { journeys: CxJourney[]; owne
   // group filtered by stage (theo thứ tự 13 bước)
   const byStage = CX_JOURNEY_STAGES.map((s) => ({ s, items: filtered.filter((j) => j.stage === s.key) })).filter((g) => g.items.length);
 
+  // Bottleneck = bước (chưa phải Community) đang đọng nhiều khách nhất.
+  const bottleneck = useMemo(() => {
+    const counts = CX_JOURNEY_STAGES.filter((s) => s.key !== "community")
+      .map((s) => ({ s, n: journeys.filter((j) => j.stage === s.key).length }))
+      .sort((a, b) => b.n - a.n)[0];
+    return counts && counts.n > 0 ? counts : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journeys]);
+
   return (
     <div>
       {/* North Star stats */}
@@ -88,6 +101,22 @@ export function JourneyBoard({ journeys, owners }: { journeys: CxJourney[]; owne
         <div className="card kpi"><div className="ic" style={{ background: "var(--c-amber-soft)", color: "var(--c-amber)" }}><Icon name="phone" /></div><div className="val">{stats.fu}</div><div className="lbl">Cần follow-up hôm nay</div></div>
         <div className="card kpi"><div className="ic" style={{ background: "var(--c-rose-soft)", color: "var(--c-rose)" }}><Icon name="award" /></div><div className="val">{stats.rf}</div><div className="lbl">Sẵn sàng giới thiệu</div></div>
         <div className="card kpi"><div className="ic" style={{ background: "var(--c-rose-soft)", color: "var(--c-rose)" }}><Icon name="alert" /></div><div className="val">{stats.bl}</div><div className="lbl">Đang vướng (blocker)</div></div>
+      </div>
+
+      {/* Chỉ số vận hành (trả lời "tháng này ra sao") + bottleneck */}
+      <div className="card mt">
+        <div className="flex between aic" style={{ flexWrap: "wrap", gap: 12 }}>
+          <div className="flex gap" style={{ flexWrap: "wrap" }}>
+            <span className="badge b-gray">Lead: <b>{ops.leads}</b></span>
+            <span className="badge b-indigo">Tỷ lệ chốt: <b>{ops.conv}%</b></span>
+            <span className="badge b-green">Đã thu: <b>{ops.revenue}</b></span>
+            <span className="badge b-amber">Pipeline: <b>{ops.pipeline}</b></span>
+            <span className="badge b-sky">AOV: <b>{ops.aov}</b></span>
+          </div>
+          {bottleneck && (
+            <span className="badge b-rose">⚠ Bottleneck: {bottleneck.s.label} ({bottleneck.n} khách)</span>
+          )}
+        </div>
       </div>
 
       {/* toolbar */}
@@ -140,6 +169,20 @@ export function JourneyBoard({ journeys, owners }: { journeys: CxJourney[]; owne
                       </div>
                     </div>
                     {j.note && <p className="small muted" style={{ marginTop: 6 }}>{j.note}</p>}
+                    {j.history && j.history.length > 0 && (
+                      <details style={{ marginTop: 6 }}>
+                        <summary className="small" style={{ color: "var(--accent)", fontWeight: 600, cursor: "pointer" }}>
+                          🕑 Lịch sử ({j.history.length} mốc) · cập nhật {fmtFull(j.updatedAt)}
+                        </summary>
+                        <div style={{ display: "grid", gap: 3, marginTop: 6 }}>
+                          {[...j.history].reverse().map((h, i) => (
+                            <div key={i} className="small muted">
+                              <b style={{ color: "var(--tx)" }}>{STAGE[h.stage]?.label || h.stage}</b> — {fmtFull(h.at)}{h.byId ? ` · ${nameOf(h.byId)}` : ""}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                   </div>
                 );
               })}
