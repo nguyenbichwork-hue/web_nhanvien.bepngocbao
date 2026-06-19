@@ -8,51 +8,40 @@
 
 /* ---------- DESIGN TOKENS ---------- */
 :root {
-  /* Brand — crimson LOGO (thay cho brand xanh #465fff của TailAdmin) */
+  /* Brand — đỏ crimson (logo) → đỏ cardinal sáng (tagline) */
   --brand-1: #9e1b32;
   --brand-2: #c8203f;
   --brand-grad: linear-gradient(135deg, #9e1b32 0%, #c8203f 100%);
   --brand-rgb: 158, 27, 50;
-  /* Accents — bảng màu ngữ nghĩa TailAdmin (success/warning/error/blue-light).
-     "indigo" = brand crimson cho KPI/badge thương hiệu. */
+  /* Accents (soft). "indigo" = tông thương hiệu chính (crimson) cho KPI/badge. */
   --c-indigo: #9e1b32;  --c-indigo-soft: #fbe9ec;
-  --c-teal:   #039855;  --c-teal-soft:   #ecfdf3;
-  --c-amber:  #dc6803;  --c-amber-soft:  #fffaeb;
-  --c-rose:   #d92d20;  --c-rose-soft:   #fef3f2;
-  --c-sky:    #0086c9;  --c-sky-soft:    #f0f9ff;
-  /* Surfaces — gray scale TailAdmin (gray-50 nền, gray-200 line) */
-  --bg: #f9fafb;  --surface: #ffffff;  --surface-2: #f2f4f7;  --line: #e4e7ec;
-  /* Text — gray TailAdmin (900/500/400) */
-  --tx: #101828;  --tx-muted: #667085;  --tx-soft: #98a2b3;
-  /* Shadows — shadow-theme-* của TailAdmin (Untitled UI) */
-  --sh-sm: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
-  --sh: 0 1px 3px 0 rgba(16, 24, 40, 0.1), 0 1px 2px 0 rgba(16, 24, 40, 0.06);
-  --sh-md: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
-  --sh-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
-  /* Radius — TailAdmin: card rounded-2xl(16), menu rounded-lg(8) */
-  --r-xl: 16px;  --r-lg: 12px;  --r-md: 8px;  --r-sm: 6px;  --r-pill: 999px;
+  --c-teal:   #0e9d6e;  --c-teal-soft:   #e8f7f1;
+  --c-amber:  #d98309;  --c-amber-soft:  #fcf2e2;
+  --c-rose:   #e23b54;  --c-rose-soft:   #fdebee;
+  --c-sky:    #2b78c5;  --c-sky-soft:    #eaf2fb;
+  /* Surfaces — trung tính slate (khớp chữ logo) */
+  --bg: #f7f7f9;  --surface: #ffffff;  --surface-2: #f5f6f8;  --line: #ebecef;
+  /* Text — slate */
+  --tx: #2b3038;  --tx-muted: #6a727c;  --tx-soft: #9aa1ab;
+  /* Shadows — ám tông crimson thay vì đen cứng */
+  --sh-sm: 0 1px 2px rgba(20, 24, 30, 0.05);
+  --sh: 0 1px 3px rgba(40, 24, 16, 0.05), 0 10px 24px -10px rgba(var(--brand-rgb), 0.20);
+  --sh-md: 0 4px 8px rgba(40, 24, 16, 0.05), 0 18px 36px -14px rgba(var(--brand-rgb), 0.26);
+  --sh-lg: 0 12px 28px -8px rgba(var(--brand-rgb), 0.32);
+  /* Radius */
+  --r-xl: 22px;  --r-lg: 18px;  --r-md: 14px;  --r-sm: 10px;  --r-pill: 999px;
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-bounce: cubic-bezier(0.34, 1.4, 0.5, 1);
   --dur: 0.28s;
-  /* Accent — "bản sắc theo nhóm". AccentScope đặt --accent/--accent-2/--accent-rgb
-     theo URL; các biến dưới phái sinh tự cập nhật vì var() phân giải lúc dùng.
-     Mặc định = brand crimson (trước khi JS chạy / trang ngoài map). */
-  --accent: var(--brand-1);
-  --accent-2: var(--brand-2);
-  --accent-rgb: var(--brand-rgb);
-  --accent-grad: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  --accent-line: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
 
 .dark {
-  /* Dark theme TailAdmin: gray-900 nền, gray-800 surface, gray-700 line */
-  --bg: #101828;  --surface: #1d2939;  --surface-2: #182230;  --line: #344054;
-  --tx: #f9fafb;  --tx-muted: #98a2b3;  --tx-soft: #667085;
-  --c-indigo-soft: #2a1217;  --c-teal-soft: #053321;  --c-amber-soft: #4e1d09;
-  --c-rose-soft: #55160c;  --c-sky-soft: #062c41;
+  --bg: #12131a;  --surface: #1b1d26;  --surface-2: #21242f;  --line: #2e323d;
+  --tx: #e9ebf0;  --tx-muted: #a8aeb8;  --tx-soft: #727a86;
+  --c-indigo-soft: #2a1217;  --c-teal-soft: #0f241c;  --c-amber-soft: #2a2110;
+  --c-rose-soft: #2a1419;  --c-sky-soft: #0e2030;
   --sh: 0 1px 3px rgba(0, 0, 0, 0.4), 0 12px 28px -12px rgba(0, 0, 0, 0.6);
   --sh-md: 0 18px 40px -16px rgba(0, 0, 0, 0.7);
 }
@@ -70,56 +59,6 @@
   --color-brand-2: var(--brand-2);
   --font-sans: var(--font-be-vietnam), -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-
-/* ============================================================
-   TailAdmin design tokens (ported, MIT — Copyright (c) 2023 TailAdmin).
-   Brand xanh #465fff của TailAdmin → ĐỔI sang thang CRIMSON theo logo BNB.
-   Cho phép dùng trực tiếp class TailAdmin: bg-brand-50, text-brand-500,
-   text-theme-sm, text-title-sm, shadow-theme-sm, text-gray-500, rounded-2xl…
-   ============================================================ */
-@theme {
-  --font-outfit: var(--font-be-vietnam), Outfit, sans-serif;
-
-  --text-title-2xl: 72px;  --text-title-xl: 60px;  --text-title-lg: 48px;
-  --text-title-md: 36px;   --text-title-sm: 30px;
-  --text-theme-xl: 20px;   --text-theme-sm: 14px;  --text-theme-xs: 12px;
-
-  /* Brand = crimson logo (thay #465fff) */
-  --color-brand-25: #fef6f7;  --color-brand-50: #fdeef0;  --color-brand-100: #fbdde2;
-  --color-brand-200: #f5b9c3; --color-brand-300: #ec8496; --color-brand-400: #e0566c;
-  --color-brand-500: #c8203f; --color-brand-600: #a81a34; --color-brand-700: #9e1b32;
-  --color-brand-800: #821528; --color-brand-900: #6b1221; --color-brand-950: #3f0a13;
-
-  --color-gray-25: #fcfcfd;  --color-gray-50: #f9fafb;  --color-gray-100: #f2f4f7;
-  --color-gray-200: #e4e7ec; --color-gray-300: #d0d5dd; --color-gray-400: #98a2b3;
-  --color-gray-500: #667085; --color-gray-600: #475467; --color-gray-700: #344054;
-  --color-gray-800: #1d2939; --color-gray-900: #101828; --color-gray-950: #0c111d;
-  --color-gray-dark: #1a2231;
-
-  --color-success-25: #f6fef9; --color-success-50: #ecfdf3; --color-success-100: #d1fadf;
-  --color-success-500: #12b76a; --color-success-600: #039855; --color-success-700: #027a48;
-  --color-error-25: #fffbfa;   --color-error-50: #fef3f2;   --color-error-100: #fee4e2;
-  --color-error-500: #f04438;  --color-error-600: #d92d20;  --color-error-700: #b42318;
-  --color-warning-25: #fffcf5; --color-warning-50: #fffaeb; --color-warning-100: #fef0c7;
-  --color-warning-500: #f79009; --color-warning-600: #dc6803; --color-warning-700: #b54708;
-  --color-blue-light-50: #f0f9ff; --color-blue-light-500: #0ba5ec; --color-blue-light-600: #0086c9;
-
-  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
-  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
-  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
-}
-
-/* Menu item utilities (ported từ TailAdmin) */
-@utility menu-item {
-  @apply relative flex items-center gap-3 rounded-lg px-3 py-2 font-medium;
-  font-size: 14px;
-}
-@utility menu-item-active { @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12]; }
-@utility menu-item-inactive { @apply text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-white/5; }
-@utility menu-group-title { @apply text-xs uppercase leading-5 text-gray-400; letter-spacing: 0.04em; }
-.menu-item svg { width: 20px; height: 20px; flex-shrink: 0; }
-.menu-item.menu-item-active svg { color: var(--color-brand-500); }
 
 /* ---------- BASE ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -143,9 +82,9 @@ a { color: inherit; text-decoration: none; }
 /* ---------- LAYOUT ---------- */
 .app { display: flex; min-height: 100vh; }
 .sidebar {
-  width: 290px; flex-shrink: 0; background: var(--surface);
-  border-right: 1px solid var(--line); padding: 24px 18px;
-  display: flex; flex-direction: column; gap: 4px;
+  width: 264px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--line); padding: 22px 16px;
+  display: flex; flex-direction: column; gap: 6px;
   position: sticky; top: 0; height: 100vh;
   overflow-y: auto; overscroll-behavior: contain;
   transition: width 0.35s var(--ease), background 0.4s var(--ease);
@@ -162,28 +101,30 @@ a { color: inherit; text-decoration: none; }
 .brand b { font-size: 19px; font-weight: 800; letter-spacing: -0.3px; }
 .brand span { display: block; font-size: 11px; color: var(--tx-soft); font-weight: 500; margin-top: -2px; }
 .nav-label {
-  font-size: 12px; font-weight: 600; color: var(--tx-soft);
-  text-transform: uppercase; letter-spacing: 0.04em; padding: 18px 12px 8px;
+  font-size: 11px; font-weight: 700; color: var(--tx-soft);
+  text-transform: uppercase; letter-spacing: 0.8px; padding: 14px 12px 6px;
 }
 .nav-item {
-  display: flex; align-items: center; gap: 12px; padding: 9px 12px;
-  border-radius: var(--r-md); color: var(--tx-muted); font-weight: 500; font-size: 14px;
-  cursor: pointer; position: relative;
-  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+  display: flex; align-items: center; gap: 13px; padding: 11px 13px;
+  border-radius: var(--r-md); color: var(--tx-muted); font-weight: 500;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: color 0.25s var(--ease), background 0.25s var(--ease), transform 0.25s var(--ease);
 }
-.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
-.nav-item:hover { background: var(--surface-2); color: var(--tx); }
-/* TailAdmin: mục active = nền brand-50 + chữ/icon brand (phẳng, không gradient) */
-.nav-item.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
-.nav-item.active svg { color: var(--accent); }
-.nav-item.active::before { display: none; }
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; transition: transform 0.3s var(--ease-bounce); }
+.nav-item:hover { background: var(--surface-2); color: var(--tx); transform: translateX(3px); }
+.nav-item:hover svg { transform: scale(1.12); }
+.nav-item.active { color: #fff; background: var(--brand-grad); box-shadow: var(--sh); }
+.nav-item.active::before {
+  content: ""; position: absolute; left: -16px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 60%; background: #fff; border-radius: 0 4px 4px 0; opacity: 0.9;
+}
 .sidebar .spacer { flex: 1; }
 .nav-divider { height: 1px; background: var(--line); margin: 8px 6px; }
 
 /* In ấn — chỉ giữ nội dung chính (dùng cho trang xem trước tin tuyển dụng) */
 @media print {
-  aside, header, .no-print { display: none !important; }
-  main > div { padding: 0 !important; max-width: none !important; }
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main { display: block !important; }
   .view-in { padding: 0 !important; }
   .card { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
@@ -261,13 +202,12 @@ a { color: inherit; text-decoration: none; }
 /* CARD */
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl);
-  padding: 22px; box-shadow: var(--sh);
+  padding: 22px; box-shadow: var(--sh-sm);
   transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border 0.3s;
 }
-.card.hover:hover { transform: translateY(-4px); box-shadow: var(--sh-md); border-color: color-mix(in srgb, var(--accent) 22%, var(--line)); }
-/* Header card kiểu ArchitectUI: tiêu đề IN HOA nhỏ + đường kẻ dưới */
-.card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -22px -22px 18px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
-.card-h h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--tx); }
+.card.hover:hover { transform: translateY(-5px); box-shadow: var(--sh-md); border-color: transparent; }
+.card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.card-h h3 { font-size: 15.5px; font-weight: 700; }
 .card-h .sub { font-size: 12px; color: var(--tx-soft); }
 
 /* KPI */
@@ -296,9 +236,8 @@ a { color: inherit; text-decoration: none; }
 .btn svg { width: 18px; height: 18px; }
 .btn:hover { transform: translateY(-2px); box-shadow: var(--sh); }
 .btn:active { transform: translateY(0) scale(0.97); }
-/* TailAdmin: nút chính nền brand đặc (không gradient), bo lg, shadow nhẹ */
-.btn.primary { background: var(--accent); color: #fff; border-color: transparent; box-shadow: var(--sh-sm); }
-.btn.primary:hover { filter: brightness(0.94); box-shadow: var(--sh); }
+.btn.primary { background: var(--brand-grad); color: #fff; border-color: transparent; box-shadow: var(--sh); }
+.btn.primary:hover { filter: brightness(1.07); box-shadow: var(--sh-md); }
 .btn.ghost { background: transparent; }
 
 /* BADGES */
@@ -412,162 +351,6 @@ details[open] > summary { margin-bottom: 4px; }
 .sch-modal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-md); width: 100%; max-width: 460px; padding: 22px; animation: pop 0.16s var(--ease); }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* ============================================================
-   HERO HEADER — "bản sắc theo nhóm" (đợt redesign)
-   ============================================================ */
-.hero {
-  position: relative; overflow: hidden;
-  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
-  padding: 20px 22px; margin-bottom: 24px;
-  border: 1px solid var(--line); border-radius: var(--r-xl);
-  background: var(--surface); box-shadow: var(--sh-sm);
-}
-.hero-bg {
-  position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(120% 150% at 0% 0%, var(--accent-soft) 0%, transparent 55%);
-  opacity: 0.6;
-}
-.hero > *:not(.hero-bg) { position: relative; z-index: 1; }
-.hero-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.hero-ic {
-  width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px;
-  background: var(--accent-soft); display: grid; place-items: center; color: var(--accent);
-  animation: pop 0.5s var(--ease-bounce); transition: transform 0.35s var(--ease-bounce);
-}
-.hero:hover .hero-ic { transform: rotate(-6deg) scale(1.05); }
-.hero-ic svg { width: 28px; height: 28px; }
-.hero-text { min-width: 0; }
-.hero-eyebrow {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 3px;
-  color: var(--accent); text-transform: uppercase;
-}
-.hero-eyebrow .hc-item { display: inline-flex; align-items: center; gap: 6px; color: var(--tx-soft); text-transform: none; font-weight: 600; }
-.hero-eyebrow .hc-item:last-child { color: var(--accent); }
-.hero-eyebrow .hc-item svg { width: 13px; height: 13px; color: var(--tx-soft); }
-.hero-eyebrow a { transition: color 0.2s var(--ease); }
-.hero-eyebrow a:hover { color: var(--accent); }
-.hero-text h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; }
-.hero-text p { color: var(--tx-muted); font-size: 13.5px; margin-top: 3px; max-width: 64ch; }
-.hero-side { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-.hero-stats { display: flex; gap: 14px; flex-wrap: wrap; }
-.hero-stat {
-  text-align: center; padding: 8px 16px; border-radius: var(--r-md);
-  background: var(--accent-soft); border: 1px solid var(--accent-line); min-width: 84px;
-}
-.hero-stat b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; color: var(--tx); }
-.hero-stat span { font-size: 11px; color: var(--tx-muted); }
-.hero-stat .hs-up { color: var(--c-teal); }
-.hero-stat .hs-down { color: var(--c-rose); }
-.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.hero .btn.primary { background: var(--accent); box-shadow: var(--sh-sm); }
-@media (max-width: 760px) {
-  .hero { padding: 18px; } .hero-ic { width: 48px; height: 48px; border-radius: 14px; }
-  .hero-ic svg { width: 24px; height: 24px; } .hero-text h1 { font-size: 20px; }
-  .hero-side { width: 100%; justify-content: space-between; }
-}
-
-/* KPI kiểu TailAdmin: thẻ TRẮNG phẳng, ô icon bo tròn tô màu, số đậm gray-900.
-   .grad/.gr-* (di sản) nay chỉ TÔ MÀU Ô ICON (không còn nền gradient). */
-.tone-accent .ic { background: var(--accent-soft); color: var(--accent); }
-.kpi .val { color: var(--tx); }
-
-.kpi.grad { background: var(--surface); color: var(--tx); border: 1px solid var(--line); box-shadow: var(--sh-sm); position: relative; overflow: hidden; }
-.kpi.grad::after { display: none; }
-.kpi.grad .ic { position: static; transform: none; width: 48px; height: 48px; margin: 0 0 16px; border-radius: 12px; }
-.kpi.grad.hover:hover .ic { transform: scale(1.06); }
-.kpi.grad .ic svg { width: 24px; height: 24px; }
-.kpi.grad .val { color: var(--tx); -webkit-text-fill-color: var(--tx); background: none; }
-.kpi.grad .lbl { color: var(--tx-muted); }
-.kpi.grad .trend { background: var(--c-teal-soft) !important; color: var(--c-teal) !important; }
-/* Tile icon nhiều màu (thay cho nền gradient cũ) */
-.gr-plum .ic { background: #efeafd; color: #7a5af8; }
-.gr-azure .ic { background: var(--c-sky-soft); color: var(--c-sky); }
-.gr-malinka .ic { background: var(--c-rose-soft); color: var(--c-rose); }
-.gr-mint .ic { background: var(--c-teal-soft); color: var(--c-teal); }
-.gr-sunny .ic { background: var(--c-amber-soft); color: var(--c-amber); }
-.gr-deepblue .ic { background: #eef2ff; color: #3641f5; }
-.gr-crimson .ic { background: var(--c-indigo-soft); color: var(--c-indigo); }
-.gr-teal .ic { background: var(--c-teal-soft); color: var(--c-teal); }
-
-/* Metric card kiểu TailAdmin: ô icon trên → NHÃN → SỐ (label trên số), phẳng */
-.kpi { display: flex; flex-direction: column; align-items: flex-start; }
-.kpi .ic { width: 48px; height: 48px; border-radius: 12px; margin: 0 0 20px; }
-.kpi .ic svg { width: 24px; height: 24px; }
-.kpi.hover:hover .ic { transform: scale(1.06); }
-.kpi .lbl { order: 2; font-size: 14px; margin: 0; color: var(--tx-muted); }
-.kpi .val { order: 3; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-top: 6px; color: var(--tx); }
-.kpi .trend { order: 4; margin-top: 12px; }
-
-/* Page header TailAdmin: tiêu đề trái + breadcrumb phải */
-.page-head2 { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px; margin-bottom: 24px; }
-.ph-left { min-width: 0; }
-.ph-title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: var(--tx); }
-.ph-sub { color: var(--tx-muted); font-size: 13.5px; margin-top: 4px; max-width: 70ch; }
-.ph-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
-.ph-crumb { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--tx-soft); flex-wrap: wrap; justify-content: flex-end; }
-.ph-crumb .phc-item { display: inline-flex; align-items: center; gap: 6px; }
-.ph-crumb a { color: var(--tx-muted); transition: color 0.2s var(--ease); }
-.ph-crumb a:hover { color: var(--accent); }
-.ph-crumb .phc-item:last-child { color: var(--tx); }
-.ph-crumb svg { width: 14px; height: 14px; color: var(--tx-soft); }
-.ph-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-@media (max-width: 640px) { .ph-right { align-items: flex-start; width: 100%; } .ph-crumb, .ph-actions { justify-content: flex-start; } }
-
-/* Tiêu đề mục có thanh accent — dùng trong .card-h */
-.sec-title { display: flex; align-items: center; gap: 10px; }
-.sec-title::before { content: ""; width: 4px; height: 17px; border-radius: 3px; background: var(--accent-grad); flex-shrink: 0; }
-.card.accent-l { border-left: 3px solid var(--accent); }
-
-/* Chip dot màu nhóm trong sidebar */
-.nav-label { display: flex; align-items: center; gap: 8px; }
-.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-
-/* ============================================================
-   SKELETON / SHIMMER — cảm giác tải mượt (loading.tsx)
-   ============================================================ */
-.chart-skel, .skel {
-  border-radius: var(--r-md); width: 100%;
-  background: linear-gradient(100deg, var(--surface-2) 28%, color-mix(in srgb, var(--accent) 9%, var(--surface-2)) 50%, var(--surface-2) 72%);
-  background-size: 200% 100%; animation: shimmer 1.3s var(--ease) infinite;
-}
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.skel-line { height: 13px; margin: 9px 0; }
-.skel-row { height: 50px; margin-bottom: 9px; border-radius: var(--r-md); }
-.skel.w30 { width: 30%; } .skel.w40 { width: 40%; } .skel.w50 { width: 50%; }
-.skel.w60 { width: 60%; } .skel.w70 { width: 70%; } .skel.w80 { width: 80%; }
-.skel-hero { height: 102px; margin-bottom: 24px; border-radius: var(--r-xl); }
-
-/* ============================================================
-   THƯ VIỆN COMBO MẪU (Fit/Quote) — thẻ ảnh bìa từ Drive
-   ============================================================ */
-.combo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-@media (max-width: 1200px) { .combo-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 860px) { .combo-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .combo-grid { grid-template-columns: 1fr; } }
-.combo-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; text-align: left; }
-.combo-cover { position: relative; aspect-ratio: 16 / 10; background: #14161d; overflow: hidden; }
-/* contain để HIỆN ĐỦ ảnh phối cảnh (có chú thích thiết bị ở mép) — không cắt */
-.combo-cover img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 0.45s var(--ease); }
-.combo-card:hover .combo-cover img { transform: scale(1.04); }
-.combo-cover-ph { width: 100%; height: 100%; display: grid; place-items: center; background: var(--accent-grad); color: rgba(255, 255, 255, 0.55); }
-.combo-cover-ph svg { width: 46px; height: 46px; }
-.combo-code { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: var(--r-pill); backdrop-filter: blur(4px); }
-.combo-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
-.combo-name { font-size: 15px; font-weight: 700; line-height: 1.25; }
-.combo-cat { font-size: 12px; color: var(--accent); font-weight: 600; }
-.combo-desc { font-size: 12.5px; color: var(--tx-muted); line-height: 1.5; flex: 1; }
-.combo-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
-.combo-price { color: var(--brand-1); font-size: 14px; white-space: nowrap; }
-
-/* Donut (Recharts) — chữ tổng ở tâm */
-.donut-center {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; pointer-events: none; padding-bottom: 26px;
-}
-.donut-center b { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
-.donut-center span { font-size: 11.5px; color: var(--tx-soft); margin-top: 3px; }
-
 /* Ô chọn nhân viên có tìm kiếm (combobox) — dùng lại ở mọi form */
 .combo { position: relative; width: 100%; }
 .combo-input {
@@ -595,33 +378,77 @@ details[open] > summary { margin-bottom: 4px; }
 .combo-opt.sel { box-shadow: inset 0 0 0 1.5px var(--brand-1); }
 .combo-empty { padding: 12px; text-align: center; color: var(--tx-muted); font-size: 13px; }
 
-/* Nút xoá chọn trong combobox tìm kiếm */
+/* ============================================================
+   CSS cho các TÍNH NĂNG được giữ lại (sau khi khôi phục giao diện gốc):
+   biểu đồ Recharts, combobox tìm kiếm, thư viện/modal combo, skeleton.
+   ============================================================ */
+/* Biến accent = brand (để biểu đồ Recharts + placeholder combo có màu) */
+:root {
+  --accent: var(--brand-1);
+  --accent-2: var(--brand-2);
+  --accent-rgb: var(--brand-rgb);
+  --accent-grad: var(--brand-grad);
+  --accent-soft: var(--c-indigo-soft);
+}
+
+/* Nút xoá chọn trong combobox tìm kiếm (SearchSelect) */
 .combo-clear {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
   width: 22px; height: 22px; border: none; background: var(--surface-2); color: var(--tx-soft);
   border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center;
-  transition: color 0.2s var(--ease);
 }
 .combo-clear:hover { color: var(--c-rose); }
 .combo:has(.combo-clear) .combo-input { padding-right: 38px; }
 
-/* Modal chi tiết combo (bấm vào thẻ KB) */
-.combo-modal {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl);
-  box-shadow: var(--sh-md); width: 100%; max-width: 920px; max-height: 90vh; overflow-y: auto;
-  animation: pop 0.18s var(--ease);
+/* Skeleton (loading.tsx) */
+.chart-skel, .skel {
+  border-radius: var(--r-md); width: 100%;
+  background: linear-gradient(100deg, var(--surface-2) 28%, color-mix(in srgb, var(--brand-1) 8%, var(--surface-2)) 50%, var(--surface-2) 72%);
+  background-size: 200% 100%; animation: shimmer 1.3s var(--ease) infinite;
 }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skel-line { height: 13px; margin: 9px 0; }
+.skel-row { height: 50px; margin-bottom: 9px; border-radius: var(--r-md); }
+.skel.w30 { width: 30%; } .skel.w40 { width: 40%; } .skel.w50 { width: 50%; }
+.skel.w60 { width: 60%; } .skel.w70 { width: 70%; } .skel.w80 { width: 80%; }
+.skel-hero { height: 102px; margin-bottom: 24px; border-radius: var(--r-xl); }
+
+/* Donut (Recharts) — chữ tổng ở tâm */
+.donut-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none; padding-bottom: 26px;
+}
+.donut-center b { font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.donut-center span { font-size: 11.5px; color: var(--tx-soft); margin-top: 3px; }
+
+/* Thư viện combo mẫu (Fit/Quote) */
+.combo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+@media (max-width: 1200px) { .combo-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 860px) { .combo-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .combo-grid { grid-template-columns: 1fr; } }
+.combo-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; text-align: left; }
+.combo-cover { position: relative; aspect-ratio: 16 / 10; background: #14161d; overflow: hidden; }
+.combo-cover img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 0.45s var(--ease); }
+.combo-card:hover .combo-cover img { transform: scale(1.04); }
+.combo-cover-ph { width: 100%; height: 100%; display: grid; place-items: center; background: var(--brand-grad); color: rgba(255, 255, 255, 0.55); }
+.combo-cover-ph svg { width: 46px; height: 46px; }
+.combo-code { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: var(--r-pill); backdrop-filter: blur(4px); }
+.combo-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.combo-name { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.combo-cat { font-size: 12px; color: var(--brand-1); font-weight: 600; }
+.combo-desc { font-size: 12.5px; color: var(--tx-muted); line-height: 1.5; flex: 1; }
+.combo-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.combo-price { color: var(--brand-1); font-size: 14px; white-space: nowrap; }
+
+/* Modal chi tiết combo */
+.combo-modal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-md); width: 100%; max-width: 920px; max-height: 90vh; overflow-y: auto; animation: pop 0.18s var(--ease); }
 .combo-modal-hero { position: relative; background: #14161d; }
 .combo-modal-hero img { width: 100%; max-height: 460px; object-fit: contain; display: block; }
-.combo-modal-close {
-  position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%;
-  border: none; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; display: grid; place-items: center;
-  backdrop-filter: blur(4px); z-index: 2;
-}
+.combo-modal-close { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; display: grid; place-items: center; backdrop-filter: blur(4px); z-index: 2; }
 .combo-modal-close:hover { background: rgba(0, 0, 0, 0.8); }
 .combo-thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 22px 0; }
 .combo-thumbs img { width: 92px; height: 60px; object-fit: cover; border-radius: var(--r-sm); cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
-.combo-thumbs img.on { border-color: var(--accent); }
+.combo-thumbs img.on { border-color: var(--brand-1); }
 .combo-modal-body { padding: 18px 22px 22px; }
 .combo-tier { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; }
 .combo-tier.feat { border-color: var(--brand-1); box-shadow: var(--sh-sm); }

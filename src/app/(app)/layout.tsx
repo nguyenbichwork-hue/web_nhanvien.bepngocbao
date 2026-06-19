@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
-import { AccentScope } from "@/components/accent-scope";
-import { AppShell } from "@/components/app-shell";
+import { Sidebar } from "@/components/sidebar";
+import { Topbar } from "@/components/topbar";
 import { canAny, requireSession, tierOf } from "@/lib/auth/session";
 import { NAV, type NavGroup } from "@/lib/nav";
 import { unreadNotificationCount } from "@/lib/org/store";
@@ -51,12 +51,13 @@ export default async function AppLayout({
   const notif = await unreadNotificationCount(session.user.id);
 
   return (
-    <>
+    <div className="app">
       <RealtimeRefresh />
-      <AccentScope />
-      <AppShell groups={groups} showSettings={showSettings} name={name} role={role} initials={initials} notif={notif}>
-        {children}
-      </AppShell>
-    </>
+      <Sidebar groups={groups} showSettings={showSettings} />
+      <div className="main">
+        <Topbar name={name} role={role} initials={initials} notif={notif} />
+        <main className="content">{children}</main>
+      </div>
+    </div>
   );
 }
