@@ -1,13 +1,14 @@
 import { requirePermission } from "@/lib/auth/session";
 import { PageHero } from "@/components/page-hero";
 import { listProducts } from "@/lib/bnb/store";
+import { comboImageMap } from "@/lib/drive/combo-images";
 import FitWizard from "./wizard";
 
 export const dynamic = "force-dynamic";
 
 export default async function FitPage() {
   await requirePermission("fit.read");
-  const products = await listProducts();
+  const [products, comboImages] = await Promise.all([listProducts(), comboImageMap()]);
 
   return (
     <div>
@@ -19,7 +20,7 @@ export default async function FitPage() {
         stats={[{ label: "Sản phẩm có thể đề xuất", value: products.length }]}
       />
 
-      <FitWizard products={products} />
+      <FitWizard products={products} comboImages={comboImages} />
     </div>
   );
 }

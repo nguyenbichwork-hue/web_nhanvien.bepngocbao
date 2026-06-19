@@ -466,6 +466,27 @@ details[open] > summary { margin-bottom: 4px; }
 .skel.w60 { width: 60%; } .skel.w70 { width: 70%; } .skel.w80 { width: 80%; }
 .skel-hero { height: 102px; margin-bottom: 24px; border-radius: var(--r-xl); }
 
+/* ============================================================
+   THƯ VIỆN COMBO MẪU (Fit/Quote) — thẻ ảnh bìa từ Drive
+   ============================================================ */
+.combo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+@media (max-width: 1200px) { .combo-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 860px) { .combo-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .combo-grid { grid-template-columns: 1fr; } }
+.combo-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.combo-cover { position: relative; aspect-ratio: 16 / 10; background: var(--surface-2); overflow: hidden; }
+.combo-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s var(--ease); }
+.combo-card:hover .combo-cover img { transform: scale(1.05); }
+.combo-cover-ph { width: 100%; height: 100%; display: grid; place-items: center; background: var(--accent-grad); color: rgba(255, 255, 255, 0.55); }
+.combo-cover-ph svg { width: 46px; height: 46px; }
+.combo-code { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: var(--r-pill); backdrop-filter: blur(4px); }
+.combo-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.combo-name { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.combo-cat { font-size: 12px; color: var(--accent); font-weight: 600; }
+.combo-desc { font-size: 12.5px; color: var(--tx-muted); line-height: 1.5; flex: 1; }
+.combo-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.combo-price { color: var(--brand-1); font-size: 14px; white-space: nowrap; }
+
 /* Donut (Recharts) — chữ tổng ở tâm */
 .donut-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;

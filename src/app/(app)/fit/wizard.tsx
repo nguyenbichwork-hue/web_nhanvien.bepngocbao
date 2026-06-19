@@ -13,7 +13,7 @@ import {
 import { TIER_LABEL, type Product, type QuoteTier } from "@/lib/bnb/types";
 import { fmtVnd } from "@/lib/bnb/util";
 
-type Props = { products: Product[] };
+type Props = { products: Product[]; comboImages?: Record<string, string> };
 
 type TierBadge = Record<QuoteTier, string>;
 const TIER_BADGE: TierBadge = {
@@ -30,7 +30,7 @@ const TIER_ICON: Record<QuoteTier, string> = {
 type ResolvedLine = { sku: string; product?: Product; price: number };
 type ResolvedTier = { tier: QuoteTier; lines: ResolvedLine[]; total: number; note?: string };
 
-export default function FitWizard({ products }: Props) {
+export default function FitWizard({ products, comboImages }: Props) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<FitAnswers>({});
   const [done, setDone] = useState(false);
@@ -119,6 +119,19 @@ export default function FitWizard({ products }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Ảnh phối cảnh dựng sẵn của combo (lấy từ Google Drive qua API) */}
+        {comboImages?.[sc.id] && (
+          <div className="card mt" style={{ padding: 0, overflow: "hidden" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={comboImages[sc.id]}
+              alt={`Phối cảnh bếp mẫu · ${sc.name} (${sc.id})`}
+              style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 440 }}
+              loading="lazy"
+            />
+          </div>
+        )}
 
         <div className="grid-k g-3 stagger mt">
           {tiers.map((t) => {

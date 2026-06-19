@@ -5,7 +5,9 @@ import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
 import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
-import { listQuotes, listCustomers, listLeads } from "@/lib/bnb/store";
+import { ComboGallery } from "@/components/combo-gallery";
+import { listQuotes, listCustomers, listLeads, listProducts } from "@/lib/bnb/store";
+import { comboImageMap } from "@/lib/drive/combo-images";
 import { fmtVnd, fmtDate, quoteTotal, compactVnd } from "@/lib/bnb/util";
 import {
   QUOTE_STATUS_LABEL, QUOTE_STATUS_BADGE, TIER_LABEL,
@@ -18,8 +20,8 @@ const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9
 export default async function QuotePage() {
   const session = await requirePermission("quote.read");
   const canManage = session.permissions.has("quote.manage");
-  const [quotes, customers, leads] = await Promise.all([
-    listQuotes(), listCustomers(), listLeads(),
+  const [quotes, customers, leads, products, comboImages] = await Promise.all([
+    listQuotes(), listCustomers(), listLeads(), listProducts(), comboImageMap(),
   ]);
 
   const cusName: Record<string, string> = {};
@@ -101,6 +103,15 @@ export default async function QuotePage() {
           </div>
         </div>
       )}
+
+      {/* Thư viện 12 combo mẫu — ảnh dựng sẵn lấy từ Google Drive qua API */}
+      <div className="card mt">
+        <div className="card-h">
+          <h3 className="sec-title">Combo mẫu · 12 kịch bản</h3>
+          <Link href="/fit" className="badge b-indigo">Chẩn đoán combo cho khách</Link>
+        </div>
+        <ComboGallery products={products} comboImages={comboImages} />
+      </div>
 
       {/* Danh sách */}
       <div className="card mt">
