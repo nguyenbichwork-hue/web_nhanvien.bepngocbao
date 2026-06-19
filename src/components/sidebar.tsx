@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { BrandLogo } from "./brand-logo";
 import type { NavGroup } from "@/lib/nav";
+import { accentForGroup } from "@/lib/theme/accent";
 
 export function Sidebar({
   groups,
@@ -25,7 +26,10 @@ export function Sidebar({
 
       {groups.map((group) => (
         <div key={group.label}>
-          <div className="nav-label">{group.label}</div>
+          <div className="nav-label">
+            <span className="nav-dot" style={{ background: accentForGroup(group.label).main }} />
+            {group.label}
+          </div>
           {group.items.map((item) => (
             <Link
               key={item.href}

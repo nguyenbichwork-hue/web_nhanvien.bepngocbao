@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
+import { AccentScope } from "@/components/accent-scope";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { canAny, requireSession, tierOf } from "@/lib/auth/session";
@@ -53,6 +54,7 @@ export default async function AppLayout({
   return (
     <div className="app">
       <RealtimeRefresh />
+      <AccentScope />
       <Sidebar groups={groups} showSettings={showSettings} />
       <div className="main">
         <Topbar name={name} role={role} initials={initials} notif={notif} />

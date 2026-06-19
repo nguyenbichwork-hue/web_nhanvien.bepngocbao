@@ -6,6 +6,17 @@ import type { Order, Quote, QuoteLine } from "./types";
 
 export const fmtVnd = (n: number) => formatVND(n || 0);
 
+/** Rút gọn số lớn cho hero/KPI: 1.2 tỷ / 850tr / 12k. (client-safe) */
+export const compactNum = (n: number): string => {
+  const a = Math.abs(n || 0);
+  if (a >= 1e9) return (n / 1e9).toFixed(a >= 1e10 ? 0 : 1).replace(/\.0$/, "") + " tỷ";
+  if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "tr";
+  if (a >= 1e3) return Math.round(n / 1e3) + "k";
+  return (n || 0).toLocaleString("vi-VN");
+};
+/** Như compactNum nhưng thêm "đ". */
+export const compactVnd = (n: number): string => compactNum(n) + "đ";
+
 /** Thành tiền một dòng = đơn giá × SL − chiết khấu (chiết khấu là số tiền tuyệt đối của dòng). */
 export const lineAmount = (l: QuoteLine): number =>
   Math.max(0, l.unitPrice * l.qty - (l.discount || 0));

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { AreaTrend, DonutChart } from "@/components/charts/rich";
 import { listOrders } from "@/lib/bnb/store";
 import { TableFilter } from "@/components/table-filter";
-import { fmtVnd, fmtDate, orderRemaining } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, dayKey, orderRemaining, compactVnd } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import { ORDER_STATUS_LABEL, ORDER_STATUS_BADGE, type OrderStatus } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";
+
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 export default async function OrdersPage() {
   await requirePermission("order.read");
@@ -18,39 +23,81 @@ export default async function OrdersPage() {
   const revenue = orders.reduce((s, o) => s + (o.paid || 0), 0);
   const debt = openOrders.reduce((s, o) => s + orderRemaining(o), 0);
 
+  // Doanh thu thu được theo ngày — 14 ngày gần nhất.
+  const now = new Date();
+  const days: { key: string; label: string }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    days.push({ key: dayKey(d), label: `${d.getDate()}/${d.getMonth() + 1}` });
+  }
+  const revByDay = days.map((d) => ({
+    label: d.label,
+    value: orders.reduce((s, o) => s + (o.payments || []).filter((p) => dayKey(p.at) === d.key).reduce((a, p) => a + (p.amount || 0), 0), 0),
+  }));
+
+  // Cơ cấu đơn theo trạng thái (donut).
+  const statuses = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
+  const mix = statuses
+    .map((st, i) => ({ name: ORDER_STATUS_LABEL[st], value: orders.filter((o) => o.status === st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Quản lý đơn hàng</div>
-      <div className="page-head">
-        <div>
-          <h1>Quản lý đơn hàng</h1>
-          <p>Vòng đời đơn: báo giá → chốt → thanh toán → giao &amp; lắp đặt.</p>
-        </div>
-        <Link href="/orders/new" className="btn primary"><Icon name="plus" /> Tạo đơn</Link>
-      </div>
+    <div>
+      <PageHero
+        icon="cart"
+        title="Quản lý đơn hàng"
+        subtitle="Vòng đời đơn: báo giá → chốt → thanh toán → giao & lắp đặt."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Đơn hàng"]]}
+        stats={[
+          { label: "Đang mở", value: openOrders.length },
+          { label: "Đã thu", value: compactVnd(revenue), tone: "up" },
+          { label: "Công nợ", value: compactVnd(debt), tone: debt > 0 ? "down" : "flat" },
+        ]}
+        actions={<Link href="/orders/new" className="btn primary"><Icon name="plus" /> Tạo đơn</Link>}
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-indigo-soft)", color: "var(--c-indigo)" }}><Icon name="cart" /></div>
-          <div className="val">{openOrders.length}</div>
+        <div className="card kpi hover tone-accent">
+          <div className="ic"><Icon name="cart" /></div>
+          <div className="val"><CountUp to={openOrders.length} /></div>
           <div className="lbl">đơn đang mở</div>
         </div>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-teal-soft)", color: "var(--c-teal)" }}><Icon name="wallet" /></div>
-          <div className="val">{fmtVnd(revenue)}</div>
+        <div className="card kpi hover tone-t">
+          <div className="ic"><Icon name="wallet" /></div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(revenue)}</div>
           <div className="lbl">doanh thu đã thu</div>
         </div>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-amber-soft)", color: "var(--c-amber)" }}><Icon name="alert" /></div>
-          <div className="val">{fmtVnd(debt)}</div>
+        <div className="card kpi hover tone-a">
+          <div className="ic"><Icon name="alert" /></div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(debt)}</div>
           <div className="lbl">công nợ còn lại</div>
+        </div>
+      </div>
+
+      {/* Biểu đồ: doanh thu 14 ngày + cơ cấu trạng thái */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h">
+            <h3 className="sec-title">Doanh thu thu được · 14 ngày</h3>
+            <span className="badge b-green">{fmtVnd(revByDay.reduce((s, d) => s + d.value, 0))}</span>
+          </div>
+          <AreaTrend data={revByDay} money height={250} name="Đã thu" />
+        </div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Cơ cấu đơn theo trạng thái</h3></div>
+          {mix.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có đơn nào.</p>
+          ) : (
+            <DonutChart data={mix} height={250} centerValue={orders.length} centerLabel="đơn" unit=" đơn" />
+          )}
         </div>
       </div>
 
       {/* Danh sách đơn */}
       <div className="card mt">
-        <div className="card-h"><h3>Tất cả đơn ({orders.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tất cả đơn ({orders.length})</h3></div>
         <TableFilter
           targetId="orders-tbl"
           placeholder="Tìm mã đơn, khách, phụ trách…"

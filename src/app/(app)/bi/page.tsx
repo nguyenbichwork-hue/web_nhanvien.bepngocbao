@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
-import { CountUp, HBars, BarChart, ProgressBar } from "@/components/charts";
+import { PageHero } from "@/components/page-hero";
+import { CountUp, HBars, ProgressBar } from "@/components/charts";
+import { AreaTrend } from "@/components/charts/rich";
 import {
   listOrders, listLeads, listNpsResponses, listAdCampaigns, listBankTxns, costBySku,
 } from "@/lib/bnb/store";
-import { fmtVnd } from "@/lib/bnb/util";
+import { fmtVnd, compactVnd } from "@/lib/bnb/util";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL,
   MKT_CHANNEL_LABEL, MKT_CHANNELS,
@@ -66,7 +68,6 @@ export default async function BIPage() {
     return { label: m.label, value: sum };
   });
   const maxRev = Math.max(1, ...revByMonth.map((d) => d.value));
-  const revBars: [string, number][] = revByMonth.map((d) => [d.label, Math.round((d.value / maxRev) * 100)]);
 
   /* ---- Phễu lead ---- */
   const funnel = LEAD_STAGES.map((st) => ({
@@ -116,34 +117,39 @@ export default async function BIPage() {
   const cashOut = txns.filter((t) => t.direction === "out").reduce((s, t) => s + t.amount, 0);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> BI · Phân tích kinh doanh</div>
-      <div className="page-head">
-        <div>
-          <h1><Icon name="chart" /> BI · Phân tích kinh doanh</h1>
-          <p>Bức tranh đa phân hệ: doanh thu, lãi gộp, phễu, hiệu quả marketing, NPS và công nợ — chỉ đọc.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="chart"
+        title="BI · Phân tích kinh doanh"
+        subtitle="Bức tranh đa phân hệ: doanh thu, lãi gộp, phễu, hiệu quả marketing, NPS và công nợ — chỉ đọc."
+        crumb={[["Trang chủ", "/dashboard"], ["Quản trị"], ["BI · Phân tích"]]}
+        stats={[
+          { label: "Doanh thu", value: compactVnd(revenue), tone: "up" },
+          { label: "Lãi gộp", value: compactVnd(grossProfit) },
+          { label: "Biên lãi", value: `${marginPct}%` },
+          { label: "NPS", value: npsScore, tone: npsScore >= 0 ? "up" : "down" },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k stagger" style={{ gridTemplateColumns: "repeat(6,1fr)" }}>
         <div className="card kpi hover tone-t"><div className="ic"><Icon name="wallet" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={revenue} /></div><div className="lbl">Doanh thu đã thu (đ)</div></div>
-        <div className="card kpi hover tone-i"><div className="ic"><Icon name="chart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={grossProfit} /></div><div className="lbl">Lãi gộp ước tính (đ)</div></div>
+        <div className="card kpi hover tone-accent"><div className="ic"><Icon name="chart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={grossProfit} /></div><div className="lbl">Lãi gộp ước tính (đ)</div></div>
         <div className="card kpi hover tone-a"><div className="ic"><Icon name="target" /></div><div className="val"><CountUp to={marginPct} />%</div><div className="lbl">Biên lãi gộp</div></div>
-        <div className="card kpi hover tone-i"><div className="ic"><Icon name="cart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={aov} /></div><div className="lbl">AOV · đơn TB (đ)</div></div>
+        <div className="card kpi hover tone-accent"><div className="ic"><Icon name="cart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={aov} /></div><div className="lbl">AOV · đơn TB (đ)</div></div>
         <div className="card kpi hover tone-t"><div className="ic"><Icon name="award" /></div><div className="val"><CountUp to={npsScore} /></div><div className="lbl">NPS ({npsTotal} phản hồi)</div></div>
         <div className="card kpi hover tone-r"><div className="ic"><Icon name="alert" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={receivable} /></div><div className="lbl">Công nợ phải thu (đ)</div></div>
       </div>
 
       {/* Doanh thu 6 tháng + Phễu */}
       <div className="grid-k g-2 mt">
-        <div className="card">
-          <div className="card-h"><h3>Doanh thu thu được · 6 tháng</h3><span className="badge b-green">{fmtVnd(revByMonth.reduce((s, d) => s + d.value, 0))}</span></div>
-          <BarChart data={revBars} />
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Doanh thu thu được · 6 tháng</h3><span className="badge b-green">{fmtVnd(revByMonth.reduce((s, d) => s + d.value, 0))}</span></div>
+          <AreaTrend data={revByMonth} money height={250} name="Đã thu" />
           <p className="muted small mt">Tháng cao nhất: {fmtVnd(maxRev)}. Tỷ lệ chốt lead: {convRate}%.</p>
         </div>
-        <div className="card">
-          <div className="card-h"><h3>Phễu lead theo trạng thái</h3><Link href="/crm" className="badge b-indigo">CRM</Link></div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phễu lead theo trạng thái</h3><Link href="/crm" className="badge b-indigo">CRM</Link></div>
           <HBars data={funnel} />
         </div>
       </div>

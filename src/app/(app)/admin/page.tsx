@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
-import { CountUp, HBars, BarChart, ProgressBar } from "@/components/charts";
+import { PageHero } from "@/components/page-hero";
+import { CountUp, HBars } from "@/components/charts";
+import { AreaTrend, DonutChart } from "@/components/charts/rich";
 import {
   listLeads, listOrders, listWarranties, listShiftReports, listTasks,
 } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, dayKey } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, dayKey, compactVnd } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL,
@@ -25,6 +27,9 @@ const STAGE_COLOR: Record<LeadStage, string> = {
   lost: "var(--c-rose)",
 };
 
+// Bảng màu cho donut cơ cấu đơn — tông trung tính → đậm dần.
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
+
 export default async function AdminPage() {
   await requirePermission("bizdash.read");
   const [leads, orders, warranties, shifts, tasks, names] = await Promise.all([
@@ -37,7 +42,6 @@ export default async function AdminPage() {
   // ---- KPI ----
   const revenue = orders.reduce((s, o) => s + (o.paid || 0), 0);
   const orderCount = orders.length;
-  // AOV = giá trị đơn trung bình (đơn chưa huỷ).
   const billableOrders = orders.filter((o) => o.status !== "cancelled");
   const aov = billableOrders.length
     ? Math.round(billableOrders.reduce((s, o) => s + (o.total || 0), 0) / billableOrders.length)
@@ -56,15 +60,15 @@ export default async function AdminPage() {
     color: STAGE_COLOR[st],
   }));
 
-  // ---- Cơ cấu đơn theo trạng thái ----
+  // ---- Cơ cấu đơn theo trạng thái (donut) ----
   const orderStatuses = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
   const orderMix = orderStatuses
-    .map((st) => ({ st, count: orders.filter((o) => o.status === st).length }))
-    .filter((x) => x.count > 0);
+    .map((st, i) => ({ name: ORDER_STATUS_LABEL[st], value: orders.filter((o) => o.status === st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
 
-  // ---- Doanh thu (đã thu) 7 ngày gần nhất ----
+  // ---- Doanh thu (đã thu) 14 ngày gần nhất (area chart) ----
   const days: { key: string; label: string }[] = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 13; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(now.getDate() - i);
     days.push({ key: dayKey(d), label: `${d.getDate()}/${d.getMonth() + 1}` });
@@ -76,8 +80,7 @@ export default async function AdminPage() {
     }, 0);
     return { label: d.label, value: sum };
   });
-  const maxRev = Math.max(1, ...revByDay.map((d) => d.value));
-  const barData: [string, number][] = revByDay.map((d) => [d.label, Math.round((d.value / maxRev) * 100)]);
+  const rev14 = revByDay.reduce((s, d) => s + d.value, 0);
 
   // ---- Sự cố / việc khẩn đang mở ----
   const openIssues = tasks
@@ -94,14 +97,18 @@ export default async function AdminPage() {
   const recentShifts = [...shifts].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Dashboard quản trị</div>
-      <div className="page-head">
-        <div>
-          <h1><Icon name="crown" /> Dashboard quản trị</h1>
-          <p>Bức tranh toàn hệ: doanh thu, lead, tỷ lệ chốt và lỗi vận hành — chỉ đọc.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="crown"
+        title="Dashboard quản trị"
+        subtitle="Bức tranh toàn hệ: doanh thu, lead, tỷ lệ chốt và lỗi vận hành — chỉ đọc."
+        crumb={[["Trang chủ", "/dashboard"], ["Quản trị"], ["Dashboard quản trị"]]}
+        stats={[
+          { label: "Doanh thu đã thu", value: compactVnd(revenue) },
+          { label: "Tỷ lệ chốt", value: `${convRate}%`, tone: convRate >= 30 ? "up" : "flat" },
+          { label: "Công nợ", value: compactVnd(receivable), tone: receivable > 0 ? "down" : "flat" },
+        ]}
+      />
 
       {/* KPI lớn */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(6,1fr)" }}>
@@ -110,7 +117,7 @@ export default async function AdminPage() {
           <div className="val" style={{ fontSize: 24 }}><CountUp to={revenue} /></div>
           <div className="lbl">Doanh thu đã thu (đ)</div>
         </div>
-        <div className="card kpi hover tone-i">
+        <div className="card kpi hover tone-accent">
           <div className="ic"><Icon name="cart" /></div>
           <div className="val"><CountUp to={orderCount} /></div>
           <div className="lbl">Tổng số đơn</div>
@@ -120,7 +127,7 @@ export default async function AdminPage() {
           <div className="val" style={{ fontSize: 24 }}><CountUp to={aov} /></div>
           <div className="lbl">AOV · giá trị đơn TB (đ)</div>
         </div>
-        <div className="card kpi hover tone-i">
+        <div className="card kpi hover tone-accent">
           <div className="ic"><Icon name="leads" /></div>
           <div className="val"><CountUp to={leadsThisMonth} /></div>
           <div className="lbl">Lead trong tháng</div>
@@ -137,52 +144,43 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* Phễu lead + Doanh thu 7 ngày */}
+      {/* Doanh thu 14 ngày (area) + Cơ cấu đơn (donut) */}
       <div className="grid-k g-2 mt">
-        <div className="card">
+        <div className="card hover">
           <div className="card-h">
-            <h3>Phễu lead theo trạng thái</h3>
-            <Link href="/crm" className="badge b-indigo">CRM</Link>
+            <h3 className="sec-title">Doanh thu thu được · 14 ngày</h3>
+            <span className="badge b-green">{fmtVnd(rev14)}</span>
           </div>
-          <HBars data={funnel} />
+          <AreaTrend data={revByDay} money height={260} name="Đã thu" />
         </div>
 
-        <div className="card">
+        <div className="card hover">
           <div className="card-h">
-            <h3>Doanh thu thu được · 7 ngày</h3>
-            <span className="badge b-green">{fmtVnd(revByDay.reduce((s, d) => s + d.value, 0))}</span>
+            <h3 className="sec-title">Cơ cấu đơn theo trạng thái</h3>
+            <Link href="/orders" className="badge b-indigo">Quản lý đơn</Link>
           </div>
-          <BarChart data={barData} />
-          <p className="muted small mt">Cao nhất trong ngày: {fmtVnd(maxRev)}.</p>
+          {orderMix.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có đơn nào.</p>
+          ) : (
+            <DonutChart data={orderMix} height={260} centerValue={orderCount} centerLabel="đơn" unit=" đơn" />
+          )}
         </div>
       </div>
 
-      {/* Cơ cấu đơn */}
-      <div className="card mt">
+      {/* Phễu lead */}
+      <div className="card mt hover">
         <div className="card-h">
-          <h3>Cơ cấu đơn theo trạng thái</h3>
-          <Link href="/orders" className="badge b-indigo">Quản lý đơn</Link>
+          <h3 className="sec-title">Phễu lead theo trạng thái</h3>
+          <Link href="/crm" className="badge b-indigo">CRM</Link>
         </div>
-        {orderMix.length === 0 ? (
-          <p className="muted small" style={{ padding: "14px 0" }}>Chưa có đơn nào.</p>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {orderMix.map(({ st, count }) => (
-              <div key={st} style={{ display: "grid", gridTemplateColumns: "minmax(120px,26%) 1fr auto", alignItems: "center", gap: 12 }}>
-                <span className={`badge ${ORDER_STATUS_BADGE[st]}`} style={{ justifySelf: "start" }}>{ORDER_STATUS_LABEL[st]}</span>
-                <ProgressBar value={(count / orderCount) * 100} color="var(--brand-grad)" />
-                <b className="small" style={{ minWidth: 28, textAlign: "right" }}>{count}</b>
-              </div>
-            ))}
-          </div>
-        )}
+        <HBars data={funnel} />
       </div>
 
       {/* Lỗi vận hành + Bảo hành đến hạn */}
       <div className="grid-k g-2 mt">
         <div className="card">
           <div className="card-h">
-            <h3>Lỗi vận hành / sự cố mở</h3>
+            <h3 className="sec-title">Lỗi vận hành / sự cố mở</h3>
             <Link href="/tasks" className="badge b-rose">{openIssues.length}</Link>
           </div>
           {openIssues.length === 0 ? (
@@ -208,7 +206,7 @@ export default async function AdminPage() {
 
         <div className="card">
           <div className="card-h">
-            <h3>Bảo hành đến hạn</h3>
+            <h3 className="sec-title">Bảo hành đến hạn</h3>
             <Link href="/warranty" className="badge b-amber">{warrantiesDue.length}</Link>
           </div>
           {warrantiesDue.length === 0 ? (
@@ -234,7 +232,7 @@ export default async function AdminPage() {
       {/* Tổng quan showroom */}
       <div className="card mt">
         <div className="card-h">
-          <h3>Tổng quan showroom · ca gần nhất</h3>
+          <h3 className="sec-title">Tổng quan showroom · ca gần nhất</h3>
           <Link href="/shift-report" className="badge b-indigo">Báo cáo ca</Link>
         </div>
         {recentShifts.length === 0 ? (
@@ -242,7 +240,7 @@ export default async function AdminPage() {
         ) : (
           <div className="grid-k g-3">
             {recentShifts.map((r) => (
-              <div key={r.id} className="card" style={{ background: "var(--surface-2)" }}>
+              <div key={r.id} className="card accent-l" style={{ background: "var(--surface-2)" }}>
                 <div className="flex between aic">
                   <b>{SHIFT_LABEL[r.shift]}</b>
                   <span className="small muted">{fmtDate(r.date)}</span>

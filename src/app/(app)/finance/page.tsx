@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
-import { CountUp, ProgressBar } from "@/components/charts";
+import { PageHero } from "@/components/page-hero";
+import { ProgressBar } from "@/components/charts";
+import { DonutChart, BarsChart } from "@/components/charts/rich";
 import { listOrders, listBankTxns, costBySku, listCustomers } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, orderRemaining } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, orderRemaining, compactVnd } from "@/lib/bnb/util";
 import {
   ORDER_STATUS_LABEL, ORDER_STATUS_BADGE, TXN_DIR_LABEL,
   type Order, type TxnDirection,
@@ -69,40 +71,71 @@ export default async function FinancePage() {
   // Giá vốn & lãi gộp — vài đơn gần nhất.
   const recent = [...active].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 8);
 
+  const arDonut = (["0-30", "31-60", ">60"] as const)
+    .map((k, i) => ({ name: `${k} ngày`, value: buckets[k].total, color: ["#0e9d6e", "#d98309", "#e23b54"][i] }))
+    .filter((x) => x.value > 0);
+  const cashBars = [
+    { label: "Tiền vào", value: cashIn },
+    { label: "Tiền ra", value: cashOut },
+    { label: "Ròng", value: Math.max(0, netCash) },
+  ];
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Tài chính – Kế toán</div>
-      <div className="page-head">
-        <div>
-          <h1>Tài chính – Kế toán</h1>
-          <p>Công nợ phải thu, giá vốn &amp; lãi gộp, đối soát ngân hàng — sổ sách thay cho Excel rời rạc.</p>
-        </div>
-        <Link href="/finance/export" className="btn primary" prefetch={false}>
-          <Icon name="download" /> Xuất kế toán (AMIS)
-        </Link>
-      </div>
+    <div>
+      <PageHero
+        icon="wallet"
+        title="Tài chính – Kế toán"
+        subtitle="Công nợ phải thu, giá vốn & lãi gộp, đối soát ngân hàng — sổ sách thay cho Excel rời rạc."
+        crumb={[["Trang chủ", "/dashboard"], ["Quản trị"], ["Tài chính – Kế toán"]]}
+        stats={[
+          { label: "Công nợ", value: compactVnd(receivable), tone: receivable > 0 ? "down" : "flat" },
+          { label: "Lãi gộp", value: compactVnd(grossProfit), tone: grossProfit >= 0 ? "up" : "down" },
+          { label: "Dòng tiền ròng", value: compactVnd(netCash), tone: netCash >= 0 ? "up" : "down" },
+        ]}
+        actions={
+          <Link href="/finance/export" className="btn primary" prefetch={false}>
+            <Icon name="download" /> Xuất kế toán (AMIS)
+          </Link>
+        }
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi tone-a">
+        <div className="card kpi hover tone-a">
           <div className="ic"><Icon name="wallet" /></div>
-          <div className="val">{fmtVnd(receivable)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(receivable)}</div>
           <div className="lbl">Công nợ phải thu</div>
         </div>
-        <div className="card kpi tone-i">
+        <div className="card kpi hover tone-accent">
           <div className="ic"><Icon name="chart" /></div>
-          <div className="val">{fmtVnd(revenue)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(revenue)}</div>
           <div className="lbl">Doanh thu (Σ tổng đơn)</div>
         </div>
-        <div className="card kpi tone-t">
+        <div className="card kpi hover tone-t">
           <div className="ic"><Icon name="award" /></div>
-          <div className="val">{fmtVnd(grossProfit)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(grossProfit)}</div>
           <div className="lbl">Lãi gộp · tỷ suất {grossMarginPct}%</div>
         </div>
-        <div className="card kpi tone-r">
+        <div className="card kpi hover tone-r">
           <div className="ic"><Icon name="building" /></div>
-          <div className="val">{fmtVnd(netCash)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(netCash)}</div>
           <div className="lbl">Dòng tiền ròng (vào − ra)</div>
+        </div>
+      </div>
+
+      {/* Biểu đồ: tuổi nợ + dòng tiền */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Công nợ theo tuổi nợ</h3><span className="badge b-gray">{debtOrders.length} đơn</span></div>
+          {arDonut.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Không có đơn nào còn nợ. 🎉</p>
+          ) : (
+            <DonutChart data={arDonut} height={250} centerValue={compactVnd(receivable)} centerLabel="phải thu" unit=" đ" />
+          )}
+        </div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Dòng tiền (đối soát NH)</h3><span className="badge b-indigo">{txns.length} GD</span></div>
+          <BarsChart data={cashBars} money height={250} name="Số tiền" />
         </div>
       </div>
 

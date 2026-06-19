@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
 import {
   listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports,
@@ -47,14 +48,19 @@ export default async function TodayPage() {
   const name = session.employee?.fullName || session.user.fullName;
 
   return (
-    <div className="view-in">
-      <div className="page-head">
-        <div>
-          <h1>{greet} 👋</h1>
-          <p>{name} · Hôm nay {fmtDate(new Date().toISOString())} — đây là việc cần làm.</p>
-        </div>
-        <Link href="/crm" className="btn primary"><Icon name="plus" /> Thêm khách hàng</Link>
-      </div>
+    <div>
+      <PageHero
+        icon="today"
+        title={`${greet} 👋`}
+        subtitle={`${name} · Hôm nay ${fmtDate(new Date().toISOString())} — đây là việc cần làm.`}
+        eyebrow="Hằng ngày"
+        stats={[
+          { label: "Lead mới", value: newLeads.length },
+          { label: "Cần liên hệ", value: followUps.length, tone: followUps.length ? "down" : "flat" },
+          { label: "Giao – lắp", value: deliveriesToday.length },
+        ]}
+        actions={<Link href="/crm" className="btn primary"><Icon name="plus" /> Thêm khách hàng</Link>}
+      />
 
       <div className="grid-k g-4 stagger">
         <Kpi icon="leads" tone="tone-i" value={newLeads.length} label="Lead mới hôm nay" sub={`${leads.length} lead tổng`} />

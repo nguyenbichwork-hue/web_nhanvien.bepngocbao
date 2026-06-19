@@ -1,8 +1,10 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
-import { CountUp, HBars } from "@/components/charts";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { BarsChart, DonutChart } from "@/components/charts/rich";
 import { listPillars, listCalendarItems, listAdCampaigns } from "@/lib/bnb/store";
-import { fmtVnd, fmtDateTime } from "@/lib/bnb/util";
+import { fmtVnd, fmtDateTime, compactVnd } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   MKT_CHANNELS, MKT_CHANNEL_LABEL,
@@ -40,7 +42,7 @@ export default async function MarketingPage() {
   const cpl = totalLeads ? Math.round(totalSpend / totalLeads) : 0;
   const scheduledCount = items.filter((i) => i.status === "planned" || i.status === "in_progress").length;
 
-  // CPL theo kênh (cho HBars) — gộp spend/leads từng kênh rồi tính chi phí/lead.
+  // CPL theo kênh (cho biểu đồ cột) — gộp spend/leads từng kênh rồi tính chi phí/lead.
   const byChannel = new Map<MktChannel, { spend: number; leads: number }>();
   for (const c of campaigns) {
     const cur = byChannel.get(c.channel) || { spend: 0, leads: 0 };
@@ -50,46 +52,71 @@ export default async function MarketingPage() {
   }
   const cplBars = [...byChannel.entries()]
     .filter(([, v]) => v.leads > 0)
-    .map(([ch, v], i) => ({
-      label: MKT_CHANNEL_LABEL[ch],
-      count: Math.round(v.spend / v.leads),
-      color: PILLAR_COLORS[i % PILLAR_COLORS.length],
-    }))
-    .sort((a, b) => a.count - b.count);
+    .map(([ch, v]) => ({ label: MKT_CHANNEL_LABEL[ch], value: Math.round(v.spend / v.leads) }))
+    .sort((a, b) => a.value - b.value);
+
+  // Tỷ trọng chi tiêu theo kênh (donut).
+  const spendShare = [...byChannel.entries()]
+    .filter(([, v]) => v.spend > 0)
+    .map(([ch, v], i) => ({ name: MKT_CHANNEL_LABEL[ch], value: v.spend, color: PILLAR_COLORS[i % PILLAR_COLORS.length] }));
 
   const cplOf = (c: { spend: number; leads: number }) => (c.leads ? Math.round(c.spend / c.leads) : 0);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Marketing</div>
-      <div className="page-head">
-        <div>
-          <h1>Marketing</h1>
-          <p>Trụ nội dung, lịch đăng và chiến dịch quảng cáo — đo chi phí mỗi lead (CPL) thay cho Google Sheets.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="chart"
+        title="Marketing"
+        subtitle="Trụ nội dung, lịch đăng và chiến dịch quảng cáo — đo chi phí mỗi lead (CPL) thay cho Google Sheets."
+        crumb={[["Trang chủ", "/dashboard"], ["Marketing & Kho"], ["Marketing"]]}
+        stats={[
+          { label: "Chi quảng cáo", value: compactVnd(totalSpend) },
+          { label: "Leads", value: totalLeads, tone: "up" },
+          { label: "CPL", value: compactVnd(cpl) },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi tone-r">
+        <div className="card kpi hover tone-r">
           <div className="ic"><Icon name="wallet" /></div>
-          <div className="val">{fmtVnd(totalSpend)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(totalSpend)}</div>
           <div className="lbl">Tổng chi quảng cáo</div>
         </div>
-        <div className="card kpi tone-i">
+        <div className="card kpi hover tone-accent">
           <div className="ic"><Icon name="leads" /></div>
           <div className="val"><CountUp to={totalLeads} /></div>
           <div className="lbl">Leads từ quảng cáo</div>
         </div>
-        <div className="card kpi tone-a">
+        <div className="card kpi hover tone-a">
           <div className="ic"><Icon name="target" /></div>
-          <div className="val">{fmtVnd(cpl)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(cpl)}</div>
           <div className="lbl">CPL (chi phí / lead)</div>
         </div>
-        <div className="card kpi tone-t">
+        <div className="card kpi hover tone-t">
           <div className="ic"><Icon name="calendar" /></div>
           <div className="val"><CountUp to={scheduledCount} /></div>
           <div className="lbl">Nội dung đã/đang lên lịch</div>
+        </div>
+      </div>
+
+      {/* Biểu đồ marketing: CPL theo kênh + tỷ trọng chi tiêu */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">So sánh CPL theo kênh</h3><span className="badge b-indigo">đ / lead</span></div>
+          {cplBars.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có dữ liệu chiến dịch.</p>
+          ) : (
+            <BarsChart data={cplBars} money height={250} name="CPL" />
+          )}
+        </div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Tỷ trọng chi tiêu theo kênh</h3></div>
+          {spendShare.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có chi tiêu.</p>
+          ) : (
+            <DonutChart data={spendShare} height={250} centerValue={compactVnd(totalSpend)} centerLabel="tổng chi" unit=" đ" />
+          )}
         </div>
       </div>
 
@@ -209,10 +236,10 @@ export default async function MarketingPage() {
       </div>
 
       {/* Chiến dịch Ads */}
-      <div className="grid-k g-2 mt">
+      <div className="mt">
         <div className="card">
           <div className="card-h">
-            <h3>Chiến dịch quảng cáo</h3>
+            <h3 className="sec-title">Chiến dịch quảng cáo</h3>
             <span className="badge b-gray">{campaigns.length}</span>
           </div>
           {campaigns.length === 0 ? (
@@ -237,11 +264,6 @@ export default async function MarketingPage() {
               </tbody>
             </table>
           )}
-        </div>
-
-        <div className="card">
-          <div className="card-h"><h3>So sánh CPL theo kênh</h3><span className="badge b-indigo">đ / lead</span></div>
-          <HBars data={cplBars} />
         </div>
       </div>
 
