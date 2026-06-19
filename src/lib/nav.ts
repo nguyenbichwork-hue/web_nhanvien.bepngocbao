@@ -41,6 +41,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/delivery", label: "Giao – Lắp đặt", icon: "truck", perm: "delivery.read" },
       { href: "/warranty", label: "Bảo hành & Hậu mãi", icon: "warranty", perm: "warranty.read" },
+      { href: "/checkin", label: "Báo cáo ca", icon: "handover", perm: "shiftreport.read" },
     ],
   },
   {

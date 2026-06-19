@@ -18,7 +18,7 @@ import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
-  ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog,
+  ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog, ShiftCheckin,
 } from "./types";
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
@@ -50,6 +50,7 @@ export type BNBDB = {
   zaloMessages: ZaloMessage[];
   products: Product[];
   receptionLogs: ReceptionLog[];
+  shiftCheckins: ShiftCheckin[];
   seq: number;
 };
 
@@ -78,6 +79,7 @@ const TABLE: Record<Coll, string> = {
   zaloMessages: "bnb_zalo_messages",
   products: "bnb_products",
   receptionLogs: "bnb_reception_logs",
+  shiftCheckins: "bnb_shift_checkins",
 };
 
 function freshDB(): BNBDB {
@@ -655,6 +657,22 @@ export async function importReceptionLogs(rows: ReceptionLog[]): Promise<{ added
     added++;
   }
   return { added, skipped };
+}
+
+/* ===== Báo cáo ca (check-in chụp ảnh) ===== */
+export async function listShiftCheckins(): Promise<ShiftCheckin[]> {
+  try {
+    const dbo = await getDb("shiftCheckins");
+    return clone([...dbo.shiftCheckins].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
+  } catch {
+    return [];
+  }
+}
+export async function createShiftCheckin(input: Omit<ShiftCheckin, "id" | "createdAt">): Promise<ShiftCheckin> {
+  await getDb("shiftCheckins");
+  const r: ShiftCheckin = { ...input, id: nextId("ck"), createdAt: now() };
+  await put("shiftCheckins", r);
+  return clone(r);
 }
 
 /* ===== Zalo OA · Hộp thoại ===== */

@@ -599,3 +599,22 @@ export type ReceptionLog = {
 
 export const RECEPTION_STAFF_DEFAULT = ["Đào Kế Thịnh", "Lê Huỳnh Hiếu", "Bùi Khương Duy", "Cát An"];
 export const RECEPTION_SOURCE_DEFAULT = ["Khách văng lai", "Cư dân Royal City", "Kiến trúc sư"];
+
+/* ============ Báo cáo ca (check-in chụp ảnh — tích hợp từ app chamcongbnb) ============
+   Ảnh + thông báo Telegram VẪN đi qua Apps Script cũ → Drive (bot nguyên); app chỉ
+   lưu METADATA có cấu trúc vào Supabase (không lưu base64 ảnh). */
+export type ShiftCheckin = {
+  id: string;
+  createdAt: string;
+  showroom?: string;
+  employee?: string;
+  shift?: "open" | "close";
+  shiftLabel?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  note?: string;
+  photoCount?: number;
+  photoLabels?: string[];
+  sentToServer?: boolean; // đã gửi ảnh lên Apps Script/Drive thành công chưa
+};
