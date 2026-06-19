@@ -3,7 +3,8 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { listOrders } from "@/lib/bnb/store";
 import { TableFilter } from "@/components/table-filter";
-import { employeeNameMap, fmtVnd, fmtDate, orderRemaining } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, orderRemaining } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import { ORDER_STATUS_LABEL, ORDER_STATUS_BADGE, type OrderStatus } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";

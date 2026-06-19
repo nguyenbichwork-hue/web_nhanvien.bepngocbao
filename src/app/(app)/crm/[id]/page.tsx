@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { getLead, listActivities, getCustomer } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL, LEAD_STAGE_BADGE, LEAD_SOURCE_LABEL, ACTIVITY_LABEL,
 } from "@/lib/bnb/types";

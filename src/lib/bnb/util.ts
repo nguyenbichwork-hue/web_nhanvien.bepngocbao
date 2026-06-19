@@ -1,6 +1,7 @@
 // BNB · Tiện ích dùng chung cho các phân hệ bán hàng.
+// QUAN TRỌNG: file này phải CLIENT-SAFE (nhiều Client Component import). Helper
+// cần đọc store (server-only) nằm ở `./names.ts`, KHÔNG để ở đây.
 import { formatVND } from "@/lib/payroll/calc";
-import { listEmployees } from "@/lib/org/store";
 import type { Order, Quote, QuoteLine } from "./types";
 
 export const fmtVnd = (n: number) => formatVND(n || 0);
@@ -17,14 +18,6 @@ export const quoteTotal = (q: Pick<Quote, "lines" | "discount">): number =>
 
 export const orderRemaining = (o: Pick<Order, "total" | "paid">): number =>
   Math.max(0, (o.total || 0) - (o.paid || 0));
-
-/** Bản đồ id nhân viên → họ tên, để hiển thị người phụ trách. */
-export async function employeeNameMap(): Promise<Record<string, string>> {
-  const emps = await listEmployees();
-  const m: Record<string, string> = {};
-  for (const e of emps) m[e.id] = e.fullName;
-  return m;
-}
 
 /* ---- Ngày tháng (vi-VN) ---- */
 export const fmtDate = (iso?: string): string =>

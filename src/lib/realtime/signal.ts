@@ -8,8 +8,13 @@
 
 import { isSupabaseStoreConfigured, supabaseAdmin } from "@/lib/supabase/admin";
 
-/** Tên kênh tín hiệu — gom theo phân hệ để client biết phần nào đổi. */
-export type SignalChannel = "schedule" | "leave" | "overtime" | "reward" | "notif";
+/**
+ * Tên kênh tín hiệu. Kênh "logic" gom theo phân hệ (schedule|leave|...) VÀ
+ * kênh THEO TÊN BẢNG (vd "bnb_orders", "schedule_entries") do tầng persist tự
+ * phát mỗi khi GHI — nhờ vậy MỌI phân hệ đều có realtime mà không phải sửa từng action.
+ * Client (`realtime-refresh.tsx`) ánh xạ kênh → phân hệ để CHỈ refresh đúng màn đang xem.
+ */
+export type SignalChannel = string;
 
 /**
  * Phát/“chạm” một cờ thay đổi. payload chỉ để gợi ý (vd userId người nhận),

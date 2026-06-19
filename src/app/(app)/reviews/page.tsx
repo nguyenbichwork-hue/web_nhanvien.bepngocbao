@@ -3,7 +3,8 @@ import { Icon } from "@/components/icon";
 import { CountUp, HBars } from "@/components/charts";
 import { TableFilter } from "@/components/table-filter";
 import { listReviews } from "@/lib/bnb/store";
-import { employeeNameMap, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtDate, initials, avatarBg } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   REVIEW_CHANNEL_LABEL, REVIEW_CHANNELS, REVIEW_STATUS_LABEL, REVIEW_STATUS_BADGE,
   type ReviewChannel,

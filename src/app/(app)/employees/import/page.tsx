@@ -29,7 +29,7 @@ export default async function ImportEmployeesPage() {
         <div className="card-h"><h3>Hướng dẫn</h3></div>
         <ul className="small" style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
           <li>Tệp <b>Excel (.xlsx)</b> — bấm <b>Tải file mẫu</b> để lấy đúng tiêu đề cột và một dòng ví dụ.</li>
-          <li>Cột bắt buộc: <b>Họ tên</b>, <b>Pháp nhân</b> (mã PN01… hoặc tên công ty).</li>
+          <li>Cột bắt buộc: <b>Họ tên</b>.</li>
           <li>Cột tuỳ chọn: Mã NV (trống → tự sinh), Email, Phòng ban, Chức danh, Trạng thái, Loại hình, Ngày vào (yyyy-mm-dd), Lương cơ bản, Phụ cấp.</li>
           <li>Điền dữ liệu vào file mẫu (giữ nguyên hàng tiêu đề), lưu lại rồi tải lên ở khung dưới.</li>
         </ul>

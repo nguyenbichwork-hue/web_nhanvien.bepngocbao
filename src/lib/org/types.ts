@@ -295,11 +295,10 @@ export type Role = {
   permissions: string[]; // danh sách permission.code
 };
 
-export type ScopeType = "GROUP" | "ENTITY" | "DEPARTMENT" | "SELF";
+export type ScopeType = "GROUP" | "DEPARTMENT" | "SELF";
 
 export const SCOPE_LABEL: Record<ScopeType, string> = {
   GROUP: "Toàn hệ thống",
-  ENTITY: "Một pháp nhân",
   DEPARTMENT: "Theo phòng ban",
   SELF: "Chỉ cá nhân",
 };

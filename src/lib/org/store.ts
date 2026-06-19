@@ -63,7 +63,7 @@ import {
 // ---- Danh mục quyền (khớp 0002_seed.sql) ----
 export const PERMISSIONS: Permission[] = [
   { code: "org.read", module: "org", action: "read", description: "Xem cơ cấu tổ chức" },
-  { code: "org.manage", module: "org", action: "manage", description: "Quản lý pháp nhân, phòng ban, chức danh" },
+  { code: "org.manage", module: "org", action: "manage", description: "Quản lý công ty, phòng ban, chức danh" },
   { code: "system.rbac", module: "system", action: "manage", description: "Quản lý vai trò & phân quyền" },
   { code: "employee.read", module: "employee", action: "read", description: "Xem hồ sơ nhân viên" },
   { code: "employee.create", module: "employee", action: "create", description: "Thêm nhân viên" },
@@ -226,19 +226,16 @@ function seed(): DB {
   };
 
   const entities: LegalEntity[] = [
-    { id: "pn01", groupId: "g1", code: "PN01", name: "Công ty TNHH K-Homes", legalName: "Công ty TNHH K-Homes (Công ty mẹ)", legalNameEn: "K-Homes Co., Ltd", taxCode: "317763152", regNo: "317763152", regDate: "2023-03-04", bhxhCode: "TZA362U", region: 1, address: "Số 10, Đồng Văn Cống, phường Cát Lái, TP. Hồ Chí Minh", director: "Đoàn Vinh Phú", directorTitle: "Giám đốc", payrollBank: "Techcombank", companyAccount: "23346688", isParent: true, isActive: true },
-    { id: "pn02", groupId: "g1", code: "PN02", name: "Công ty TNHH Xây dựng Thành An", legalName: "Công ty TNHH Xây dựng Thành An", legalNameEn: "Thanh An Ha Noi Construction Co., Ltd", taxCode: "108280673", regNo: "108280673", regDate: "2018-05-23", bhxhCode: "TIB239I1", region: 1, address: "Số 277 Nguyễn Trãi, Phường Khương Đình, TP. Hà Nội", director: "Nguyễn Thị Bích", directorTitle: "Giám đốc", payrollBank: "MBbank", companyAccount: "699586688", isParent: false, isActive: true },
-    { id: "pn03", groupId: "g1", code: "PN03", name: "Công ty TNHH WellHome Việt Nam", legalName: "Công ty TNHH WellHome Việt Nam", legalNameEn: "WellHome (Việt Nam)", taxCode: "318140880", regNo: "318140880", regDate: "2023-03-11", bhxhCode: "TZI113U", region: 1, address: "P.5.09, Tòa nhà ST Moritz, 1014 Phạm Văn Đồng, P. Hiệp Bình Chánh, TP. Thủ Đức, TP.HCM", director: "Trần Thị Ngọc Huyền", directorTitle: "Giám đốc", payrollBank: "MBbank", companyAccount: "16106688", isParent: false, isActive: true },
-    { id: "pn04", groupId: "g1", code: "PN04", name: "Công ty TNHH Peaki", legalName: "Công ty TNHH Peaki", legalNameEn: "Peaki", taxCode: "318900468", regNo: "318900468", regDate: "2025-03-04", region: 1, address: "Số 10, Đồng Văn Cống, phường Cát Lái, TP. Hồ Chí Minh", director: "Phạm Hoàng Yên", directorTitle: "Giám đốc", payrollBank: "Techcombank", companyAccount: "82356868", isParent: false, isActive: true },
+    { id: "pn04", groupId: "g1", code: "PN04", name: "Công ty TNHH Peaki", legalName: "Công ty TNHH Peaki", legalNameEn: "Peaki", taxCode: "318900468", regNo: "318900468", regDate: "2025-03-04", region: 1, address: "Số 10, Đồng Văn Cống, phường Cát Lái, TP. Hồ Chí Minh", director: "Phạm Hoàng Yên", directorTitle: "Giám đốc", payrollBank: "Techcombank", companyAccount: "82356868", isParent: true, isActive: true },
   ];
 
   const departments: Department[] = [
-    { id: "pn01-BGD", legalEntityId: "pn01", parentId: null, code: "BGD", name: "Ban Giám đốc", isActive: true },
-    { id: "pn01-KT", legalEntityId: "pn01", parentId: null, code: "KT", name: "Phòng Tài chính / Kế toán", isActive: true },
-    { id: "pn01-KD", legalEntityId: "pn01", parentId: null, code: "KD", name: "Phòng Kinh Doanh", isActive: true },
-    { id: "pn01-VH", legalEntityId: "pn01", parentId: null, code: "VH", name: "Phòng Vận Hành / Bán lẻ", isActive: true },
-    { id: "pn01-DA", legalEntityId: "pn01", parentId: null, code: "DA", name: "Phòng Dự án / Quản lý sản phẩm", isActive: true },
-    { id: "pn01-NS", legalEntityId: "pn01", parentId: null, code: "NS", name: "Phòng Nhân sự", isActive: true },
+    { id: "pn01-BGD", legalEntityId: "pn04", parentId: null, code: "BGD", name: "Ban Giám đốc", isActive: true },
+    { id: "pn01-KT", legalEntityId: "pn04", parentId: null, code: "KT", name: "Phòng Tài chính / Kế toán", isActive: true },
+    { id: "pn01-KD", legalEntityId: "pn04", parentId: null, code: "KD", name: "Phòng Kinh Doanh", isActive: true },
+    { id: "pn01-VH", legalEntityId: "pn04", parentId: null, code: "VH", name: "Phòng Vận Hành / Bán lẻ", isActive: true },
+    { id: "pn01-DA", legalEntityId: "pn04", parentId: null, code: "DA", name: "Phòng Dự án / Quản lý sản phẩm", isActive: true },
+    { id: "pn01-NS", legalEntityId: "pn04", parentId: null, code: "NS", name: "Phòng Nhân sự", isActive: true },
   ];
 
   const jobTitles: JobTitle[] = [
@@ -260,35 +257,6 @@ function seed(): DB {
     { id: "e6", legalEntityId: "pn04", jobTitleId: "jt-tn", code: "NV0006", fullName: "Nguyễn Thị Thúy Hằng", status: "active", gender: "female" },
     { id: "e7", legalEntityId: "pn04", jobTitleId: "jt-nv", code: "NV0007", fullName: "Dương Thị Hồng Ngọc", email: "duonghngoc2301@gmail.com", status: "active", gender: "female", dateOfBirth: "2001-01-23", phone: "0978395264", personalEmail: "duonghngoc2301@gmail.com", nationalId: "24301010357", nationalIdDate: "2026-01-29", nationalIdPlace: "bộ công an", address: "154/127/24 âu dương lân, p chánh hưng,q8", employmentType: "fulltime", joinDate: "2026-04-14", taxCode: "24301010357", bankName: "Vietcombank", bankAccount: "1017425776" },
     { id: "e8", legalEntityId: "pn04", jobTitleId: "jt-tt", code: "NV0008", fullName: "Bùi Thị Thanh Huyền", email: "huyenthao558@gmail.com", status: "active", gender: "female", dateOfBirth: "2005-02-27", phone: "0965571810", personalEmail: "huyenthao558@gmail.com", nationalId: "22305002583", nationalIdDate: "2030-02-27", nationalIdPlace: "CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI", address: "Ecohome 3, Đông Ngạc, Bắc Từ Liêm, Hà Nội", employmentType: "seasonal", joinDate: "2025-11-24", taxCode: "22305002583", bankName: "BIDV Bank", bankAccount: "4421169534" },
-    { id: "e9", legalEntityId: "pn03", jobTitleId: "jt-nv", code: "NV0009", fullName: "Trần Khánh Hà", email: "hamalaga2020@gmail.com", status: "active", gender: "male", dateOfBirth: "1984-01-01", phone: "0906843012", personalEmail: "hamalaga2020@gmail.com", nationalId: "901569539", nationalIdDate: "2026-04-14", nationalIdPlace: "Q12", address: "53 đường B3 Tây thạnh, quận Tân Phú tphcm", employmentType: "contract", joinDate: "2026-04-22", taxCode: "901569539", bankName: "Vietcombank", bankAccount: "k có stk" },
-    { id: "e10", legalEntityId: "pn03", jobTitleId: "jt-cv", code: "NV0010", fullName: "Nguyễn Ngọc Nhung", email: "ngocnhung040190@gmail.com", status: "active", gender: "female", dateOfBirth: "1990-04-01", phone: "0901480715", personalEmail: "ngocnhung040190@gmail.com", nationalId: "72190015253", nationalIdDate: "2022-12-09", nationalIdPlace: "Bộ CA", address: "77 Võ Văn Kiệt, P. An Lạc, HCM", employmentType: "contract", joinDate: "2026-04-20", taxCode: "72190015253", bankName: "Vietcombank", bankAccount: "71000974852" },
-    { id: "e11", legalEntityId: "pn03", jobTitleId: "jt-nv", code: "NV0011", fullName: "Lưu Khánh Ly", email: "luukly96@gmail.com", status: "active", gender: "female", dateOfBirth: "2001-09-06", phone: "0783783424", personalEmail: "luukly96@gmail.com", nationalId: "40301013787", nationalIdDate: "2022-08-19", nationalIdPlace: "Cục cảnh sát quản lý hành chính và trật tự xã hội", address: "62/12 tổ 36, khu phố Đông Chiêu A, phường Dĩ An, Bình Dương", employmentType: "fulltime", joinDate: "2026-04-13", taxCode: "40301013787", bankName: "TP Bank", bankAccount: "3342305901" },
-    { id: "e12", legalEntityId: "pn03", jobTitleId: "jt-cv", code: "NV0012", fullName: "Nguyễn Thị Thanh Mai", email: "mainguyen24101997@gmail.com", status: "active", gender: "female", dateOfBirth: "1997-10-24", phone: "0961707493", personalEmail: "mainguyen24101997@gmail.com", nationalId: "80197004417", nationalIdDate: "2022-12-29", nationalIdPlace: "Cục cảnh sát Quản lý hành chính về trật tự xã hội", address: "130/20 Quốc lộ 1, P2 Tp Tân An Long An", employmentType: "fulltime", taxCode: "80197004417", bankName: "Techcom bank", bankAccount: "19037100814015" },
-    { id: "e13", legalEntityId: "pn03", jobTitleId: "jt-tn", code: "NV0013", fullName: "Võ Học Hân", email: "vohochan@gmail.com", status: "active", gender: "female", dateOfBirth: "1997-02-06", phone: "0932062697", personalEmail: "vohochan@gmail.com", nationalId: "70197004609", nationalIdDate: "2023-09-10", nationalIdPlace: "CCSQLHCVTTXH", address: "577/47/51R Vườn Lài, An Phú Đông, TPHCM", employmentType: "fulltime", taxCode: "70197004609", bankName: "Techcom bank", bankAccount: "19034958426014" },
-    { id: "e14", legalEntityId: "pn03", jobTitleId: "jt-tt", code: "NV0014", fullName: "Lê Xuân Thiên", email: "xuanthien16089@gmail.com", status: "active", gender: "male", dateOfBirth: "2004-08-16", phone: "0385887318", personalEmail: "xuanthien16089@gmail.com", nationalId: "54204008123", nationalIdDate: "2021-10-08", nationalIdPlace: "CỤC TRƯỞNG CCSQLHC VỀ TTXH", address: "Đại học Quốc gia, tòa nhà F2, Ký túc xá Đ. Mạc Đĩnh Chi, Khu B, Đông Hòa, Bình Dương", employmentType: "intern", joinDate: "2026-04-29", taxCode: "54204008123", bankName: "BIDV Bank", bankAccount: "5901110903" },
-    { id: "e15", legalEntityId: "pn03", jobTitleId: "jt-tt", code: "NV0015", fullName: "Võ Hoàng Thảo Linh", email: "vohoangthaolinh030979@gmail.com", status: "active", gender: "female", dateOfBirth: "2003-06-28", phone: "0942773239", personalEmail: "vohoangthaolinh030979@gmail.com", nationalId: "58303000726", nationalIdDate: "2021-04-21", nationalIdPlace: "Cục CA Ninh Thuận", address: "28A đường số 12, Trường Thọ, Thủ Đức", employmentType: "intern", joinDate: "2026-05-18", taxCode: "58303000726", bankName: "Vietcombank", bankAccount: "1018687295" },
-    { id: "e16", legalEntityId: "pn03", jobTitleId: "jt-tt", code: "NV0016", fullName: "Đỗ Thị Diễm Hương", email: "huongdtd234111e@st.uel.edu.vn", status: "active", gender: "female", dateOfBirth: "2005-02-04", phone: "0865357647", personalEmail: "huongdtd234111e@st.uel.edu.vn", nationalId: "51305008449", nationalIdDate: "2021-12-08", nationalIdPlace: "Cục Cảnh sát quản lý hành chính về trật tự xã hội", address: "702/45 Lê Đức Thọ, phường An Hội Đông, TP. Hồ Chí Minh", employmentType: "intern", joinDate: "2026-05-14", taxCode: "51305008449", bankName: "MB Bank", bankAccount: "865357647" },
-    { id: "e17", legalEntityId: "pn03", jobTitleId: "jt-tt", code: "NV0017", fullName: "Kim Thị Du Mỹ", email: "kimthidumy.vtatv.1609@gmail.com", status: "active", gender: "female", dateOfBirth: "2003-11-28", phone: "0356045862", personalEmail: "kimthidumy.vtatv.1609@gmail.com", nationalId: "84303002966", nationalIdDate: "2021-07-04", address: "66 Nguyễn Ngọc Lộc, phường Diên Hồng, Thành phố Hồ Chí Minh", employmentType: "intern", joinDate: "2027-05-14", taxCode: "84303002966", bankName: "Vietinbank", bankAccount: "100874643023" },
-    { id: "e18", legalEntityId: "pn02", jobTitleId: "jt-tt", code: "NV0018", fullName: "Nguyễn Thanh Tuấn", email: "nttuan081006vn@gmail.com", status: "active", gender: "male", dateOfBirth: "2006-08-10", phone: "0352913107", personalEmail: "nttuan081006vn@gmail.com", nationalId: "86206006417", nationalIdDate: "2025-09-04", nationalIdPlace: "BỘ CÔNG AN", address: "134/99/11 Dương Thị Mười, Tân Thới Hiệp, Quận 12, Thành phố Hồ Chí Minh", employmentType: "intern", joinDate: "2026-05-05", taxCode: "86206006417", bankName: "Techcom bank", bankAccount: "6565339339" },
-    { id: "e19", legalEntityId: "pn02", jobTitleId: "jt-tt", code: "NV0019", fullName: "Phạm Tuấn Kiệt", email: "kietpham2309.pt@gmail.com", status: "active", gender: "male", dateOfBirth: "2006-09-23", phone: "0338274244", personalEmail: "kietpham2309.pt@gmail.com", nationalId: "60206010912", nationalIdDate: "2021-05-29", nationalIdPlace: "Cục Cảnh sát quản lý hành chính về trật tự xã hội", address: "227/3/12 Phạm Văn Chiêu, Phường 14, Quận Gò Vấp, TP.HCM", employmentType: "intern", joinDate: "2026-07-04", taxCode: "60206010912", bankName: "MB Bank", bankAccount: "338274244" },
-    { id: "e20", legalEntityId: "pn02", jobTitleId: "jt-nv", code: "NV0020", fullName: "Trần Thị Thu Hà", email: "tranthithuha16655@gmail.com", status: "active", gender: "female", dateOfBirth: "2000-05-15", phone: "0775850315", personalEmail: "tranthithuha16655@gmail.com", nationalId: "54300003569", nationalIdDate: "2023-07-13", nationalIdPlace: "Cục Trưởng Cục Cảnh Sát Quản Lý Hành Chính Về Trật Tự Xã Hội", address: "58 Tân Thành, Tân Phú", employmentType: "fulltime", joinDate: "2026-01-04", taxCode: "54300003569", bankName: "BIDV Bank", bankAccount: "59010000916232" },
-    { id: "e21", legalEntityId: "pn02", jobTitleId: "jt-gd", code: "NV0021", fullName: "Nguyễn Thị Bích", email: "nguyenbich2000@gmail.com", status: "active", gender: "female", dateOfBirth: "2000-02-20", phone: "0969081132", personalEmail: "nguyenbich2000@gmail.com", nationalId: "1300028035", nationalIdDate: "2021-09-28", nationalIdPlace: "Cục Cảnh sát Quản lý Hành chính về Trật tự Xã hội", address: "Hà Nội", employmentType: "fulltime", taxCode: "1300028035", bankName: "Vietcombank", bankAccount: "1016765021" },
-    { id: "e22", legalEntityId: "pn02", jobTitleId: "jt-tt", code: "NV0022", fullName: "Lê Đạt Tuấn Kiệt", email: "kietl6955@gmail.com", status: "active", gender: "male", dateOfBirth: "2006-06-15", phone: "0911188937", personalEmail: "kietl6955@gmail.com", nationalId: "54206008547", nationalIdDate: "2022-08-25", nationalIdPlace: "Cục Cảnh sát quản lý hành chính về trật tự xã hội", address: "158 Tân Kỳ Tân Quý, Quận Tân Phú, TP.HCM", employmentType: "intern", joinDate: "2026-05-21", taxCode: "54206008547", bankName: "ACB Bank", bankAccount: "42330367" },
-    { id: "e23", legalEntityId: "pn02", jobTitleId: "jt-tt", code: "NV0023", fullName: "Trần Ngọc Đăng Khoa", email: "tranngocdangkhoa2702@gmail.com", status: "active", gender: "male", dateOfBirth: "2006-02-27", phone: "0867682704", personalEmail: "tranngocdangkhoa2702@gmail.com", nationalId: "79206027670", nationalIdDate: "2021-07-20", nationalIdPlace: "Cục cảnh sát", address: "339/32, HT13, phường Hiệp Thành, Quận 12, Tp Hồ Chí Minh", employmentType: "intern", joinDate: "2026-05-21", taxCode: "79206027670", bankName: "MB Bank", bankAccount: "7922227022006" },
-    { id: "e24", legalEntityId: "pn01", departmentId: "pn01-KD", jobTitleId: "jt-nv", code: "NV0024", fullName: "Phạm Thị Hương", email: "cuunguyetbangwork@gmail.com", status: "active", gender: "female", dateOfBirth: "2003-09-29", phone: "0335115461", personalEmail: "cuunguyetbangwork@gmail.com", nationalId: "67303000286", nationalIdDate: "2021-04-13", nationalIdPlace: "Cục cảnh sát quản lý hành chính về trật tự xã hội", address: "Thôn Thuận Nam, xã Thuận Hạnh, huyện Đắk Song, tỉnh Đắk Nông", employmentType: "fulltime", joinDate: "2026-05-05", taxCode: "67303000286", bankName: "BIDV Bank", bankAccount: "6350978098" },
-    { id: "e25", legalEntityId: "pn01", jobTitleId: "jt-nv", code: "NV0025", fullName: "Nguyễn Hồ Tố Uyên", email: "nguyenhotouyen2002@gmail.com", status: "active", gender: "female", dateOfBirth: "2002-02-26", phone: "0337852019", personalEmail: "nguyenhotouyen2002@gmail.com", nationalId: "62302005713", nationalIdDate: "2021-10-05", nationalIdPlace: "Cục Cảnh sát quản lí hành chính về trật tự xã hội", address: "Alley No. 3, Street 182, Tang Nhon Phu A Ward, Thu Duc city, Ho Chi Minh city", employmentType: "fulltime", joinDate: "2026-06-05", taxCode: "62302005713", bankName: "Vietcombank", bankAccount: "1014171154" },
-    { id: "e26", legalEntityId: "pn01", departmentId: "pn01-BGD", jobTitleId: "jt-gd", code: "NV0026", fullName: "Đoàn Vinh Phú", status: "active", gender: "male", dateOfBirth: "1997-10-16", nationalId: "54097009223", address: "97 Lê Lợi, phường Tuy Hòa, Tỉnh Đắk Lak, Việ Nam", employmentType: "fulltime", taxCode: "54097009223", bankName: "ACB Bank", bankAccount: "97368368" },
-    { id: "e27", legalEntityId: "pn01", departmentId: "pn01-BGD", jobTitleId: "jt-gd", code: "NV0027", fullName: "Phạm Hoàng Yên", status: "active", gender: "female", dateOfBirth: "1997-03-04", nationalId: "54197009127", address: "19/236 đường Bà Triệu, khu phố Trường Chinh, phường Tuy Hòa, Đắc Lắc, Việt Nam", employmentType: "fulltime" },
-    { id: "e28", legalEntityId: "pn01", departmentId: "pn01-KT", jobTitleId: "jt-tn", code: "NV0028", fullName: "Lê Trần Ái Sa", email: "letranaisa2002@gmail.com", status: "active", gender: "female", dateOfBirth: "2002-11-19", phone: "0357799141", personalEmail: "letranaisa2002@gmail.com", nationalId: "70302005728", nationalIdDate: "2023-09-13", nationalIdPlace: "CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI", address: "2C Binh Gia, Tan Binh Ward, Ho Chi Minh City", employmentType: "fulltime", taxCode: "70302005728", bankName: "Vietcombank", bankAccount: "1022893798" },
-    { id: "e29", legalEntityId: "pn01", departmentId: "pn01-NS", jobTitleId: "jt-tn", code: "NV0029", fullName: "Nguyễn Trương Phúc Lộc", email: "phuclochlk@gmail.com", status: "active", gender: "female", dateOfBirth: "1998-12-12", phone: "0369932023", personalEmail: "phuclochlk@gmail.com", nationalId: "79198031279", nationalIdDate: "2023-10-07", nationalIdPlace: "cục cảnh sát", address: "C18.03 Chung cư Tân Phước, phường Minh Phụng Thành phố Hồ Chí Minh", employmentType: "seasonal", taxCode: "79198031279", bankName: "ACB Bank", bankAccount: "14802947" },
-    { id: "e30", legalEntityId: "pn01", departmentId: "pn01-KD", jobTitleId: "jt-tn", code: "NV0030", fullName: "Trần Khánh Phong", email: "trankhanhphong.1706@gmail.com", status: "active", gender: "male", dateOfBirth: "2000-06-17", phone: "0345999107", personalEmail: "trankhanhphong.1706@gmail.com", nationalId: "70205007906", nationalIdDate: "2021-12-08", nationalIdPlace: "CỤC TRƯỞNG CỤC CẢNH SÁT QUẢN LÝ HÀNH CHÍNH VỀ TRẬT TỰ XÃ HỘI", address: "14/34 đường số 4, Khu phố 2, Phường Hiệp Bình Chánh, Tp. Thủ đức, Tp. Hồ Chí Minh", employmentType: "fulltime", taxCode: "70205007906", bankName: "Vietcombank", bankAccount: "1039234639" },
-    { id: "e31", legalEntityId: "pn01", departmentId: "pn01-VH", jobTitleId: "jt-tt", code: "NV0031", fullName: "Trang Phúc An", email: "tpan211101@gmail.com", status: "active", gender: "female", dateOfBirth: "2001-11-21", phone: "0775073390", personalEmail: "tpan211101@gmail.com", nationalId: "82301015578", nationalIdDate: "2021-09-08", nationalIdPlace: "tien giang", address: "au duong lan quan 8", employmentType: "intern", joinDate: "2026-03-23", taxCode: "82301015578", bankName: "MB Bank", bankAccount: "775073390" },
-    { id: "e32", legalEntityId: "pn01", departmentId: "pn01-DA", jobTitleId: "jt-tn", code: "NV0032", fullName: "Nguyễn Thị Khánh Linh", email: "nguyenthikhanhlinhqn555@gmail.com", status: "active", gender: "female", dateOfBirth: "2002-01-26", phone: "0901205713", personalEmail: "nguyenthikhanhlinhqn555@gmail.com", nationalId: "52302004106", nationalIdDate: "2021-02-10", nationalIdPlace: "Cục trưởng Cục Cảnh sát Quản lý hành chính về trật tự xã hội", address: "111/50 Dang Thuy Tram St, Ward 13, Binh Thanh District, HCM City", employmentType: "fulltime", joinDate: "2026-07-01", taxCode: "52302004106", bankName: "Techcombank", bankAccount: "2552767676" },
-    { id: "e33", legalEntityId: "pn01", departmentId: "pn01-VH", jobTitleId: "jt-ql", code: "NV0033", fullName: "Hồ Anh Việt", email: "viet.hoanh.hanoi@gmail.com", status: "active", gender: "male", dateOfBirth: "2000-04-01", phone: "0393087527", personalEmail: "viet.hoanh.hanoi@gmail.com", nationalId: "1200001446", nationalIdDate: "2025-06-01", nationalIdPlace: "Cục cảnh sát", address: "Số 223 Sơn Tây, Kim Mã, Ba Đình, Hà Nội", employmentType: "fulltime", taxCode: "1200001446", bankName: "Vietcombank", bankAccount: "1012527553" },
-    { id: "e34", legalEntityId: "pn01", departmentId: "pn01-VH", jobTitleId: "jt-nv", code: "NV0034", fullName: "Đỗ Vân Nhi", email: "vannhii2806@gamil.com", status: "active", gender: "female", dateOfBirth: "2003-11-03", phone: "0338479003", personalEmail: "vannhii2806@gamil.com", nationalId: "8303004155", nationalIdDate: "2021-04-13", nationalIdPlace: "Cục cảnh sát Tuyên Quang", address: "Số nhà 19, ngách 39, ngõ 381 Nguyễn Khang, Cầu Giấy, Hà Nội", employmentType: "fulltime", taxCode: "8303004155", bankName: "MB Bank", bankAccount: "338479003" },
-    { id: "e35", legalEntityId: "pn01", departmentId: "pn01-VH", jobTitleId: "jt-nv", code: "NV0035", fullName: "Đặng Thị Thùy Phương", email: "dtthuyphuong190806@gmail.com", status: "active", gender: "female", dateOfBirth: "2006-08-19", phone: "0386178206", personalEmail: "dtthuyphuong190806@gmail.com", nationalId: "24306009299", nationalIdDate: "2021-05-28", nationalIdPlace: "Cục cảnh sát", address: "10/217 Yên Hoà, Cầu Giấy, Hà Nội", employmentType: "fulltime", taxCode: "24306009299", bankName: "MB Bank", bankAccount: "816191020" },
-    { id: "e36", legalEntityId: "pn01", jobTitleId: "jt-nv", code: "NV0036", fullName: "Nguyễn Tấn Dũng", email: "nguyendung22105@gmail.com", status: "active", gender: "male", dateOfBirth: "2005-01-22", phone: "0345621163", personalEmail: "nguyendung22105@gmail.com", nationalId: "42205001426", nationalIdDate: "2026-10-04", nationalIdPlace: "CỤC TRƯỞNG CỤC CSQLHC và TTXH", address: "1583/14 Phạm Thế Hiển, Phường Bình Đông, Hồ Chí Minh", employmentType: "fulltime", taxCode: "42205001426", bankName: "MB Bank", bankAccount: "288820058888" },
-    { id: "e37", legalEntityId: "pn01", departmentId: "pn01-NS", jobTitleId: "jt-tt", code: "NV0037", fullName: "Tăng Anh Thư", email: "tanganhthu1976@gmail.com", status: "active", gender: "female", dateOfBirth: "2001-07-21", phone: "0902630289", personalEmail: "tanganhthu1976@gmail.com", nationalId: "79301016857", nationalIdDate: "2021-12-21", nationalIdPlace: "Cục trường cục cảnh sát quản lý hành chính về trật tự xã hội", address: "33 Công Trường Tự do, Bình Thạnh, TP.HCM", employmentType: "intern", joinDate: "2026-11-05", taxCode: "79301016857", bankName: "TP Bank", bankAccount: "902630289" },
   ];
 
   const shifts: WorkShift[] = [
@@ -334,8 +302,8 @@ function seed(): DB {
   const roles: Role[] = [
     { id: "r-admin", code: "ADMIN", name: "Quản trị hệ thống", description: "Toàn quyền hệ thống, cấu hình & phân quyền", isSystem: true, permissions: [...ALL] },
     { id: "r-bod", code: "BOD", name: "Chủ cửa hàng / BOD", description: "Xem toàn cảnh doanh thu, lead, vận hành; phê duyệt cấp cao", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "leave.read", "leave.approve", "payroll.read", "report.read", "report.export", "recruit.read", "performance.read", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve", "lead.read", "customer.read", "fit.read", "survey.read", "quote.read", "order.read", "delivery.read", "warranty.read", "shiftreport.read", "task.read", "bizdash.read", "design.read", "cx.read", "marketing.read", "purchase.read", "finance.read", "finance.manage", "review.read", "inbox.read"] },
-    { id: "r-hrg", code: "HRG", name: "HR Toàn hệ thống", description: "Nhân sự cấp cao — xem/sửa mọi pháp nhân", isSystem: true, permissions: except("system.rbac") },
-    { id: "r-hr", code: "HR", name: "HR Pháp nhân", description: "Nhân sự trong phạm vi một pháp nhân", isSystem: true, permissions: except("system.rbac", "org.manage") },
+    { id: "r-hrg", code: "HRG", name: "HR Toàn hệ thống", description: "Nhân sự cấp cao — quản lý toàn bộ nhân sự, tổ chức", isSystem: true, permissions: except("system.rbac") },
+    { id: "r-hr", code: "HR", name: "HR Đơn vị", description: "Nhân sự trong phạm vi được phân (phòng ban)", isSystem: true, permissions: except("system.rbac", "org.manage") },
     { id: "r-rec", code: "REC", name: "Recruiter", description: "Quản lý tuyển dụng, ứng viên, phỏng vấn", isSystem: true, permissions: ["org.read", "employee.read", "recruit.read", "recruit.manage", "report.read"] },
     { id: "r-mgr", code: "MGR", name: "Quản lý trực tiếp", description: "Trưởng đơn vị — xếp lịch, duyệt đơn, xem nhân sự phòng ban", isSystem: true, permissions: ["org.read", "employee.read", "schedule.read", "schedule.manage", "leave.read", "leave.approve", "report.read", "recruit.read", "performance.read", "performance.manage", "contract.read", "asset.read", "training.read", "reward.read", "benefit.read", "overtime.read", "overtime.approve"] },
     { id: "r-emp", code: "EMP", name: "Nhân viên", description: "Tự phục vụ — xem lịch, gửi đơn, xem phiếu lương & KPI của bản thân", isSystem: true, permissions: ["schedule.read", "leave.read", "leave.request", "payroll.read", "performance.read", "overtime.read", "overtime.request"] },
@@ -359,71 +327,17 @@ function seed(): DB {
     { id: "u5", email: "caraven1303@gmail.com", fullName: "Nguyễn Chí Công", employeeId: "e5", isActive: true, password: DEV_PASSWORD },
     { id: "u6", email: "duonghngoc2301@gmail.com", fullName: "Dương Thị Hồng Ngọc", employeeId: "e7", isActive: true, password: DEV_PASSWORD },
     { id: "u7", email: "huyenthao558@gmail.com", fullName: "Bùi Thị Thanh Huyền", employeeId: "e8", isActive: true, password: DEV_PASSWORD },
-    { id: "u8", email: "hamalaga2020@gmail.com", fullName: "Trần Khánh Hà", employeeId: "e9", isActive: true, password: DEV_PASSWORD },
-    { id: "u9", email: "ngocnhung040190@gmail.com", fullName: "Nguyễn Ngọc Nhung", employeeId: "e10", isActive: true, password: DEV_PASSWORD },
-    { id: "u10", email: "luukly96@gmail.com", fullName: "Lưu Khánh Ly", employeeId: "e11", isActive: true, password: DEV_PASSWORD },
-    { id: "u11", email: "mainguyen24101997@gmail.com", fullName: "Nguyễn Thị Thanh Mai", employeeId: "e12", isActive: true, password: DEV_PASSWORD },
-    { id: "u12", email: "vohochan@gmail.com", fullName: "Võ Học Hân", employeeId: "e13", isActive: true, password: DEV_PASSWORD },
-    { id: "u13", email: "xuanthien16089@gmail.com", fullName: "Lê Xuân Thiên", employeeId: "e14", isActive: true, password: DEV_PASSWORD },
-    { id: "u14", email: "vohoangthaolinh030979@gmail.com", fullName: "Võ Hoàng Thảo Linh", employeeId: "e15", isActive: true, password: DEV_PASSWORD },
-    { id: "u15", email: "huongdtd234111e@st.uel.edu.vn", fullName: "Đỗ Thị Diễm Hương", employeeId: "e16", isActive: true, password: DEV_PASSWORD },
-    { id: "u16", email: "kimthidumy.vtatv.1609@gmail.com", fullName: "Kim Thị Du Mỹ", employeeId: "e17", isActive: true, password: DEV_PASSWORD },
-    { id: "u17", email: "nttuan081006vn@gmail.com", fullName: "Nguyễn Thanh Tuấn", employeeId: "e18", isActive: true, password: DEV_PASSWORD },
-    { id: "u18", email: "kietpham2309.pt@gmail.com", fullName: "Phạm Tuấn Kiệt", employeeId: "e19", isActive: true, password: DEV_PASSWORD },
-    { id: "u19", email: "tranthithuha16655@gmail.com", fullName: "Trần Thị Thu Hà", employeeId: "e20", isActive: true, password: DEV_PASSWORD },
-    { id: "u20", email: "nguyenbich2000@gmail.com", fullName: "Nguyễn Thị Bích", employeeId: "e21", isActive: true, password: DEV_PASSWORD },
-    { id: "u21", email: "kietl6955@gmail.com", fullName: "Lê Đạt Tuấn Kiệt", employeeId: "e22", isActive: true, password: DEV_PASSWORD },
-    { id: "u22", email: "tranngocdangkhoa2702@gmail.com", fullName: "Trần Ngọc Đăng Khoa", employeeId: "e23", isActive: true, password: DEV_PASSWORD },
-    { id: "u23", email: "cuunguyetbangwork@gmail.com", fullName: "Phạm Thị Hương", employeeId: "e24", isActive: true, password: DEV_PASSWORD },
-    { id: "u24", email: "nguyenhotouyen2002@gmail.com", fullName: "Nguyễn Hồ Tố Uyên", employeeId: "e25", isActive: true, password: DEV_PASSWORD },
-    { id: "u25", email: "letranaisa2002@gmail.com", fullName: "Lê Trần Ái Sa", employeeId: "e28", isActive: true, password: DEV_PASSWORD },
-    { id: "u26", email: "phuclochlk@gmail.com", fullName: "Nguyễn Trương Phúc Lộc", employeeId: "e29", isActive: true, password: DEV_PASSWORD },
-    { id: "u27", email: "trankhanhphong.1706@gmail.com", fullName: "Trần Khánh Phong", employeeId: "e30", isActive: true, password: DEV_PASSWORD },
-    { id: "u28", email: "tpan211101@gmail.com", fullName: "Trang Phúc An", employeeId: "e31", isActive: true, password: DEV_PASSWORD },
-    { id: "u29", email: "nguyenthikhanhlinhqn555@gmail.com", fullName: "Nguyễn Thị Khánh Linh", employeeId: "e32", isActive: true, password: DEV_PASSWORD },
-    { id: "u30", email: "viet.hoanh.hanoi@gmail.com", fullName: "Hồ Anh Việt", employeeId: "e33", isActive: true, password: DEV_PASSWORD },
-    { id: "u31", email: "vannhii2806@gamil.com", fullName: "Đỗ Vân Nhi", employeeId: "e34", isActive: true, password: DEV_PASSWORD },
-    { id: "u32", email: "dtthuyphuong190806@gmail.com", fullName: "Đặng Thị Thùy Phương", employeeId: "e35", isActive: true, password: DEV_PASSWORD },
-    { id: "u33", email: "nguyendung22105@gmail.com", fullName: "Nguyễn Tấn Dũng", employeeId: "e36", isActive: true, password: DEV_PASSWORD },
-    { id: "u34", email: "tanganhthu1976@gmail.com", fullName: "Tăng Anh Thư", employeeId: "e37", isActive: true, password: DEV_PASSWORD },
   ];
 
   const assignments: RoleAssignment[] = [
     { id: "a-admin", userId: "u-admin", roleId: "r-admin", scopeType: "GROUP" },
     { id: "a1", userId: "u1", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a2", userId: "u2", roleId: "r-mgr", scopeType: "ENTITY", scopeEntityId: "pn04" },
+    { id: "a2", userId: "u2", roleId: "r-mgr", scopeType: "GROUP" },
     { id: "a3", userId: "u3", roleId: "r-emp", scopeType: "SELF" },
     { id: "a4", userId: "u4", roleId: "r-emp", scopeType: "SELF" },
     { id: "a5", userId: "u5", roleId: "r-emp", scopeType: "SELF" },
     { id: "a6", userId: "u6", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a7", userId: "u7", roleId: "r-hr", scopeType: "ENTITY", scopeEntityId: "pn04" },
-    { id: "a8", userId: "u8", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a9", userId: "u9", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a10", userId: "u10", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a11", userId: "u11", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a12", userId: "u12", roleId: "r-mgr", scopeType: "ENTITY", scopeEntityId: "pn03" },
-    { id: "a13", userId: "u13", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a14", userId: "u14", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a15", userId: "u15", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a16", userId: "u16", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a17", userId: "u17", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a18", userId: "u18", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a19", userId: "u19", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a20", userId: "u20", roleId: "r-mgr", scopeType: "ENTITY", scopeEntityId: "pn02" },
-    { id: "a21", userId: "u21", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a22", userId: "u22", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a23", userId: "u23", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a24", userId: "u24", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a25", userId: "u25", roleId: "r-mgr", scopeType: "DEPARTMENT", scopeDepartmentId: "pn01-KT" },
-    { id: "a26", userId: "u26", roleId: "r-hrg", scopeType: "GROUP" },
-    { id: "a27", userId: "u27", roleId: "r-mgr", scopeType: "DEPARTMENT", scopeDepartmentId: "pn01-KD" },
-    { id: "a28", userId: "u28", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a29", userId: "u29", roleId: "r-mgr", scopeType: "DEPARTMENT", scopeDepartmentId: "pn01-DA" },
-    { id: "a30", userId: "u30", roleId: "r-mgr", scopeType: "DEPARTMENT", scopeDepartmentId: "pn01-VH" },
-    { id: "a31", userId: "u31", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a32", userId: "u32", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a33", userId: "u33", roleId: "r-emp", scopeType: "SELF" },
-    { id: "a34", userId: "u34", roleId: "r-hr", scopeType: "ENTITY", scopeEntityId: "pn01" },
+    { id: "a7", userId: "u7", roleId: "r-hr", scopeType: "GROUP" },
   ];
 
   return {
@@ -1147,7 +1061,7 @@ export async function setUserAssignment(input: {
 }): Promise<RoleAssignment> {
   const dbo = await getDb("assignments");
   // Phạm vi chỉ giữ id liên quan tới loại scope (tránh dữ liệu thừa).
-  const scopeEntityId = input.scopeType === "ENTITY" ? input.scopeEntityId || undefined : undefined;
+  const scopeEntityId = undefined;
   const scopeDepartmentId = input.scopeType === "DEPARTMENT" ? input.scopeDepartmentId || undefined : undefined;
   const cur = dbo.assignments.find((a) => a.userId === input.userId);
   if (cur) {
@@ -1527,7 +1441,6 @@ export async function approverUserIds(employeeId: string, permission: string): P
     if (!role || !role.permissions.includes(permission)) continue;
     let inScope = false;
     if (a.scopeType === "GROUP") inScope = true;
-    else if (a.scopeType === "ENTITY") inScope = a.scopeEntityId === emp.legalEntityId;
     else if (a.scopeType === "DEPARTMENT" && a.scopeDepartmentId)
       inScope = !!emp.departmentId && deptSubtree(a.scopeDepartmentId).has(emp.departmentId);
     else if (a.scopeType === "SELF")

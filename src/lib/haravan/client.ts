@@ -112,6 +112,46 @@ export async function fetchProducts(limit = 50): Promise<Product[]> {
   }
 }
 
+/**
+ * Lấy TOÀN BỘ catalog (phân trang đến hết) — cho POS/Báo giá cần tìm trên mọi mặt hàng.
+ * Haravan chốt 50 SP/trang & không hỗ trợ tìm-text phía server → phải nạp đủ rồi lọc ở client.
+ * Gọi theo lô song song (concurrency thấp) để nhanh mà không vượt rate-limit; mỗi trang cache 5'.
+ */
+export async function fetchAllProducts(opts?: { hardCap?: number }): Promise<Product[]> {
+  if (!haravanConfigured()) return STUB_PRODUCTS;
+  try {
+    const hardCap = opts?.hardCap ?? 4000; // trần an toàn chống vòng lặp
+    let total = 0;
+    try {
+      const c = await haravanGet<{ count: number }>(`/products/count.json`);
+      total = c.count ?? 0;
+    } catch {
+      total = 0;
+    }
+    const pageCount = total ? Math.min(Math.ceil(total / 50), Math.ceil(hardCap / 50)) : 1;
+    const out: Product[] = [];
+    const CONC = 5; // số trang gọi song song mỗi lô
+    for (let start = 1; start <= pageCount; start += CONC) {
+      const pages: number[] = [];
+      for (let p = start; p < start + CONC && p <= pageCount; p++) pages.push(p);
+      const batches = await Promise.all(
+        pages.map(async (page) => {
+          const data = await haravanGet<{ products: HaravanProduct[] }>(
+            `/products.json?limit=50&page=${page}`,
+          );
+          return (data.products ?? []).map(mapProduct);
+        }),
+      );
+      for (const b of batches) out.push(...b);
+      if (out.length >= hardCap) break;
+    }
+    return out;
+  } catch (err) {
+    console.error("[haravan] fetchAllProducts thất bại, dùng stub:", err);
+    return STUB_PRODUCTS;
+  }
+}
+
 /** Tổng số sản phẩm trên Haravan (cho dashboard/đồng bộ). */
 export async function fetchProductCount(): Promise<number | null> {
   if (!haravanConfigured()) return null;

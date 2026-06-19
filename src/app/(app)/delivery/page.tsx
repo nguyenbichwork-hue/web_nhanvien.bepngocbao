@@ -2,7 +2,8 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { CountUp } from "@/components/charts";
 import { listDeliveries, listOrders, listCustomers } from "@/lib/bnb/store";
-import { employeeNameMap, fmtDate, fmtDateTime, dayKey, isSameDay } from "@/lib/bnb/util";
+import { fmtDate, fmtDateTime, dayKey, isSameDay } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   DELIVERY_STATUS_LABEL, DELIVERY_STATUS_BADGE,
 } from "@/lib/bnb/types";

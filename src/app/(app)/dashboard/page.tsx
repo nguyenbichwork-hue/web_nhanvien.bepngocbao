@@ -5,7 +5,8 @@ import { CountUp } from "@/components/charts";
 import {
   listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports,
 } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate, fmtDateTime, isSameDay } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, fmtDateTime, isSameDay } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_SOURCE_LABEL, DELIVERY_STATUS_LABEL, DELIVERY_STATUS_BADGE,
   PRIORITY_LABEL, PRIORITY_BADGE, SHIFT_LABEL,

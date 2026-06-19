@@ -20,7 +20,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
           <h1>Cài đặt</h1>
           <p>
             {isAdmin
-              ? "Tổ chức đa pháp nhân, danh mục dùng chung, phân quyền (RBAC) và tài khoản cá nhân."
+              ? "Hồ sơ công ty, danh mục dùng chung, phân quyền (RBAC) và tài khoản cá nhân."
               : "Tài khoản & bảo mật cá nhân."}
           </p>
         </div>

@@ -118,7 +118,7 @@ export default async function EmployeeEditPage({
       {canEdit ? (
         <EmployeeForm
           action={updateEmployeeAction}
-          entities={entities}
+          companyId={entities[0]?.id ?? ""}
           departments={departments}
           jobTitles={jobTitles}
           roles={roles}
@@ -137,7 +137,6 @@ export default async function EmployeeEditPage({
             <Field label="Email công việc" value={employee.email} />
             <Field label="Điện thoại" value={employee.phone} />
             <Field label="Giới tính" value={employee.gender ? GENDER_LABEL[employee.gender] : undefined} />
-            <Field label="Pháp nhân" value={entities.find((e) => e.id === employee.legalEntityId)?.name} />
             <Field label="Phòng ban" value={departments.find((d) => d.id === employee.departmentId)?.name} />
             <Field label="Chức danh" value={jobTitles.find((j) => j.id === employee.jobTitleId)?.name} />
             <Field label="Loại hình" value={employee.employmentType ? EMPLOYMENT_TYPE_LABEL[employee.employmentType] : undefined} />
@@ -164,9 +163,8 @@ export default async function EmployeeEditPage({
               <AssignRoleRow
                 user={{ id: account.id, fullName: employee.fullName, email: account.email }}
                 roles={roles.map((r) => ({ id: r.id, code: r.code, name: r.name }))}
-                entities={entities.map((e) => ({ id: e.id, name: e.name }))}
                 departments={departments.map((d) => ({ id: d.id, name: d.name }))}
-                current={accountAsg ? { roleId: accountAsg.roleId, scopeType: accountAsg.scopeType, scopeEntityId: accountAsg.scopeEntityId, scopeDepartmentId: accountAsg.scopeDepartmentId } : undefined}
+                current={accountAsg ? { roleId: accountAsg.roleId, scopeType: accountAsg.scopeType, scopeDepartmentId: accountAsg.scopeDepartmentId } : undefined}
               />
             </tbody>
           </table>

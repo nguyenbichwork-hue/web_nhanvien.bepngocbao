@@ -7,7 +7,6 @@ import {
   PERMISSIONS,
   listAssignments,
   listDepartments,
-  listEntities,
   listRoles,
   listUsers,
 } from "@/lib/org/store";
@@ -16,11 +15,10 @@ import { requirePermission } from "@/lib/auth/session";
 export default async function RolesPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
   await requirePermission("system.rbac");
   const { err } = await searchParams;
-  const [roles, users, assignments, entities, departments] = await Promise.all([
+  const [roles, users, assignments, departments] = await Promise.all([
     listRoles(),
     listUsers(),
     listAssignments(),
-    listEntities(),
     listDepartments(),
   ]);
 
@@ -79,9 +77,8 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
                       key={u.id}
                       user={{ id: u.id, fullName: u.fullName, email: u.email }}
                       roles={roles.map((r) => ({ id: r.id, code: r.code, name: r.name }))}
-                      entities={entities.map((e) => ({ id: e.id, name: e.name }))}
                       departments={departments.map((d) => ({ id: d.id, name: d.name }))}
-                      current={a ? { roleId: a.roleId, scopeType: a.scopeType, scopeEntityId: a.scopeEntityId, scopeDepartmentId: a.scopeDepartmentId } : undefined}
+                      current={a ? { roleId: a.roleId, scopeType: a.scopeType, scopeDepartmentId: a.scopeDepartmentId } : undefined}
                     />
                   );
                 })}

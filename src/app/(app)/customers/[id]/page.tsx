@@ -6,7 +6,8 @@ import {
   getCustomer, listOrders, listWarranties, listNpsResponses,
   listLeads, listSurveys, listActivities,
 } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   ORDER_STATUS_LABEL, ORDER_STATUS_BADGE,
   WARRANTY_STATUS_LABEL, WARRANTY_STATUS_BADGE,

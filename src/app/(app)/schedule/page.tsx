@@ -7,7 +7,6 @@ import {
   getScheduleConfig,
   listDepartments,
   listEmployees,
-  listEntities,
   listScheduleEntries,
   listShifts,
   resolveMonth,
@@ -18,18 +17,17 @@ import {
   type ScheduleKind,
 } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEmployeeIds, visibleEntityIds } from "@/lib/auth/scope";
+import { visibleEmployeeIds } from "@/lib/auth/scope";
 
 const VN_MONTH = (m: number) => `Tháng ${m}`;
 const pad = (n: number) => String(n).padStart(2, "0");
 
-type SP = { y?: string; m?: string; entity?: string; dept?: string };
+type SP = { y?: string; m?: string; dept?: string };
 
 export default async function SchedulePage({ searchParams }: { searchParams: Promise<SP> }) {
   const session = await requirePermission("schedule.read");
   const sp = await searchParams;
-  const [allEntities, departments, allEmployees, shifts, config, entries] = await Promise.all([
-    listEntities(),
+  const [departments, allEmployees, shifts, config, entries] = await Promise.all([
     listDepartments(),
     listEmployees(),
     listShifts(),
@@ -37,11 +35,9 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
     listScheduleEntries(),
   ]);
 
-  // Giới hạn theo phạm vi: chỉ thấy nhân viên & pháp nhân trong tầm của mình.
+  // Giới hạn theo phạm vi: chỉ thấy nhân viên trong tầm của mình.
   const visIds = await visibleEmployeeIds(session);
   const employees = visIds === "all" ? allEmployees : allEmployees.filter((e) => visIds.has(e.id));
-  const vEntities = await visibleEntityIds(session);
-  const entities = vEntities === "all" ? allEntities : allEntities.filter((e) => vEntities.includes(e.id));
   const canManage = can(session, "schedule.manage"); // sửa lịch mọi người (HR/Quản lý)
   const selfId = session.employee?.id;
   // Hàng được phép sửa: tất cả (quản lý) hoặc chỉ hàng của chính mình (nhân viên tự phục vụ).
@@ -69,14 +65,13 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
 
   // Lọc nhân viên hiển thị (bỏ người đã nghỉ việc).
   const roster = employees.filter((e) => {
-    if (sp.entity && e.legalEntityId !== sp.entity) return false;
     if (sp.dept && e.departmentId !== sp.dept) return false;
     return e.status !== "left";
   });
 
   const deptName = (id?: string | null) => departments.find((d) => d.id === id)?.name ?? "—";
   const empName = (id: string) => employees.find((e) => e.id === id)?.fullName ?? id;
-  const filterDepts = sp.entity ? departments.filter((d) => d.legalEntityId === sp.entity) : departments;
+  const filterDepts = departments;
 
   // Giải lịch tháng cho từng nhân viên → hàng cho lưới tương tác.
   const rows: ScheduleRow[] = await Promise.all(
@@ -130,16 +125,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       <form className="card" method="get" style={{ marginBottom: 18 }}>
         <input type="hidden" name="y" value={year} />
         <input type="hidden" name="m" value={month} />
-        <div className="grid-k g-3" style={{ alignItems: "end" }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Pháp nhân</label>
-            <select name="entity" defaultValue={sp.entity ?? ""}>
-              <option value="">Tất cả</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>{e.code} · {e.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="grid-k g-2" style={{ alignItems: "end" }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Phòng ban</label>
             <select name="dept" defaultValue={sp.dept ?? ""}>

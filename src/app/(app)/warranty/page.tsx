@@ -3,7 +3,8 @@ import { Icon } from "@/components/icon";
 import { CountUp } from "@/components/charts";
 import { TableFilter } from "@/components/table-filter";
 import { listWarranties, listOrders, listCustomers } from "@/lib/bnb/store";
-import { employeeNameMap, fmtDate } from "@/lib/bnb/util";
+import { fmtDate } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   WARRANTY_STATUS_LABEL, WARRANTY_STATUS_BADGE, CARE_MILESTONES,
 } from "@/lib/bnb/types";

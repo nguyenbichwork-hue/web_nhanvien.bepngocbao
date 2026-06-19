@@ -5,7 +5,8 @@ import { CountUp, HBars, BarChart, ProgressBar } from "@/components/charts";
 import {
   listLeads, listOrders, listWarranties, listShiftReports, listTasks,
 } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate, dayKey } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, dayKey } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL,
   ORDER_STATUS_LABEL, ORDER_STATUS_BADGE,

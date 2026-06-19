@@ -10,7 +10,7 @@ import {
   deleteRow,
 } from "@/lib/org/persist";
 import {
-  STUB_PRODUCTS, fetchProducts, fetchCustomers, fetchOrders,
+  STUB_PRODUCTS, fetchProducts, fetchAllProducts, fetchCustomers, fetchOrders,
   fetchOrderById, fetchCustomerById, fetchInventory,
   createHaravanCustomer, createHaravanOrder, haravanConfigured,
 } from "@/lib/haravan/client";
@@ -187,6 +187,22 @@ export async function listProducts(): Promise<Product[]> {
       }
     } catch (err) {
       console.error("[bnb] listProducts Haravan lỗi, dùng stub:", err);
+    }
+  }
+  return clone((await getDb("products")).products);
+}
+/** TOÀN BỘ catalog — cho POS/Báo giá cần tìm trên mọi mặt hàng (nạp đủ, cache 5'). */
+export async function listAllProducts(): Promise<Product[]> {
+  if (haravanConfigured()) {
+    try {
+      const live = await fetchAllProducts();
+      if (live.length) {
+        const liveSkus = new Set(live.map((p) => p.sku).filter(Boolean));
+        const fallback = STUB_PRODUCTS.filter((s) => s.sku && !liveSkus.has(s.sku));
+        return [...live, ...fallback];
+      }
+    } catch (err) {
+      console.error("[bnb] listAllProducts Haravan lỗi, dùng stub:", err);
     }
   }
   return clone((await getDb("products")).products);

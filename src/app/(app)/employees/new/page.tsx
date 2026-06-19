@@ -27,14 +27,14 @@ export default async function NewEmployeePage() {
           </Link>
           <div>
             <h1>Thêm nhân viên</h1>
-            <p>Tạo hồ sơ nhân sự mới và gán vào pháp nhân, phòng ban, chức danh.</p>
+            <p>Tạo hồ sơ nhân sự mới và gán vào phòng ban, chức danh.</p>
           </div>
         </div>
       </div>
 
       <EmployeeForm
         action={createEmployeeAction}
-        entities={entities}
+        companyId={entities[0]?.id ?? ""}
         departments={departments}
         jobTitles={jobTitles}
         roles={roles}

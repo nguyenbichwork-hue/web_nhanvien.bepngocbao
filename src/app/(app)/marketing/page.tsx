@@ -2,7 +2,8 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { CountUp, HBars } from "@/components/charts";
 import { listPillars, listCalendarItems, listAdCampaigns } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDateTime } from "@/lib/bnb/util";
+import { fmtVnd, fmtDateTime } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   MKT_CHANNELS, MKT_CHANNEL_LABEL,
   CONTENT_STATUS_LABEL, CONTENT_STATUS_BADGE,

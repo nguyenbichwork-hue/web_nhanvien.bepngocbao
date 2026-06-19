@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { PrintButton } from "@/components/print-button";
 import { getGroup, getJobOpening, listDepartments, listEntities, listJobTitles } from "@/lib/org/store";
 import { EMPLOYMENT_TYPE_LABEL, OPENING_STATUS_BADGE, OPENING_STATUS_LABEL } from "@/lib/org/types";
 import { formatVND } from "@/lib/payroll/calc";
 import { requirePermission } from "@/lib/auth/session";
-import { visibleEntityIds } from "@/lib/auth/scope";
 
 type Params = { id: string };
 
@@ -35,7 +33,7 @@ function Block({ title, value }: { title: string; value?: string }) {
 }
 
 export default async function OpeningPreviewPage({ params }: { params: Promise<Params> }) {
-  const session = await requirePermission("recruit.read");
+  await requirePermission("recruit.read");
   const { id } = await params;
   const [opening, group, entities, departments, jobTitles] = await Promise.all([
     getJobOpening(id),
@@ -44,11 +42,6 @@ export default async function OpeningPreviewPage({ params }: { params: Promise<P
     listDepartments(),
     listJobTitles(),
   ]);
-
-  if (opening) {
-    const vEntities = await visibleEntityIds(session);
-    if (vEntities !== "all" && !vEntities.includes(opening.legalEntityId)) redirect("/forbidden");
-  }
 
   if (!opening) {
     return (

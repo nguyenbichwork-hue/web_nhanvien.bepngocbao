@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
-import { listDepartments, listEmployees, listEntities, listJobTitles } from "@/lib/org/store";
+import { listDepartments, listEmployees, listJobTitles } from "@/lib/org/store";
 import { EMPLOYEE_STATUS_LABEL, type EmployeeStatus } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
-import { filterEmployees, visibleEntityIds } from "@/lib/auth/scope";
+import { filterEmployees } from "@/lib/auth/scope";
 
 const STATUS_BADGE: Record<EmployeeStatus, string> = {
   active: "b-green",
@@ -12,7 +12,7 @@ const STATUS_BADGE: Record<EmployeeStatus, string> = {
   left: "b-rose",
 };
 
-type SP = { q?: string; entity?: string; dept?: string; status?: string };
+type SP = { q?: string; dept?: string; status?: string };
 
 export default async function EmployeesPage({
   searchParams,
@@ -21,36 +21,28 @@ export default async function EmployeesPage({
 }) {
   const session = await requirePermission("employee.read");
   const sp = await searchParams;
-  const [allEntities, departments, jobTitles, allEmployees] = await Promise.all([
-    listEntities(),
+  const [departments, jobTitles, allEmployees] = await Promise.all([
     listDepartments(),
     listJobTitles(),
     listEmployees(),
   ]);
 
-  // Giới hạn theo phạm vi của người dùng (pháp nhân / phòng ban / cá nhân).
+  // Giới hạn theo phạm vi của người dùng (phòng ban / cá nhân).
   const employees = await filterEmployees(session, allEmployees);
-  const vEntities = await visibleEntityIds(session);
-  const entities = vEntities === "all" ? allEntities : allEntities.filter((e) => vEntities.includes(e.id));
   const canCreate = can(session, "employee.create");
 
-  const entityName = (id: string) => entities.find((e) => e.id === id)?.name ?? "—";
   const deptName = (id?: string | null) => departments.find((d) => d.id === id)?.name ?? "—";
   const titleName = (id?: string | null) => jobTitles.find((j) => j.id === id)?.name ?? "—";
 
   const q = (sp.q ?? "").trim().toLowerCase();
   const filtered = employees.filter((e) => {
-    if (sp.entity && e.legalEntityId !== sp.entity) return false;
     if (sp.dept && e.departmentId !== sp.dept) return false;
     if (sp.status && e.status !== sp.status) return false;
     if (q && !`${e.fullName} ${e.code} ${e.email ?? ""}`.toLowerCase().includes(q)) return false;
     return true;
   });
 
-  // Phòng ban cho dropdown lọc — giới hạn theo pháp nhân đã chọn (nếu có).
-  const filterDepts = sp.entity
-    ? departments.filter((d) => d.legalEntityId === sp.entity)
-    : departments;
+  const filterDepts = departments;
 
   return (
     <div className="view-in">
@@ -60,11 +52,11 @@ export default async function EmployeesPage({
       <div className="page-head">
         <div>
           <h1>Danh bạ nhân viên</h1>
-          <p>Hồ sơ nhân sự trong phạm vi của bạn — {employees.length} người ở {entities.length} pháp nhân.</p>
+          <p>Hồ sơ nhân sự trong phạm vi của bạn — {employees.length} người.</p>
         </div>
         <div className="flex gap">
           {can(session, "report.export") && (
-            <a className="btn" href={`/export/employees${sp.entity ? `?entity=${sp.entity}` : ""}`}>
+            <a className="btn" href="/export/employees">
               <Icon name="download" /> Xuất Excel
             </a>
           )}
@@ -83,21 +75,10 @@ export default async function EmployeesPage({
 
       {/* Bộ lọc */}
       <form className="card" method="get" style={{ marginBottom: 18 }}>
-        <div className="grid-k g-4" style={{ gap: 14, alignItems: "end" }}>
+        <div className="grid-k g-3" style={{ gap: 14, alignItems: "end" }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Tìm kiếm</label>
             <input name="q" defaultValue={sp.q ?? ""} placeholder="Tên, mã NV, email…" />
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Pháp nhân</label>
-            <select name="entity" defaultValue={sp.entity ?? ""}>
-              <option value="">Tất cả</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.code} · {e.name}
-                </option>
-              ))}
-            </select>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Phòng ban</label>
@@ -150,7 +131,6 @@ export default async function EmployeesPage({
               <tr>
                 <th>Mã</th>
                 <th>Họ tên</th>
-                <th>Pháp nhân</th>
                 <th>Phòng ban</th>
                 <th>Chức danh</th>
                 <th>Trạng thái</th>
@@ -183,7 +163,6 @@ export default async function EmployeesPage({
                       </div>
                     </div>
                   </td>
-                  <td>{entityName(e.legalEntityId)}</td>
                   <td>{deptName(e.departmentId)}</td>
                   <td>{titleName(e.jobTitleId)}</td>
                   <td>

@@ -5,7 +5,6 @@ import {
   getJobOpening,
   listCandidates,
   listDepartments,
-  listEntities,
   listJobTitles,
 } from "@/lib/org/store";
 import { formatVND } from "@/lib/payroll/calc";
@@ -21,9 +20,7 @@ import {
   type EmploymentType,
   type OpeningStatus,
 } from "@/lib/org/types";
-import { redirect } from "next/navigation";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEntityIds } from "@/lib/auth/scope";
 
 type Params = { id: string };
 
@@ -91,19 +88,13 @@ function MoveButton({
 export default async function OpeningBoardPage({ params }: { params: Promise<Params> }) {
   const session = await requirePermission("recruit.read");
   const { id } = await params;
-  const [opening, entities, departments, jobTitles, allCandidates] = await Promise.all([
+  const [opening, departments, jobTitles, allCandidates] = await Promise.all([
     getJobOpening(id),
-    listEntities(),
     listDepartments(),
     listJobTitles(),
     listCandidates(id),
   ]);
 
-  // Ngoài phạm vi pháp nhân → chặn.
-  if (opening) {
-    const vEntities = await visibleEntityIds(session);
-    if (vEntities !== "all" && !vEntities.includes(opening.legalEntityId)) redirect("/forbidden");
-  }
   const canManage = can(session, "recruit.manage");
 
   if (!opening) {
@@ -124,7 +115,6 @@ export default async function OpeningBoardPage({ params }: { params: Promise<Par
     );
   }
 
-  const entityName = entities.find((e) => e.id === opening.legalEntityId)?.name ?? "—";
   const deptName = departments.find((d) => d.id === opening.departmentId)?.name ?? "—";
   const titleName = jobTitles.find((j) => j.id === opening.jobTitleId)?.name ?? "—";
 
@@ -140,7 +130,7 @@ export default async function OpeningBoardPage({ params }: { params: Promise<Par
         <div>
           <h1>{opening.title}</h1>
           <p>
-            {entityName} · {deptName} · {titleName} · cần {opening.headcount} ·{" "}
+            {deptName} · {titleName} · cần {opening.headcount} ·{" "}
             <span className={`badge ${OPENING_STATUS_BADGE[opening.status]}`}>
               {OPENING_STATUS_LABEL[opening.status]}
             </span>
@@ -188,32 +178,17 @@ export default async function OpeningBoardPage({ params }: { params: Promise<Par
             </summary>
             <form action={updateJobOpeningAction} style={{ marginTop: 14 }}>
               <input type="hidden" name="id" value={opening.id} />
+              <input type="hidden" name="legalEntityId" value={opening.legalEntityId} />
               <div className="grid-k g-2">
                 <div className="field">
                   <label>Vị trí *</label>
                   <input name="title" required defaultValue={opening.title} />
                 </div>
                 <div className="field">
-                  <label>Pháp nhân *</label>
-                  <select name="legalEntityId" required defaultValue={opening.legalEntityId}>
-                    {entities.map((e) => (
-                      <option key={e.id} value={e.id}>{e.code} · {e.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
                   <label>Phòng ban</label>
                   <select name="departmentId" defaultValue={opening.departmentId ?? ""}>
                     <option value="">—</option>
-                    {entities.map((e) => {
-                      const deps = departments.filter((d) => d.legalEntityId === e.id);
-                      if (!deps.length) return null;
-                      return (
-                        <optgroup key={e.id} label={`${e.code} · ${e.name}`}>
-                          {deps.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
-                        </optgroup>
-                      );
-                    })}
+                    {departments.map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
                   </select>
                 </div>
                 <div className="field">

@@ -1,23 +1,17 @@
-import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { createDepartmentAction, deleteDepartmentAction } from "@/lib/org/actions";
 import { listDepartments, listEmployees, listEntities } from "@/lib/org/store";
 import type { Department, Employee } from "@/lib/org/types";
 import { requirePermission } from "@/lib/auth/session";
 
-export default async function DepartmentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ e?: string }>;
-}) {
+export default async function DepartmentsPage() {
   await requirePermission("org.manage");
   const entities = await listEntities();
-  const sel = (await searchParams).e ?? entities[0]?.id;
-  const entity = entities.find((x) => x.id === sel) ?? entities[0];
+  const entity = entities[0];
 
   const [departments, employees] = await Promise.all([
-    listDepartments(entity.id),
-    listEmployees(entity.id),
+    listDepartments(),
+    listEmployees(),
   ]);
 
   // dựng cây
@@ -26,23 +20,10 @@ export default async function DepartmentsPage({
 
   return (
     <>
-      {/* Chọn pháp nhân */}
-      <div className="chips" style={{ marginBottom: 18 }}>
-        {entities.map((e) => (
-          <Link
-            key={e.id}
-            href={`/settings/departments?e=${e.id}`}
-            className={`chip${e.id === entity.id ? " on" : ""}`}
-          >
-            {e.code} · {e.name}
-          </Link>
-        ))}
-      </div>
-
       <div className="card hover">
         <div className="card-h">
           <div>
-            <h3>Phòng ban — {entity.name}</h3>
+            <h3>Phòng ban</h3>
             <div className="sub">
               {departments.length} đơn vị · cấu trúc cây phân cấp
             </div>

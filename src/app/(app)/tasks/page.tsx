@@ -1,7 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { listTasks } from "@/lib/bnb/store";
-import { employeeNameMap, fmtDate } from "@/lib/bnb/util";
+import { fmtDate } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   TASK_STATUS_LABEL, TASK_STATUS_BADGE,
   PRIORITY_LABEL, PRIORITY_BADGE,

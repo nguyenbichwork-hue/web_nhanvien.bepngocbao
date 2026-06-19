@@ -20,7 +20,7 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <BrandLogo height={30} />
+        <BrandLogo height={30} variant="sidebar" />
       </div>
 
       {groups.map((group) => (

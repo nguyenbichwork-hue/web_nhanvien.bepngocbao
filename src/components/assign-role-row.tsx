@@ -8,21 +8,19 @@ import { SCOPE_LABEL, type ScopeType } from "@/lib/org/types";
 type Opt = { id: string; name: string };
 type RoleOpt = { id: string; code: string; name: string };
 
-const SCOPES: ScopeType[] = ["GROUP", "ENTITY", "DEPARTMENT", "SELF"];
+const SCOPES: ScopeType[] = ["GROUP", "DEPARTMENT", "SELF"];
 
-/** Một dòng gán/đổi vai trò + phạm vi cho 1 người dùng. Scope ENTITY/DEPARTMENT mới hiện ô chọn tương ứng. */
+/** Một dòng gán/đổi vai trò + phạm vi cho 1 người dùng. Scope DEPARTMENT mới hiện ô chọn phòng ban. */
 export function AssignRoleRow({
   user,
   roles,
-  entities,
   departments,
   current,
 }: {
   user: { id: string; fullName: string; email: string };
   roles: RoleOpt[];
-  entities: Opt[];
   departments: Opt[];
-  current?: { roleId: string; scopeType: ScopeType; scopeEntityId?: string | null; scopeDepartmentId?: string | null };
+  current?: { roleId: string; scopeType: ScopeType; scopeDepartmentId?: string | null };
 }) {
   const [scope, setScope] = useState<ScopeType>(current?.scopeType ?? "SELF");
 
@@ -44,12 +42,6 @@ export function AssignRoleRow({
           <select name="scopeType" value={scope} onChange={(e) => setScope(e.target.value as ScopeType)} style={{ minWidth: 120 }}>
             {SCOPES.map((s) => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}
           </select>
-          {scope === "ENTITY" && (
-            <select name="scopeEntityId" defaultValue={current?.scopeEntityId ?? ""} required style={{ minWidth: 150 }}>
-              <option value="" disabled>— Pháp nhân —</option>
-              {entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
-          )}
           {scope === "DEPARTMENT" && (
             <select name="scopeDepartmentId" defaultValue={current?.scopeDepartmentId ?? ""} required style={{ minWidth: 150 }}>
               <option value="" disabled>— Phòng ban —</option>

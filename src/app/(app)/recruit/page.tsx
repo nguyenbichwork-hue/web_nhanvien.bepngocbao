@@ -17,33 +17,20 @@ import {
   type OpeningStatus,
 } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEntityIds } from "@/lib/auth/scope";
 
-type SP = { entity?: string };
-
-export default async function RecruitPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
+export default async function RecruitPage() {
   const session = await requirePermission("recruit.read");
-  const sp = await searchParams;
-  const entityId = sp.entity || undefined;
-  const [allEntities, departments, jobTitles, allOpenings, candidates] = await Promise.all([
+  const [allEntities, departments, jobTitles, openings, candidates] = await Promise.all([
     listEntities(),
     listDepartments(),
     listJobTitles(),
-    listJobOpenings(entityId),
+    listJobOpenings(),
     listCandidates(),
   ]);
 
-  // Giới hạn tin tuyển dụng theo pháp nhân trong phạm vi của người dùng.
-  const vEntities = await visibleEntityIds(session);
-  const entities = vEntities === "all" ? allEntities : allEntities.filter((e) => vEntities.includes(e.id));
-  const openings = vEntities === "all" ? allOpenings : allOpenings.filter((o) => vEntities.includes(o.legalEntityId));
+  const company = allEntities[0];
   const canManage = can(session, "recruit.manage");
 
-  const entityName = (id: string) => allEntities.find((e) => e.id === id)?.name ?? "—";
   const deptName = (id?: string | null) => departments.find((d) => d.id === id)?.name ?? "—";
 
   const candOf = (openingId: string) => candidates.filter((c) => c.openingId === openingId);
@@ -120,7 +107,6 @@ export default async function RecruitPage({
                   <tr key={o.id}>
                     <td>
                       <div className="uname">{o.title}</div>
-                      <div className="small muted">{entityName(o.legalEntityId)}</div>
                     </td>
                     <td>{deptName(o.departmentId)}</td>
                     <td style={{ textAlign: "center" }}>{o.headcount}</td>
@@ -147,34 +133,19 @@ export default async function RecruitPage({
         <div className="card">
           <div className="card-h"><h3>Đăng tin tuyển dụng</h3></div>
           <form action={createJobOpeningAction}>
+            <input type="hidden" name="legalEntityId" value={company?.id ?? ""} />
             <div className="field">
               <label>Vị trí *</label>
               <input name="title" required placeholder="VD: Chuyên viên Kinh doanh" />
             </div>
             <div className="grid-k g-2">
               <div className="field">
-                <label>Pháp nhân *</label>
-                <select name="legalEntityId" required defaultValue={entities[0]?.id ?? ""}>
-                  {entities.map((e) => (
-                    <option key={e.id} value={e.id}>{e.code} · {e.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
                 <label>Phòng ban</label>
                 <select name="departmentId" defaultValue="">
                   <option value="">—</option>
-                  {entities.map((e) => {
-                    const deps = departments.filter((d) => d.legalEntityId === e.id);
-                    if (!deps.length) return null;
-                    return (
-                      <optgroup key={e.id} label={`${e.code} · ${e.name}`}>
-                        {deps.map((d) => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
                 </select>
               </div>
               <div className="field">

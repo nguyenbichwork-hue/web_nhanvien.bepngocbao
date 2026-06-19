@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { ProductThumb } from "@/components/product-thumb";
 import { fmtVnd } from "@/lib/bnb/util";
 import { PAYMENT_LABEL, type PaymentMethod } from "@/lib/bnb/types";
 import { checkoutAction } from "./actions";
 
-type ProductLite = { id: string; name: string; sku?: string; price: number; brand?: string; image?: string };
+type ProductLite = {
+  id: string; name: string; sku?: string; price: number;
+  brand?: string; category?: string; image?: string; stock?: number; available?: boolean;
+};
 type CustomerLite = { id: string; name: string; phone: string };
 
 type CartLine = {
@@ -20,7 +23,23 @@ type CartLine = {
 };
 
 const METHODS: PaymentMethod[] = ["cash", "transfer", "card", "cod"];
+const QUICK_CASH = [50000, 100000, 200000, 500000];
+const PER_PAGE = 24; // số sản phẩm mỗi trang lưới POS
 const lineAmt = (l: CartLine) => Math.max(0, l.qty * l.unitPrice);
+const onlyDigits = (s: string) => Number(s.replace(/[^\d]/g, "")) || 0;
+
+/** Dãy số trang rút gọn có dấu "…" khi nhiều trang (1 … 4 5 6 … 73). */
+function buildPageList(cur: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out: (number | "…")[] = [1];
+  const lo = Math.max(2, cur - 1);
+  const hi = Math.min(total - 1, cur + 1);
+  if (lo > 2) out.push("…");
+  for (let i = lo; i <= hi; i++) out.push(i);
+  if (hi < total - 1) out.push("…");
+  out.push(total);
+  return out;
+}
 
 export function POSTerminal({
   products, customers, canPushHaravan,
@@ -30,22 +49,54 @@ export function POSTerminal({
   canPushHaravan: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [brand, setBrand] = useState("__all");
+  const [category, setCategory] = useState("__all");
+  const [inStock, setInStock] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [discount, setDiscount] = useState(0);
+  const [received, setReceived] = useState(0);
+  const [note, setNote] = useState("");
   const [pushHaravan, setPushHaravan] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const total = useMemo(() => cart.reduce((s, l) => s + lineAmt(l), 0), [cart]);
+  // Danh sách hãng / nhóm để đổ vào bộ lọc (loại bỏ rỗng, sắp xếp)
+  const brands = useMemo(
+    () => [...new Set(products.map((p) => p.brand).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, "vi")),
+    [products],
+  );
+  const categories = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "vi")),
+    [products],
+  );
 
-  const results = useMemo(() => {
+  const subtotal = useMemo(() => cart.reduce((s, l) => s + lineAmt(l), 0), [cart]);
+  const discountVal = Math.min(Math.max(0, discount), subtotal);
+  const total = Math.max(0, subtotal - discountVal);
+  const isCash = method === "cash";
+  const changeDue = received - total;
+
+  const matched = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? products.filter((p) => p.name.toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q))
-      : products;
-    return list.slice(0, 24);
-  }, [query, products]);
+    return products.filter((p) => {
+      if (q && !(p.name.toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q))) return false;
+      if (brand !== "__all" && p.brand !== brand) return false;
+      if (category !== "__all" && p.category !== category) return false;
+      if (inStock && !((p.stock ?? 0) > 0 || p.available)) return false;
+      return true;
+    });
+  }, [query, brand, category, inStock, products]);
+  const totalPages = Math.max(1, Math.ceil(matched.length / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const results = matched.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
+  const pageNums = buildPageList(safePage, totalPages);
+  // Đổi bộ lọc / tìm kiếm → quay về trang 1
+  useEffect(() => { setPage(1); }, [query, brand, category, inStock]);
+
+  const filterActive = brand !== "__all" || category !== "__all" || inStock || query.trim();
 
   function addProduct(p: ProductLite) {
     setCart((cs) => {
@@ -64,6 +115,9 @@ export function POSTerminal({
   function remove(key: string) {
     setCart((cs) => cs.filter((l) => l.key !== key));
   }
+  function resetFilters() {
+    setQuery(""); setBrand("__all"); setCategory("__all"); setInStock(false);
+  }
 
   const cartJson = JSON.stringify(
     cart.map((l) => ({ productId: l.productId, sku: l.sku, name: l.name, qty: l.qty, unitPrice: l.unitPrice })),
@@ -79,6 +133,30 @@ export function POSTerminal({
         <div className="field" style={{ margin: 0 }}>
           <label>Tìm theo tên hoặc SKU</label>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Gõ để lọc sản phẩm..." />
+        </div>
+        {/* Bộ lọc nhanh sản phẩm */}
+        <div className="flex aic" style={{ flexWrap: "wrap", gap: 9, marginTop: 12 }}>
+          {brands.length > 0 && (
+            <select className={`fsel${brand !== "__all" ? " act" : ""}`} value={brand} onChange={(e) => setBrand(e.target.value)} style={{ minWidth: 140 }} aria-label="Hãng">
+              <option value="__all">Hãng: Tất cả</option>
+              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          )}
+          {categories.length > 0 && (
+            <select className={`fsel${category !== "__all" ? " act" : ""}`} value={category} onChange={(e) => setCategory(e.target.value)} style={{ minWidth: 140 }} aria-label="Nhóm">
+              <option value="__all">Nhóm: Tất cả</option>
+              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          <button type="button" className={`chip${inStock ? " on" : ""}`} onClick={() => setInStock((v) => !v)}>Còn hàng</button>
+          {filterActive && (
+            <button type="button" className="btn sm ghost" onClick={resetFilters} title="Xoá lọc">
+              <Icon name="x" /> Xoá lọc
+            </button>
+          )}
+          <span className="small muted" style={{ marginLeft: "auto" }}>
+            {matched.length.toLocaleString("vi-VN")} sản phẩm{totalPages > 1 ? ` · trang ${safePage}/${totalPages}` : ""}
+          </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, marginTop: 16 }}>
           {results.map((p) => (
@@ -98,6 +176,47 @@ export function POSTerminal({
           ))}
           {results.length === 0 && <p className="muted small">Không tìm thấy sản phẩm phù hợp.</p>}
         </div>
+
+        {/* Phân trang */}
+        {totalPages > 1 && (
+          <div className="flex aic" style={{ justifyContent: "center", gap: 6, marginTop: 16, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="iconbtn"
+              style={{ width: 34, height: 34, opacity: safePage <= 1 ? 0.4 : 1 }}
+              disabled={safePage <= 1}
+              onClick={() => setPage(safePage - 1)}
+              aria-label="Trang trước"
+            >
+              <Icon name="chevleft" />
+            </button>
+            {pageNums.map((n, i) =>
+              n === "…" ? (
+                <span key={`gap-${i}`} className="muted small" style={{ padding: "0 4px" }}>…</span>
+              ) : (
+                <button
+                  key={n}
+                  type="button"
+                  className={`chip${n === safePage ? " on" : ""}`}
+                  style={{ minWidth: 36, textAlign: "center", padding: "7px 10px" }}
+                  onClick={() => setPage(n)}
+                >
+                  {n}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              className="iconbtn"
+              style={{ width: 34, height: 34, opacity: safePage >= totalPages ? 0.4 : 1 }}
+              disabled={safePage >= totalPages}
+              onClick={() => setPage(safePage + 1)}
+              aria-label="Trang sau"
+            >
+              <Icon name="chev" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Cột phải: giỏ + thanh toán */}
@@ -107,6 +226,9 @@ export function POSTerminal({
         <input type="hidden" name="guestName" value={guestName} />
         <input type="hidden" name="guestPhone" value={guestPhone} />
         <input type="hidden" name="method" value={method} />
+        <input type="hidden" name="discount" value={discountVal} />
+        <input type="hidden" name="received" value={isCash ? received : 0} />
+        <input type="hidden" name="note" value={note} />
         <input type="hidden" name="pushHaravan" value={pushHaravan ? "1" : "0"} />
 
         <div className="card">
@@ -131,12 +253,6 @@ export function POSTerminal({
               ))}
             </div>
           )}
-          <div style={{ borderTop: "2px solid var(--line)", marginTop: 12, paddingTop: 12 }}>
-            <div className="flex between aic">
-              <b>Tổng tiền</b>
-              <b style={{ fontSize: 24, color: "var(--brand-1)" }}>{fmtVnd(total)}</b>
-            </div>
-          </div>
         </div>
 
         <div className="card">
@@ -162,6 +278,7 @@ export function POSTerminal({
               </div>
             </div>
           )}
+
           <div className="field" style={{ margin: "12px 0 0" }}>
             <label>Phương thức thanh toán</label>
             <div className="chips">
@@ -170,6 +287,68 @@ export function POSTerminal({
               ))}
             </div>
           </div>
+
+          {/* Giảm giá đơn */}
+          <div className="field" style={{ margin: "14px 0 0" }}>
+            <label>Giảm giá đơn (đ)</label>
+            <input
+              inputMode="numeric"
+              value={discount ? discount.toLocaleString("vi-VN") : ""}
+              onChange={(e) => setDiscount(onlyDigits(e.target.value))}
+              placeholder="0"
+            />
+          </div>
+
+          {/* Tiền khách đưa — chỉ với tiền mặt, có nút mệnh giá nhanh + tính thối */}
+          {isCash && (
+            <div className="field" style={{ margin: "14px 0 0" }}>
+              <label>Tiền khách đưa</label>
+              <input
+                inputMode="numeric"
+                value={received ? received.toLocaleString("vi-VN") : ""}
+                onChange={(e) => setReceived(onlyDigits(e.target.value))}
+                placeholder="0"
+              />
+              <div className="flex aic" style={{ flexWrap: "wrap", gap: 7, marginTop: 9 }}>
+                <button type="button" className="chip" onClick={() => setReceived(total)} disabled={total <= 0}>Đủ tiền</button>
+                {QUICK_CASH.map((v) => (
+                  <button key={v} type="button" className="chip" onClick={() => setReceived((r) => r + v)}>
+                    +{v / 1000}k
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tóm tắt đơn — kiểu Haravan */}
+          <div style={{ borderTop: "1px dashed var(--line)", marginTop: 16, paddingTop: 14, display: "grid", gap: 8 }}>
+            <div className="flex between small"><span className="muted">Tạm tính</span><span>{fmtVnd(subtotal)}</span></div>
+            {discountVal > 0 && (
+              <div className="flex between small"><span className="muted">Giảm giá</span><span style={{ color: "var(--c-rose)" }}>− {fmtVnd(discountVal)}</span></div>
+            )}
+            <div className="flex between aic" style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+              <b>Tổng cộng</b>
+              <b style={{ fontSize: 24, color: "var(--brand-1)" }}>{fmtVnd(total)}</b>
+            </div>
+            {isCash && received > 0 && (
+              <>
+                <div className="flex between small"><span className="muted">Khách đưa</span><span>{fmtVnd(received)}</span></div>
+                <div className="flex between aic">
+                  <span className="small muted">Tiền thối lại</span>
+                  <b style={{ color: changeDue >= 0 ? "var(--c-teal)" : "var(--c-rose)" }}>
+                    {changeDue >= 0 ? fmtVnd(changeDue) : `Thiếu ${fmtVnd(-changeDue)}`}
+                  </b>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Ghi chú đơn */}
+          <div className="field" style={{ margin: "14px 0 0" }}>
+            <label>Ghi chú đơn</label>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Không bắt buộc — ghi chú giao hàng, yêu cầu riêng…" style={{ height: 64 }} />
+          </div>
+
           {canPushHaravan && (
             <label className="flex aic small" style={{ gap: 8, marginTop: 14, cursor: "pointer" }}>
               <input type="checkbox" checked={pushHaravan} onChange={(e) => setPushHaravan(e.target.checked)} />

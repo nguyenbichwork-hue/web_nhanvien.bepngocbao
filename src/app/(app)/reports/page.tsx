@@ -1,13 +1,8 @@
-import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { BarChart, CountUp, Donut, HBars } from "@/components/charts";
 import { getHrAnalytics, getLeaveAnalytics, getSalaryAnalytics, getTurnoverAnalytics } from "@/lib/org/analytics";
-import { listEntities } from "@/lib/org/store";
 import { formatVND } from "@/lib/payroll/calc";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEntityIds } from "@/lib/auth/scope";
-
-type SP = { entity?: string };
 
 const oneDecimal = (v: number | null, suffix: string) =>
   v === null ? "—" : `${v.toFixed(1).replace(".", ",")}${suffix}`;
@@ -32,35 +27,17 @@ function Section({
   );
 }
 
-export default async function ReportsPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
+export default async function ReportsPage() {
   const session = await requirePermission("report.read");
-  const sp = await searchParams;
-
-  // Giới hạn theo phạm vi: ngoài tập đoàn → ép về pháp nhân được phép.
-  const vEntities = await visibleEntityIds(session);
-  const allEntities = await listEntities();
-  const entities = vEntities === "all" ? allEntities : allEntities.filter((e) => vEntities.includes(e.id));
-  const requested = sp.entity || undefined;
-  const entityId =
-    vEntities === "all"
-      ? requested
-      : requested && vEntities.includes(requested)
-        ? requested
-        : vEntities[0]; // không cho xem ngoài phạm vi
-  const lockedScope = vEntities !== "all";
 
   const [hr, leave, turnover, salary] = await Promise.all([
-    getHrAnalytics(entityId),
-    getLeaveAnalytics(entityId),
-    getTurnoverAnalytics(entityId),
-    getSalaryAnalytics(entityId),
+    getHrAnalytics(),
+    getLeaveAnalytics(),
+    getTurnoverAnalytics(),
+    getSalaryAnalytics(),
   ]);
   const canExport = can(session, "report.export");
-  const exportHref = `/export/employees${entityId ? `?entity=${entityId}` : ""}`;
+  const exportHref = "/export/employees";
 
   const donut = (data: { label: string; count: number; color: string }[]) =>
     data.map((s) => [s.label, s.count, s.color] as [string, number, string]);
@@ -79,7 +56,7 @@ export default async function ReportsPage({
       <div className="page-head">
         <div>
           <h1>Báo cáo nhân sự</h1>
-          <p>Phân tích tổng quan — phạm vi: {hr.scope}.</p>
+          <p>Phân tích tổng quan toàn công ty.</p>
         </div>
         {canExport && (
           <a className="btn" href={exportHref}>
@@ -87,33 +64,6 @@ export default async function ReportsPage({
           </a>
         )}
       </div>
-
-      {/* Bộ lọc phạm vi */}
-      <form className="card" method="get" style={{ marginBottom: 22 }}>
-        <div className="grid-k g-4" style={{ gap: 14, alignItems: "end" }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Pháp nhân</label>
-            <select name="entity" defaultValue={entityId ?? ""} disabled={lockedScope && entities.length <= 1}>
-              {!lockedScope && <option value="">Toàn tập đoàn</option>}
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.code} · {e.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex gap" style={{ marginBottom: 0 }}>
-            <button type="submit" className="btn primary">
-              <Icon name="filter" /> Áp dụng
-            </button>
-            {!lockedScope && (
-              <Link href="/reports" className="btn ghost">
-                Toàn tập đoàn
-              </Link>
-            )}
-          </div>
-        </div>
-      </form>
 
       {/* ===== Nhóm 1 — Nhân sự ===== */}
       <Section title="Nhân sự" sub="Quy mô & cơ cấu lực lượng lao động">
@@ -142,41 +92,18 @@ export default async function ReportsPage({
 
         <div className="grid-k g-2 stagger" style={{ marginBottom: 18 }}>
           <div className="card hover">
-            <div className="card-h"><h3>Cơ cấu theo pháp nhân</h3></div>
-            {hr.total === 0 ? (
-              <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>Chưa có nhân sự.</p>
-            ) : (
-              <div className="donut-wrap">
-                <Donut data={donut(hr.byEntity)} total={hr.total} unit="NV" />
-                <div style={{ flex: 1 }}>
-                  {hr.byEntity.map((d) => (
-                    <div key={d.label} className="flex between aic" style={{ padding: "6px 0" }}>
-                      <span className="small">
-                        <i style={{ background: d.color, width: 11, height: 11, borderRadius: 4, display: "inline-block", marginRight: 8 }} />
-                        {d.label}
-                      </span>
-                      <b className="small">{d.count}</b>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="card hover">
             <div className="card-h"><h3>Theo phòng ban</h3></div>
             <HBars data={hr.byDepartment} unit=" NV" />
           </div>
-        </div>
-
-        <div className="grid-k g-2 stagger">
           <div className="card hover">
             <div className="card-h"><h3>Theo loại hình lao động</h3></div>
             <HBars data={hr.byEmploymentType} unit=" NV" />
           </div>
-          <div className="card hover">
-            <div className="card-h"><h3>Theo chức danh</h3></div>
-            <HBars data={hr.byTitle} unit=" NV" />
-          </div>
+        </div>
+
+        <div className="card hover">
+          <div className="card-h"><h3>Theo chức danh</h3></div>
+          <HBars data={hr.byTitle} unit=" NV" />
         </div>
       </Section>
 

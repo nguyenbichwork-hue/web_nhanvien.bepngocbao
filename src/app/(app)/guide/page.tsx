@@ -272,15 +272,14 @@ export default async function GuidePage() {
       >
         <Block title="Khái niệm cốt lõi">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Đa pháp nhân:</b> Pháp nhân (công ty, có MST/BHXH/vùng lương riêng) → Phòng ban (dạng cây) → Nhân viên. Dữ liệu tách theo pháp nhân.</li>
+            <li><b>Cơ cấu công ty:</b> Công ty (có MST/BHXH/vùng lương) → Phòng ban (dạng cây) → Nhân viên. Toàn hệ thống vận hành cho một công ty.</li>
             <li><b>Phân quyền (RBAC):</b> mỗi tài khoản gắn <i>Vai trò</i> (tập hợp quyền) + <i>Phạm vi dữ liệu</i>. Chi tiết ở mục <a href="#settings">Cài đặt &amp; phân quyền</a>.</li>
             <li><b>Tích hợp chéo:</b> Hồ sơ NV cấp dữ liệu lương cho <a href="#payroll">Tính lương</a>; đơn nghỉ đã duyệt hiện trên <a href="#schedule">Lịch làm việc</a>; nghỉ không lương trừ vào <a href="#payroll">lương</a>.</li>
-            <li><b>Dữ liệu demo:</b> hiện lưu trong bộ nhớ máy chủ (in-memory) — thao tác đầy đủ nhưng <b>mất khi khởi động lại server</b>; sẽ lưu bền khi nối Supabase.</li>
-            <li><b>Giao diện:</b> chế độ Sáng/Tối (nút góc trên bên phải); nhiều trang có thanh lọc theo pháp nhân/phòng ban (lọc qua URL nên chia sẻ link là giữ bộ lọc).</li>
+            <li><b>Giao diện:</b> chế độ Sáng/Tối (nút góc trên bên phải); nhiều trang có thanh lọc theo phòng ban/trạng thái (lọc qua URL nên chia sẻ link là giữ bộ lọc).</li>
           </ul>
         </Block>
-        <Block title={`Pháp nhân trong hệ thống (${entities.length})`}>
-          <Chips items={entities.map((e) => ({ label: `${e.code} · ${e.name}${e.region ? ` (Vùng ${ROMAN[String(e.region)]})` : ""}`, badge: "b-indigo" }))} />
+        <Block title="Hồ sơ công ty">
+          <Chips items={entities.map((e) => ({ label: `${e.name}${e.region ? ` (Vùng ${ROMAN[String(e.region)]})` : ""}`, badge: "b-indigo" }))} />
         </Block>
       </Section>
 
@@ -306,7 +305,7 @@ export default async function GuidePage() {
             <thead><tr><th>Cấp</th><th>Vai trò tiêu biểu</th><th>Trang chủ &amp; trải nghiệm</th></tr></thead>
             <tbody>
               <tr><td><span className="badge b-rose">Quản trị</span></td><td>ADMIN, BOD</td><td>Toàn quyền (ADMIN có <b>Cài đặt</b> &amp; <b>Vai trò &amp; quyền</b>); BOD xem báo cáo hợp nhất toàn tập đoàn &amp; phê duyệt cấp cao.</td></tr>
-              <tr><td><span className="badge b-indigo">Nhân sự</span></td><td>HRG, HR, REC</td><td>Tổng quan tổ chức (HR pháp nhân chỉ thấy pháp nhân mình); quản lý nhân sự, lương, KPI. REC chuyên tuyển dụng.</td></tr>
+              <tr><td><span className="badge b-indigo">Nhân sự</span></td><td>HRG, HR, REC</td><td>Tổng quan tổ chức; quản lý nhân sự, lương, KPI. REC chuyên tuyển dụng.</td></tr>
               <tr><td><span className="badge b-amber">Quản lý</span></td><td>MGR</td><td>Trang <b>“Quản lý đội”</b>: duyệt đơn nghỉ, xếp lịch, xem nhân sự &amp; KPI của phòng mình.</td></tr>
               <tr><td><span className="badge b-green">Nhân viên</span></td><td>EMP</td><td><b>Cổng nhân viên</b> tự phục vụ: lịch của tôi, nghỉ phép, phiếu lương &amp; KPI của bản thân.</td></tr>
             </tbody>
@@ -315,7 +314,7 @@ export default async function GuidePage() {
         <Block title="Phạm vi dữ liệu (mỗi tài khoản gắn 1 phạm vi)">
           <Chips items={(Object.keys(SCOPE_LABEL) as ScopeType[]).map((s) => ({ label: SCOPE_LABEL[s], badge: "b-amber" }))} />
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: "10px 0 0" }}>
-            <li><b>Toàn tập đoàn</b> → thấy mọi pháp nhân. <b>Một pháp nhân</b> → chỉ dữ liệu pháp nhân đó.</li>
+            <li><b>Toàn hệ thống</b> → thấy mọi nhân sự của công ty.</li>
             <li><b>Theo phòng ban</b> → chỉ nhân sự/đơn từ phòng (gồm phòng con). <b>Chỉ cá nhân</b> → chỉ dữ liệu của chính mình.</li>
             <li>Phạm vi áp cho cả <b>menu</b>, <b>bảng dữ liệu</b> và <b>thao tác</b>: nút Thêm/Sửa/Xoá/Duyệt chỉ hiện khi có quyền, và mọi thao tác đều được kiểm tra lại ở máy chủ.</li>
           </ul>
@@ -341,7 +340,7 @@ export default async function GuidePage() {
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
             <li>Vào <b>Tài khoản của tôi</b> bằng <b>ảnh đại diện góc trên bên phải</b>, hoặc menu <b>Cài đặt → tab “Tài khoản &amp; Bảo mật”</b> (mục Cài đặt hiển thị cho <b>mọi vai trò</b>): xem email/vai trò/phạm vi, <b>đổi mật khẩu</b>, và mở <b>Hồ sơ của tôi</b>.</li>
             <li><b>Hồ sơ của tôi</b> — nhân viên tự sửa <b>thông tin cá nhân</b>: ảnh chân dung/CCCD, điện thoại, email cá nhân, địa chỉ, số CCCD, số tài khoản &amp; ngân hàng nhận lương.</li>
-            <li><b>Bảo vệ quyền lợi 2 bên:</b> lương/thuế/BHXH, trạng thái, pháp nhân, phòng ban, chức danh, vai trò &amp; tài khoản <b>chỉ HR sửa được</b> — nhân viên không tự đổi.</li>
+            <li><b>Bảo vệ quyền lợi 2 bên:</b> lương/thuế/BHXH, trạng thái, phòng ban, chức danh, vai trò &amp; tài khoản <b>chỉ HR sửa được</b> — nhân viên không tự đổi.</li>
           </ul>
         </Block>
         <Block title="Quên / đổi mật khẩu">
@@ -702,9 +701,13 @@ export default async function GuidePage() {
         purpose="Bán nhanh tại quầy showroom — chọn hàng từ danh mục Haravan, thu tiền và xuất đơn hoàn tất trong một màn hình.">
         <Block title="Chức năng & logic">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Chọn hàng:</b> tìm theo tên/SKU từ danh mục sản phẩm (live Haravan), bấm để thêm vào giỏ; sửa số lượng từng dòng — <b>tổng tiền cập nhật realtime</b>.</li>
+            <li><b>Chọn hàng:</b> nạp <b>toàn bộ catalog Haravan</b> (cache 5 phút), tìm theo tên/SKU + lọc, <b>duyệt theo trang</b> (24 SP/trang); bấm để thêm vào giỏ; sửa số lượng từng dòng — <b>tổng tiền cập nhật realtime</b>.</li>
+            <li><b>Lọc nhanh sản phẩm:</b> ngoài ô tìm kiếm còn lọc theo <b>Hãng</b>, <b>Nhóm hàng</b> và nút <b>Còn hàng</b> (chỉ hiện SKU còn tồn / đang bán) — thu hẹp danh mục để bấm chọn nhanh hơn.</li>
             <li><b>Khách:</b> chọn khách hàng có sẵn hoặc bán khách lẻ (nhập tên / SĐT tuỳ chọn).</li>
-            <li><b>Thanh toán:</b> chọn hình thức ({Object.values(PAYMENT_LABEL).join(" · ")}) rồi bấm Thanh toán → tạo <a href="#orders">đơn hàng</a> trạng thái {ORDER_STATUS_LABEL.completed} (đã thu = tổng), chuyển sang trang chi tiết đơn.</li>
+            <li><b>Giảm giá đơn:</b> nhập số tiền giảm (đ) cho cả đơn → <b>Tổng cộng = tạm tính − giảm giá</b>.</li>
+            <li><b>Tiền khách đưa &amp; thối lại:</b> với hình thức {PAYMENT_LABEL.cash}, nhập tiền khách đưa (có nút mệnh giá nhanh +50k…+500k và “Đủ tiền”) → tự tính <b>tiền thối lại</b> (báo đỏ nếu khách đưa còn thiếu).</li>
+            <li><b>Thanh toán:</b> chọn hình thức ({Object.values(PAYMENT_LABEL).join(" · ")}) rồi bấm Thanh toán → tạo <a href="#orders">đơn hàng</a> trạng thái {ORDER_STATUS_LABEL.completed} (đã thu = tổng cộng sau giảm giá), chuyển sang trang chi tiết đơn.</li>
+            <li><b>Ghi chú đơn</b> tuỳ chọn; giảm giá / tiền khách đưa / tiền thối / ghi chú đều được lưu vào ghi chú đơn hàng.</li>
             <li>Tuỳ chọn <b>đẩy đơn lên Haravan</b> ngay khi thanh toán (khi đã cấu hình Haravan).</li>
             <li>Cần quyền <code>order.manage</code>.</li>
           </ul>
@@ -776,7 +779,7 @@ export default async function GuidePage() {
         purpose="Trang chủ tự đổi theo CẤP người dùng (xem mục Đăng nhập & phân quyền) — tổng hợp realtime từ dữ liệu các phân hệ.">
         <Block title="Nội dung theo cấp">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Quản trị / Nhân sự:</b> 4 chỉ số (tổng nhân sự, chính thức, đơn chờ duyệt, tuyển trong năm), biểu đồ cơ cấu theo pháp nhân &amp; phòng ban, nhân viên mới onboarding và đơn nghỉ chờ duyệt — giới hạn theo phạm vi pháp nhân.</li>
+            <li><b>Quản trị / Nhân sự:</b> 4 chỉ số (tổng nhân sự, chính thức, đơn chờ duyệt, tuyển trong năm), biểu đồ cơ cấu theo phòng ban, nhân viên mới onboarding và đơn nghỉ chờ duyệt — giới hạn theo phạm vi của bạn.</li>
             <li><b>Quản lý trực tiếp:</b> bảng “Quản lý đội” — thành viên phòng, đơn nghỉ chờ duyệt (duyệt nhanh), đang nghỉ hôm nay, điểm KPI trung bình của đội.</li>
             <li><b>Nhân viên:</b> cổng cá nhân — ngày phép còn lại, đơn đang chờ, lịch làm sắp tới, link phiếu lương và KPI của bản thân.</li>
           </ul>
@@ -791,10 +794,10 @@ export default async function GuidePage() {
 
       {/* ===== Employees ===== */}
       <Section id="employees" icon="users" title="Nhân viên" routes="/employees · /employees/new · /employees/[id]"
-        purpose="Quản lý hồ sơ nhân sự đầy đủ (Core HR) cho toàn tập đoàn.">
+        purpose="Quản lý hồ sơ nhân sự đầy đủ (Core HR) cho toàn công ty.">
         <Block title="Chức năng & logic">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Danh bạ:</b> tìm theo tên/mã/email; lọc theo pháp nhân, phòng ban, trạng thái.</li>
+            <li><b>Danh bạ:</b> tìm theo tên/mã/email; lọc theo phòng ban, trạng thái.</li>
             <li><b>Hồ sơ nhiều nhóm:</b> Thông tin cơ bản; <b>Ảnh hồ sơ &amp; giấy tờ</b> (ảnh chân dung + CCCD mặt trước/sau, tự nén trước khi lưu); Tổ chức &amp; công việc; Lương·thuế·bảo hiểm (lương cơ bản, phụ cấp, lương đóng BHXH, MST, sổ BHXH, tài khoản ngân hàng); Tài khoản đăng nhập.</li>
             <li><b>Ô “Ngân hàng”</b> có gợi ý lọc-khi-gõ danh mục ngân hàng VN (vẫn cho nhập tự do).</li>
             <li><b>Ảnh chân dung</b> hiển thị ở danh bạ và đầu hồ sơ; ảnh CCCD chỉ hiện cho người có quyền sửa hồ sơ (HR). Ảnh lưu in-memory (mất khi máy chủ khởi động lại — sẽ chuyển Supabase Storage sau).</li>
@@ -830,7 +833,7 @@ export default async function GuidePage() {
             <li>Loại HĐ: Thử việc / Xác định thời hạn / Không xác định thời hạn / Thời vụ. HĐ không xác định thời hạn bỏ trống ngày kết thúc.</li>
             <li><b>Trạng thái tự tính theo ngày:</b> Hiệu lực · <b>Sắp hết hạn</b> (còn ≤ 60 ngày) · Hết hạn · Đã chấm dứt.</li>
             <li>Đầu trang có <b>bảng cảnh báo</b> các HĐ sắp/đã hết hạn để xử lý gia hạn.</li>
-            <li>Lọc theo phạm vi: HR thấy HĐ trong pháp nhân, Trưởng phòng thấy HĐ phòng mình.</li>
+            <li>Lọc theo phạm vi: HR thấy toàn bộ HĐ, Trưởng phòng thấy HĐ phòng mình.</li>
           </ul>
         </Block>
         <Block title="Cách dùng">
@@ -988,7 +991,7 @@ export default async function GuidePage() {
         </Block>
         <Block title="Cách dùng">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li>Chọn <b>kỳ lương (tháng)</b> + <b>pháp nhân</b> + (tuỳ chọn) lọc theo <b>một nhân viên</b> → xem bảng lương + dòng tổng. Ô “Nhân viên” gõ tên/mã để tìm nhanh; chọn “Tất cả nhân viên” để xem toàn bộ.</li>
+            <li>Chọn <b>kỳ lương (tháng)</b> + (tuỳ chọn) lọc theo <b>một nhân viên</b> → xem bảng lương + dòng tổng. Ô “Nhân viên” gõ tên/mã để tìm nhanh; chọn “Tất cả nhân viên” để xem toàn bộ.</li>
             <li><b>Tìm nhanh trong bảng:</b> khi nhiều nhân sự, ô “Tìm nhân viên…” ở tiêu đề bảng lọc tức thì các dòng đang hiển thị theo tên/mã (không cần bấm lại “Xem bảng lương”).</li>
             <li>Bấm mũi tên cuối mỗi dòng để xem <b>phiếu lương chi tiết</b> (bóc tách BHXH, thuế, điều chỉnh kỳ, thưởng/phạt, chi phí DN); tại đây cũng quản lý điều chỉnh kỳ và chỉnh lương.</li>
           </ul>
@@ -1051,7 +1054,7 @@ export default async function GuidePage() {
         </Block>
         <Block title="Chức năng">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Tin tuyển dụng đầy đủ:</b> vị trí, pháp nhân/phòng ban/chức danh, số lượng, trạng thái, <b>loại hình, địa điểm, mức lương (khoảng hoặc chữ), kinh nghiệm, mô tả công việc, yêu cầu, quyền lợi, hạn nộp, người/email/điện thoại liên hệ</b>.</li>
+            <li><b>Tin tuyển dụng đầy đủ:</b> vị trí, phòng ban/chức danh, số lượng, trạng thái, <b>loại hình, địa điểm, mức lương (khoảng hoặc chữ), kinh nghiệm, mô tả công việc, yêu cầu, quyền lợi, hạn nộp, người/email/điện thoại liên hệ</b>.</li>
             <li><b>Xem trước tin đăng:</b> trang <code>/recruit/[id]/preview</code> hiển thị tin dạng bài đăng tuyển hoàn chỉnh, có nút <b>In</b> để in/lưu PDF hoặc chia sẻ. Đây là nơi tin được “đăng” trong nội bộ; kênh công khai (website tuyển dụng) là bước sau khi nối backend.</li>
             <li><b>Sửa tin:</b> mở “Sửa tin” trong trang chi tiết để cập nhật mọi trường.</li>
             <li><b>Bảng Kanban:</b> mỗi cột là một bước; bấm nút để chuyển ứng viên sang bước kế tiếp hoặc Loại; ứng viên đã loại có thể Khôi phục.</li>
@@ -1133,10 +1136,10 @@ export default async function GuidePage() {
 
       {/* ===== Reports ===== */}
       <Section id="reports" icon="chart" title="Báo cáo" routes="/reports"
-        purpose="Phân tích nhân sự tổng hợp theo 6 nhóm chỉ số, lọc được theo pháp nhân; số liệu tính realtime.">
+        purpose="Phân tích nhân sự tổng hợp theo 6 nhóm chỉ số toàn công ty; số liệu tính realtime.">
         <Block title="6 nhóm chỉ số">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Nhân sự:</b> quy mô, cơ cấu theo pháp nhân/phòng ban/loại hình/chức danh, thâm niên trung bình.</li>
+            <li><b>Nhân sự:</b> quy mô, cơ cấu theo phòng ban/loại hình/chức danh, thâm niên trung bình.</li>
             <li><b>Đa dạng:</b> tỷ lệ nữ, tuổi trung bình, cơ cấu giới tính, phân bố nhóm tuổi.</li>
             <li><b>Tuyển dụng:</b> tuyển trong năm/tháng, biểu đồ tuyển mới 6 tháng.</li>
             <li><b>Nghỉ phép &amp; Nghỉ việc:</b> đang nghỉ hôm nay, đơn chờ duyệt, ngày phép duyệt trong tháng, đã nghỉ việc, nghỉ theo loại.</li>
@@ -1166,12 +1169,12 @@ export default async function GuidePage() {
       </Section>
 
       {/* ===== Settings ===== */}
-      <Section id="settings" icon="settings" title="Cài đặt & phân quyền" routes="/settings (Pháp nhân · Phòng ban · Chức danh · Phụ cấp & Khấu trừ · Ngày lễ · Quy trình duyệt · Vai trò & quyền · Nhật ký)"
-        purpose="Cấu hình cây tổ chức và hệ thống phân quyền (RBAC). Truy cập ở góc dưới thanh bên.">
+      <Section id="settings" icon="settings" title="Cài đặt & phân quyền" routes="/settings (Công ty · Phòng ban · Chức danh · Phụ cấp & Khấu trừ · Ngày lễ · Quy trình duyệt · Vai trò & quyền · Nhật ký)"
+        purpose="Cấu hình hồ sơ công ty, cây tổ chức và hệ thống phân quyền (RBAC). Truy cập ở góc dưới thanh bên.">
         <Block title="Các tab">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li><b>Pháp nhân:</b> thêm/sửa công ty (MST, số ĐKKD, mã BHXH, vùng lương, ngân hàng chi lương &amp; số TK công ty, cờ công ty mẹ…).</li>
-            <li><b>Phòng ban:</b> cây phân cấp theo từng pháp nhân; thêm/xoá.</li>
+            <li><b>Công ty:</b> sửa hồ sơ công ty (MST, số ĐKKD, mã BHXH, vùng lương, ngân hàng chi lương &amp; số TK công ty…) — dùng cho bảng lương &amp; phiếu lương.</li>
+            <li><b>Phòng ban:</b> cây phân cấp; thêm/xoá.</li>
             <li><b>Chức danh:</b> danh mục dùng chung; thêm, bật/tắt.</li>
             <li><b>Phụ cấp &amp; Khấu trừ:</b> danh mục khoản cộng/trừ vào lương (kèm cờ chịu thuế / đóng BHXH).</li>
             <li><b>Ngày lễ:</b> khai báo ngày nghỉ lễ trong năm (ảnh hưởng lịch &amp; tính công).</li>

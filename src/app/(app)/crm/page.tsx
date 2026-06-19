@@ -3,7 +3,8 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { TableFilter } from "@/components/table-filter";
 import { listLeads } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL, LEAD_STAGE_BADGE, LEAD_SOURCE_LABEL, LEAD_SOURCES,
 } from "@/lib/bnb/types";

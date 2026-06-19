@@ -42,7 +42,6 @@ import {
   createDependent,
   createDepartment,
   createEmployee,
-  createEntity,
   createHoliday,
   createJobOpening,
   createJobTitle,
@@ -162,33 +161,7 @@ const region = (fd: FormData): LegalEntity["region"] => {
   return n && n >= 1 && n <= 4 ? (n as 1 | 2 | 3 | 4) : undefined;
 };
 
-// ---------------- Pháp nhân ----------------
-export async function createEntityAction(fd: FormData) {
-  await requirePermission("org.manage");
-  await createEntity({
-    code: str(fd, "code"),
-    name: str(fd, "name"),
-    legalName: str(fd, "legalName") || undefined,
-    legalNameEn: str(fd, "legalNameEn") || undefined,
-    taxCode: str(fd, "taxCode") || undefined,
-    regNo: str(fd, "regNo") || undefined,
-    regDate: str(fd, "regDate") || undefined,
-    bhxhCode: str(fd, "bhxhCode") || undefined,
-    region: region(fd),
-    director: str(fd, "director") || undefined,
-    directorTitle: str(fd, "directorTitle") || undefined,
-    payrollBank: str(fd, "payrollBank") || undefined,
-    companyAccount: str(fd, "companyAccount") || undefined,
-    isParent: fd.get("isParent") != null,
-    address: str(fd, "address") || undefined,
-    phone: str(fd, "phone") || undefined,
-    email: str(fd, "email") || undefined,
-    isActive: true,
-  });
-  revalidatePath("/settings/entities");
-  redirect("/settings/entities");
-}
-
+// ---------------- Công ty (hồ sơ pháp lý dùng cho lương/BHXH) ----------------
 export async function updateEntityAction(fd: FormData) {
   await requirePermission("org.manage");
   const id = str(fd, "id");
@@ -205,11 +178,11 @@ export async function updateEntityAction(fd: FormData) {
     directorTitle: str(fd, "directorTitle") || undefined,
     payrollBank: str(fd, "payrollBank") || undefined,
     companyAccount: str(fd, "companyAccount") || undefined,
-    isParent: fd.get("isParent") != null,
+    isParent: true,
     address: str(fd, "address") || undefined,
     phone: str(fd, "phone") || undefined,
     email: str(fd, "email") || undefined,
-    isActive: fd.get("isActive") != null,
+    isActive: true,
   });
   revalidatePath("/settings/entities");
   redirect("/settings/entities");
@@ -306,7 +279,7 @@ function readEmployeeFields(fd: FormData): Omit<Employee, "id" | "code"> {
   };
 }
 
-const SCOPES: ScopeType[] = ["GROUP", "ENTITY", "DEPARTMENT", "SELF"];
+const SCOPES: ScopeType[] = ["GROUP", "DEPARTMENT", "SELF"];
 
 /**
  * Cấp tài khoản đăng nhập cho nhân viên (móc nối — CHƯA chạy Supabase Auth/mật khẩu thật).
@@ -338,8 +311,7 @@ async function maybeProvisionAccount(emp: Employee, fd: FormData) {
     userId: user.id,
     roleId,
     scopeType,
-    scopeEntityId:
-      scopeType === "ENTITY" ? optStr(fd, "accountScopeEntityId") ?? emp.legalEntityId : null,
+    scopeEntityId: null,
     scopeDepartmentId:
       scopeType === "DEPARTMENT" ? optStr(fd, "accountScopeDepartmentId") ?? emp.departmentId ?? null : null,
   });
@@ -778,7 +750,7 @@ export async function assignRoleAction(fd: FormData) {
     userId,
     roleId,
     scopeType,
-    scopeEntityId: str(fd, "scopeEntityId") || undefined,
+    scopeEntityId: null,
     scopeDepartmentId: str(fd, "scopeDepartmentId") || undefined,
   });
   await audit(session, "Gán vai trò", "system", `user ${userId} → vai trò ${roleId} (${scopeType})`);
@@ -1378,8 +1350,9 @@ export async function importEmployeesAction(_prev: ImportResult | null, fd: Form
     base: idx("lương cơ bản", "base"),
     allowance: idx("phụ cấp", "allowance"),
   };
-  if (col.name < 0 || col.entity < 0)
-    return { created: 0, failed: 0, errors: ['Thiếu cột bắt buộc "Họ tên" và "Pháp nhân".'] };
+  if (col.name < 0)
+    return { created: 0, failed: 0, errors: ['Thiếu cột bắt buộc "Họ tên".'] };
+  const company = entities[0];
 
   const get = (r: string[], i: number) => (i >= 0 ? (r[i] ?? "").trim() : "");
   const matchEntity = (v: string) =>
@@ -1393,9 +1366,9 @@ export async function importEmployeesAction(_prev: ImportResult | null, fd: Form
     const line = rows[r];
     const fullName = get(line, col.name);
     const entVal = get(line, col.entity);
-    const ent = matchEntity(entVal);
+    const ent = matchEntity(entVal) ?? company;
     if (!fullName) { failed++; errors.push(`Dòng ${r + 1}: thiếu họ tên.`); continue; }
-    if (!ent) { failed++; errors.push(`Dòng ${r + 1}: không tìm thấy pháp nhân "${entVal}".`); continue; }
+    if (!ent) { failed++; errors.push(`Dòng ${r + 1}: chưa có hồ sơ công ty.`); continue; }
 
     const deptVal = get(line, col.dept);
     const dept = deptVal

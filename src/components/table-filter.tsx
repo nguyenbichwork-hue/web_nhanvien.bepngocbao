@@ -84,9 +84,10 @@ export function TableFilter({
       {filters.map((f) => (
         <select
           key={f.key}
+          className={`fsel${(sel[f.key] ?? "__all") !== "__all" ? " act" : ""}`}
           value={sel[f.key] ?? "__all"}
           onChange={(e) => setSel((s) => ({ ...s, [f.key]: e.target.value }))}
-          style={{ minWidth: 150, flex: "0 0 auto" }}
+          style={{ minWidth: 142, flex: "0 0 auto" }}
           aria-label={f.label}
         >
           <option value="__all">{f.label}: Tất cả</option>

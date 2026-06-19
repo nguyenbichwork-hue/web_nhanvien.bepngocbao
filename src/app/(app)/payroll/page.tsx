@@ -22,9 +22,9 @@ import {
 } from "@/lib/payroll/config";
 import { PAYROLL_STATUS_LABEL } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEmployeeIds, visibleEntityIds } from "@/lib/auth/scope";
+import { visibleEmployeeIds } from "@/lib/auth/scope";
 
-type SP = { month?: string; entity?: string; emp?: string };
+type SP = { month?: string; emp?: string };
 
 const currentYm = () => {
   const d = new Date();
@@ -43,24 +43,20 @@ export default async function PayrollPage({
   const session = await requirePermission("payroll.read");
   const sp = await searchParams;
   const ym = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : currentYm();
-  const entityId = sp.entity || undefined;
   const isSelf = session.scope === "SELF";
 
   const [allEntities, allEmployees] = await Promise.all([listEntities(), listEmployees()]);
 
-  // Giới hạn theo phạm vi (pháp nhân / cá nhân).
+  // Giới hạn theo phạm vi (phòng ban / cá nhân).
   const visIds = await visibleEmployeeIds(session);
-  const vEntities = await visibleEntityIds(session);
-  const entities = vEntities === "all" ? allEntities : allEntities.filter((e) => vEntities.includes(e.id));
 
+  // Vùng lương tối thiểu lấy từ hồ sơ công ty (dùng cho BHXH/BHTN).
   const regionOf = (id: string): Region => (allEntities.find((e) => e.id === id)?.region ?? 1) as Region;
-  const entityName = (id: string) => allEntities.find((e) => e.id === id)?.name ?? "—";
 
   const inScope = (id: string) => visIds === "all" || visIds.has(id);
-  // Danh sách nhân sự thuộc kỳ (sau lọc phạm vi + pháp nhân) — dùng cho cả bảng lẫn ô lọc nhân viên.
+  // Danh sách nhân sự thuộc kỳ (sau lọc phạm vi) — dùng cho cả bảng lẫn ô lọc nhân viên.
   const scopedEmployees = allEmployees
     .filter((e) => inScope(e.id))
-    .filter((e) => (entityId ? e.legalEntityId === entityId : true))
     .filter((e) => isPaidInMonth(e, ym));
 
   // Lọc theo một nhân viên cụ thể (nếu chọn).
@@ -114,13 +110,11 @@ export default async function PayrollPage({
         <div>
           <h1>{isSelf ? "Phiếu lương của tôi" : "Bảng lương"}</h1>
           <p>
-            {isSelf
-              ? monthLabel(ym)
-              : `${monthLabel(ym)} · ${entityId ? entityName(entityId) : "Trong phạm vi của bạn"} · ${rows.length} nhân sự`}
+            {isSelf ? monthLabel(ym) : `${monthLabel(ym)} · ${rows.length} nhân sự`}
           </p>
         </div>
         {!isSelf && can(session, "report.export") && (
-          <a className="btn" href={`/export/payroll?month=${ym}${entityId ? `&entity=${entityId}` : ""}`}>
+          <a className="btn" href={`/export/payroll?month=${ym}`}>
             <Icon name="download" /> Xuất Excel
           </a>
         )}
@@ -133,19 +127,6 @@ export default async function PayrollPage({
             <label>Kỳ lương (tháng)</label>
             <input type="month" name="month" defaultValue={ym} />
           </div>
-          {!isSelf && (
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Pháp nhân</label>
-              <select name="entity" defaultValue={sp.entity ?? ""}>
-                {vEntities === "all" && <option value="">Toàn tập đoàn</option>}
-                {entities.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.code} · {e.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           {!isSelf && (
             <div className="field" style={{ marginBottom: 0 }}>
               <label>Nhân viên</label>
@@ -249,7 +230,7 @@ export default async function PayrollPage({
                   <tr data-search={`${e.fullName} ${e.code}`}>
                     <td>
                       <div className="uname">{e.fullName}</div>
-                      <div className="small muted">{e.code} · {entityName(e.legalEntityId)}</div>
+                      <div className="small muted">{e.code}</div>
                     </td>
                     <td style={{ textAlign: "right" }}>{formatVND(slip.base)}</td>
                     <td style={{ textAlign: "right" }}>{formatVND(slip.allowance)}</td>

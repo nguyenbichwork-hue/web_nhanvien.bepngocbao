@@ -15,7 +15,6 @@ import {
   type EmploymentType,
   type Gender,
   type JobTitle,
-  type LegalEntity,
   type Role,
   type ScopeType,
 } from "@/lib/org/types";
@@ -24,7 +23,7 @@ export type ExistingAccount = { email: string; roleName: string; scopeLabel: str
 
 type Props = {
   action: (fd: FormData) => void | Promise<void>;
-  entities: LegalEntity[];
+  companyId: string;
   departments: Department[];
   jobTitles: JobTitle[];
   roles: Role[];
@@ -41,7 +40,7 @@ const v = (s?: string | null) => s ?? "";
 
 export function EmployeeForm({
   action,
-  entities,
+  companyId,
   departments,
   jobTitles,
   roles,
@@ -189,34 +188,17 @@ export function EmployeeForm({
         <div className="card-h">
           <h3>Tổ chức & công việc</h3>
         </div>
+        <input type="hidden" name="legalEntityId" value={employee?.legalEntityId ?? companyId} />
         <div className="grid-k g-3">
-          <div className="field">
-            <label>Pháp nhân *</label>
-            <select name="legalEntityId" required defaultValue={employee?.legalEntityId ?? entities[0]?.id ?? ""}>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.code} · {e.name}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="field">
             <label>Phòng ban</label>
             <select name="departmentId" defaultValue={employee?.departmentId ?? ""}>
               <option value="">—</option>
-              {entities.map((e) => {
-                const deps = departments.filter((d) => d.legalEntityId === e.id);
-                if (!deps.length) return null;
-                return (
-                  <optgroup key={e.id} label={`${e.code} · ${e.name}`}>
-                    {deps.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                );
-              })}
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className="field">
@@ -365,7 +347,7 @@ export function EmployeeForm({
               <input type="checkbox" name="createAccount" value="1" style={{ width: 18, height: 18 }} />
               Cấp tài khoản đăng nhập cho nhân viên này
             </label>
-            <div className="grid-k g-4">
+            <div className="grid-k g-3">
               <div className="field">
                 <label>Email đăng nhập</label>
                 <input
@@ -392,17 +374,6 @@ export function EmployeeForm({
                   {(Object.keys(SCOPE_LABEL) as ScopeType[]).map((s) => (
                     <option key={s} value={s}>
                       {SCOPE_LABEL[s]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Pháp nhân (nếu phạm vi = 1 pháp nhân)</label>
-                <select name="accountScopeEntityId" defaultValue={employee?.legalEntityId ?? ""}>
-                  <option value="">(theo pháp nhân của NV)</option>
-                  {entities.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.code} · {e.name}
                     </option>
                   ))}
                 </select>

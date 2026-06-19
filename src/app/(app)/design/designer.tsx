@@ -10,7 +10,7 @@ import {
   type QuoteTier,
 } from "@/lib/bnb/types";
 import { TIER_ORDER } from "@/lib/bnb/fit";
-import { fmtVnd } from "@/lib/bnb/util";
+import { formatVND as fmtVnd } from "@/lib/payroll/calc";
 
 /* ============ Dữ liệu lựa chọn ============ */
 

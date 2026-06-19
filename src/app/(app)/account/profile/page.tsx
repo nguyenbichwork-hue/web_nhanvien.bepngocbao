@@ -45,7 +45,7 @@ export default async function MyProfilePage({ searchParams }: { searchParams: Pr
           <EmployeeForm
             action={updateOwnProfileAction}
             mode="self"
-            entities={[]}
+            companyId=""
             departments={[]}
             jobTitles={[]}
             roles={[]}

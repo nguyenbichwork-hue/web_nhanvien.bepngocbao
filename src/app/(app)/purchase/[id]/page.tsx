@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { getPurchaseOrder } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   PO_STATUS_LABEL, PO_STATUS_BADGE, type POStatus,
 } from "@/lib/bnb/types";

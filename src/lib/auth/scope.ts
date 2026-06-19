@@ -26,39 +26,11 @@ async function departmentSubtreeIds(rootId: string): Promise<Set<string>> {
   return out;
 }
 
-/** Các pháp nhân người dùng được nhìn thấy ("all" = toàn tập đoàn). */
-export async function visibleEntityIds(s: Session): Promise<string[] | "all"> {
-  switch (s.scope) {
-    case "GROUP":
-      return "all";
-    case "ENTITY":
-      return s.scopeEntityId ? [s.scopeEntityId] : [];
-    case "DEPARTMENT": {
-      const all = await listDepartments();
-      const dep = all.find((d) => d.id === s.scopeDepartmentId);
-      return dep ? [dep.legalEntityId] : [];
-    }
-    case "SELF":
-      return s.employee?.legalEntityId ? [s.employee.legalEntityId] : [];
-  }
-}
-
-/** Pháp nhân mặc định để preselect bộ lọc; undefined nếu thấy toàn bộ. */
-export async function defaultEntityId(s: Session): Promise<string | undefined> {
-  const ids = await visibleEntityIds(s);
-  if (ids === "all") return undefined;
-  return ids[0];
-}
-
 /** Tập id nhân viên người dùng được nhìn thấy ("all" = mọi nhân viên). */
 export async function visibleEmployeeIds(s: Session): Promise<Set<string> | "all"> {
   switch (s.scope) {
     case "GROUP":
       return "all";
-    case "ENTITY": {
-      const emps = await listEmployees(s.scopeEntityId ?? "__none__");
-      return new Set(emps.map((e) => e.id));
-    }
     case "DEPARTMENT": {
       if (!s.scopeDepartmentId) return new Set();
       const deptIds = await departmentSubtreeIds(s.scopeDepartmentId);

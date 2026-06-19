@@ -8,13 +8,37 @@ export function BrandLogo({
   centered = false,
   subtitle = null,
   onDark = false,
+  variant = "default",
 }: {
   height?: number;
   centered?: boolean;
   subtitle?: string | null;
   /** Trên nền tối (trang đăng nhập…) — dùng monogram + chữ sáng cho gọn gàng. */
   onDark?: boolean;
+  /** "sidebar" = monogram + chữ render bằng token màu → tự hợp cả nền sáng lẫn tối. */
+  variant?: "default" | "sidebar";
 }) {
+  // Thanh bên: monogram (nền trong suốt) + tên render bằng token màu (var(--tx))
+  // nên hiện rõ ở CẢ chế độ Sáng và Tối (logo.png có chữ slate tối → chìm trên nền tối).
+  if (variant === "sidebar") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-mark.png"
+          alt="Bếp Ngọc Bảo"
+          style={{ height: height * 1.25, width: "auto", display: "block", flexShrink: 0 }}
+        />
+        <div style={{ lineHeight: 1.12, minWidth: 0 }}>
+          <div style={{ color: "var(--tx)", fontWeight: 800, fontSize: 16.5, letterSpacing: 0.2 }}>BẾP NGỌC BẢO</div>
+          <div style={{ color: "var(--tx-soft)", fontSize: 9.5, letterSpacing: 0.4, marginTop: 2, textTransform: "uppercase" }}>
+            An tâm vận hành · Trọn vẹn cảm xúc
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (onDark) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>

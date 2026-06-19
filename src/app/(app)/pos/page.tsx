@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
-import { listProducts, listCustomers } from "@/lib/bnb/store";
+import { listAllProducts, listCustomers } from "@/lib/bnb/store";
 import { haravanConfigured } from "@/lib/haravan/client";
 import { POSTerminal } from "./pos-terminal";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function POSPage() {
   await requirePermission("order.manage");
-  const [products, customers] = await Promise.all([listProducts(), listCustomers()]);
+  const [products, customers] = await Promise.all([listAllProducts(), listCustomers()]);
 
   const productLite = products.map((p) => ({
     id: p.id,
@@ -16,7 +16,10 @@ export default async function POSPage() {
     sku: p.sku,
     price: p.price,
     brand: p.brand,
+    category: p.category,
     image: p.image,
+    stock: p.stock,
+    available: p.available,
   }));
   const customerLite = customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone }));
 

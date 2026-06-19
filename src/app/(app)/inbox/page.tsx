@@ -3,7 +3,8 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { listConversations, listMessages, getConversation } from "@/lib/bnb/store";
 import { oaConfigured } from "@/lib/zalo/oa";
-import { employeeNameMap, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import {
   ZALO_CONV_STATUS_LABEL, ZALO_CONV_STATUS_BADGE, type ZaloConvStatus,
 } from "@/lib/bnb/types";

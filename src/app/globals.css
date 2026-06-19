@@ -293,7 +293,35 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { padding: 9px 15px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface-2); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.22s var(--ease); }
+.chip:hover { border-color: var(--tx-soft); }
 .chip.on { background: var(--brand-grad); color: #fff; border-color: transparent; box-shadow: var(--sh); }
+
+/* FILTER BAR — select lọc nhanh: bo pill, chevron riêng, nổi bật khi đang lọc.
+   KHÔNG để <select> trần (trông "phèn"); dùng class .fsel ở mọi thanh lọc. */
+.fsel {
+  appearance: none; -webkit-appearance: none;
+  height: 42px; border: 1px solid var(--line); background-color: var(--surface-2);
+  border-radius: var(--r-pill); padding: 0 38px 0 16px; color: var(--tx);
+  font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239aa1ab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; background-size: 16px;
+  transition: border 0.22s var(--ease), box-shadow 0.22s var(--ease), background-color 0.22s var(--ease), color 0.22s;
+}
+.fsel:hover { border-color: var(--tx-soft); }
+.fsel:focus {
+  outline: none; border-color: var(--brand-1); background-color: var(--surface);
+  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.12);
+}
+/* Đang áp một giá trị khác "Tất cả" → tô nhẹ brand cho dễ thấy đang lọc */
+.fsel.act {
+  border-color: var(--brand-1); color: var(--brand-1); background-color: var(--c-indigo-soft);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239e1b32' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+.fsel option { color: var(--tx); background: var(--surface); font-weight: 500; }
+
+/* Nút nhỏ gọn (xoá lọc, thao tác phụ) — khớp chiều cao thanh lọc */
+.btn.sm { padding: 9px 13px; font-size: 12.5px; border-radius: var(--r-pill); }
+.btn.sm svg { width: 15px; height: 15px; }
 
 /* misc helpers */
 .mt { margin-top: 20px; }

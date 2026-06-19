@@ -12,7 +12,7 @@ import {
 import { requirePermission } from "@/lib/auth/session";
 import { visibleEmployeeIds } from "@/lib/auth/scope";
 
-type SP = { cycle?: string; entity?: string };
+type SP = { cycle?: string };
 
 export default async function PerformancePage({
   searchParams,
@@ -40,12 +40,7 @@ export default async function PerformancePage({
   const emp = (id: string) => employees.find((e) => e.id === id);
   const deptName = (id?: string | null) => departments.find((d) => d.id === id)?.name ?? "—";
 
-  const rows = reviews
-    .filter((r) => {
-      if (!sp.entity) return true;
-      return emp(r.employeeId)?.legalEntityId === sp.entity;
-    })
-    .map((r) => ({ r, e: emp(r.employeeId), rating: perfRating(r.finalScore) }));
+  const rows = reviews.map((r) => ({ r, e: emp(r.employeeId), rating: perfRating(r.finalScore) }));
 
   const finalized = rows.filter((x) => x.r.status === "finalized").length;
   const scored = rows.filter((x) => x.r.finalScore != null);
@@ -65,8 +60,6 @@ export default async function PerformancePage({
     .filter((c) => ratingCounts.get(c))
     .map((c) => ({ label: ratingLabel[c], count: ratingCounts.get(c) ?? 0, color: ratingColor[c] }));
 
-  const entities = Array.from(new Set(employees.map((e) => e.legalEntityId)));
-
   return (
     <div className="view-in">
       <div className="crumbs">
@@ -81,24 +74,13 @@ export default async function PerformancePage({
 
       {/* Bộ lọc */}
       <form className="card" method="get" style={{ marginBottom: 20 }}>
-        <div className="grid-k g-4" style={{ gap: 14, alignItems: "end" }}>
+        <div className="grid-k g-2" style={{ gap: 14, alignItems: "end" }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Kỳ đánh giá</label>
             <select name="cycle" defaultValue={cycleId ?? ""}>
               {cycles.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} {c.status === "open" ? "(đang mở)" : "(đã đóng)"}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>Pháp nhân</label>
-            <select name="entity" defaultValue={sp.entity ?? ""}>
-              <option value="">Toàn tập đoàn</option>
-              {entities.map((id) => (
-                <option key={id} value={id}>
-                  {id.toUpperCase()}
                 </option>
               ))}
             </select>

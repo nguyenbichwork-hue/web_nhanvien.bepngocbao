@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Icon } from "@/components/icon";
 import {
   convertCandidateAction,
@@ -23,7 +23,6 @@ import {
   type InterviewResult,
 } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
-import { visibleEntityIds } from "@/lib/auth/scope";
 
 const fmt = (iso?: string | null) => {
   if (!iso) return "—";
@@ -38,8 +37,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
   if (!candidate) notFound();
 
   const opening = await getJobOpening(candidate.openingId);
-  const vEntities = await visibleEntityIds(session);
-  if (opening && vEntities !== "all" && !vEntities.includes(opening.legalEntityId)) redirect("/forbidden");
 
   const [interviews, onboarding, linkedEmp] = await Promise.all([
     listInterviews(id),

@@ -1,7 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { listShiftReports } from "@/lib/bnb/store";
-import { employeeNameMap, fmtVnd, fmtDate } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate } from "@/lib/bnb/util";
+import { employeeNameMap } from "@/lib/bnb/names";
 import { SHIFT_LABEL, type ShiftKind } from "@/lib/bnb/types";
 import { createShiftReportAction } from "./actions";
 import { ChipSelect } from "./chip-select";

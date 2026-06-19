@@ -31,14 +31,25 @@ export async function checkoutAction(fd: FormData) {
     .filter((l) => l.name);
   if (!lines.length) return;
 
-  const total = lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
+  const num = (k: string) => Math.max(0, Number((s(fd, k) || "").replace(/[^\d]/g, "")) || 0);
+  const subtotal = lines.reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
+  const discount = Math.min(num("discount"), subtotal);
+  const total = Math.max(0, subtotal - discount);
+  const received = num("received");
   const method = (s(fd, "method") || "cash") as PaymentMethod;
   const customerId = s(fd, "customerId") || undefined;
   const guestName = s(fd, "guestName");
   const guestPhone = s(fd, "guestPhone");
+  const userNote = s(fd, "note");
 
   const noteParts: string[] = ["POS quầy"];
   if (!customerId && guestName) noteParts.push(`Khách: ${guestName}${guestPhone ? ` · ${guestPhone}` : ""}`);
+  if (discount > 0) noteParts.push(`Giảm giá: ${discount.toLocaleString("vi-VN")}đ`);
+  if (method === "cash" && received > 0) {
+    noteParts.push(`Khách đưa: ${received.toLocaleString("vi-VN")}đ`);
+    if (received >= total) noteParts.push(`Thối: ${(received - total).toLocaleString("vi-VN")}đ`);
+  }
+  if (userNote) noteParts.push(userNote);
 
   const payments: Payment[] = [
     { id: `pay-${Date.now()}`, amount: total, method, at: new Date().toISOString(), note: "Thanh toán POS" },
