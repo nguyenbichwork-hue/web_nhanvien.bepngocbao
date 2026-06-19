@@ -18,8 +18,10 @@ export const viewport: Viewport = {
   themeColor: "#9e1b32",
 };
 
-// Chạy trước khi paint để không nháy sáng/tối
-const themeScript = `(function(){try{var t=localStorage.getItem('bnb-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`;
+// Chạy trước khi paint để không nháy sáng/tối.
+// MẶC ĐỊNH SÁNG (kiểu TailAdmin) — chỉ vào tối khi người dùng TỰ chọn (lưu 'dark').
+// Không bám prefers-color-scheme để tránh máy đang ở chế độ tối làm app tối/vỡ.
+const themeScript = `(function(){try{if(localStorage.getItem('bnb-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
