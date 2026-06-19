@@ -26,16 +26,29 @@ export function Sidebar({
       {groups.map((group) => (
         <div key={group.label}>
           <div className="nav-label">{group.label}</div>
-          {group.items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-item${isActive(item.href) ? " active" : ""}`}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </Link>
-          ))}
+          {group.items.map((item) =>
+            item.external ? (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nav-item"
+              >
+                <Icon name={item.icon} />
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-item${isActive(item.href) ? " active" : ""}`}
+              >
+                <Icon name={item.icon} />
+                {item.label}
+              </Link>
+            ),
+          )}
         </div>
       ))}
 

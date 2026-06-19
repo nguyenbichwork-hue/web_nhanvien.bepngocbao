@@ -7,7 +7,7 @@
 //        leave, overtime, performance, reports, recruit, contracts, benefits,
 //        assets, training, rewards.
 // Muốn bật lại mục nào → thêm dòng tương ứng vào nhóm bên dưới.
-export type NavItem = { href: string; label: string; icon: string; perm?: string };
+export type NavItem = { href: string; label: string; icon: string; perm?: string; external?: boolean };
 export type NavGroup = { label: string; items: NavItem[] };
 
 export const NAV: NavGroup[] = [
@@ -23,8 +23,7 @@ export const NAV: NavGroup[] = [
       { href: "/crm", label: "Khách hàng & Lead", icon: "customer", perm: "lead.read" },
       { href: "/customers", label: "Khách hàng 360", icon: "users", perm: "customer.read" },
       { href: "/fit", label: "Fit Diagnostic", icon: "fit", perm: "fit.read" },
-      { href: "/design", label: "Thiết kế bếp AI", icon: "sparkle", perm: "design.read" },
-      { href: "/quote", label: "Tư vấn & Báo giá", icon: "quote", perm: "quote.read" },
+      { href: "https://thietkebep.bepngocbao.vn/", label: "Tư vấn & Báo giá", icon: "quote", perm: "quote.read", external: true },
       { href: "/pos", label: "POS quầy", icon: "wallet", perm: "order.manage" },
       { href: "/orders", label: "Đơn hàng", icon: "cart", perm: "order.read" },
     ],
