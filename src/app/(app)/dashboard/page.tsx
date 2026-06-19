@@ -17,11 +17,11 @@ export const dynamic = "force-dynamic";
 
 function Kpi({ icon, tone, value, label, sub }: { icon: string; tone: string; value: number; label: string; sub?: string }) {
   return (
-    <div className={`card kpi hover ${tone}`}>
+    <div className={`card kpi grad hover ${tone}`}>
       <div className="ic"><Icon name={icon} /></div>
       <div className="val"><CountUp to={value} /></div>
       <div className="lbl">{label}</div>
-      {sub && <div className="trend up" style={{ background: "var(--surface-2)", color: "var(--tx-muted)" }}>{sub}</div>}
+      {sub && <div className="trend up">{sub}</div>}
     </div>
   );
 }
@@ -63,10 +63,10 @@ export default async function TodayPage() {
       />
 
       <div className="grid-k g-4 stagger">
-        <Kpi icon="leads" tone="tone-i" value={newLeads.length} label="Lead mới hôm nay" sub={`${leads.length} lead tổng`} />
-        <Kpi icon="phone" tone="tone-a" value={followUps.length} label="Cần liên hệ hôm nay" />
-        <Kpi icon="truck" tone="tone-t" value={deliveriesToday.length} label="Giao – lắp hôm nay" />
-        <Kpi icon="warranty" tone="tone-r" value={warrantiesDue.length} label="Bảo hành đến hạn" />
+        <Kpi icon="leads" tone="gr-crimson" value={newLeads.length} label="Lead mới hôm nay" sub={`${leads.length} lead tổng`} />
+        <Kpi icon="phone" tone="gr-sunny" value={followUps.length} label="Cần liên hệ hôm nay" />
+        <Kpi icon="truck" tone="gr-mint" value={deliveriesToday.length} label="Giao – lắp hôm nay" />
+        <Kpi icon="warranty" tone="gr-malinka" value={warrantiesDue.length} label="Bảo hành đến hạn" />
       </div>
 
       <div className="grid-k g-2 mt">

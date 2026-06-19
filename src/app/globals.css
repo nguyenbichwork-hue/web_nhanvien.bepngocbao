@@ -19,17 +19,17 @@
   --c-amber:  #d98309;  --c-amber-soft:  #fcf2e2;
   --c-rose:   #e23b54;  --c-rose-soft:   #fdebee;
   --c-sky:    #2b78c5;  --c-sky-soft:    #eaf2fb;
-  /* Surfaces — trung tính slate (khớp chữ logo) */
-  --bg: #f7f7f9;  --surface: #ffffff;  --surface-2: #f5f6f8;  --line: #ebecef;
+  /* Surfaces — nền xám mát kiểu ArchitectUI */
+  --bg: #f1f4f8;  --surface: #ffffff;  --surface-2: #f5f7fa;  --line: #e9edf2;
   /* Text — slate */
   --tx: #2b3038;  --tx-muted: #6a727c;  --tx-soft: #9aa1ab;
-  /* Shadows — ám tông crimson thay vì đen cứng */
-  --sh-sm: 0 1px 2px rgba(20, 24, 30, 0.05);
-  --sh: 0 1px 3px rgba(40, 24, 16, 0.05), 0 10px 24px -10px rgba(var(--brand-rgb), 0.20);
-  --sh-md: 0 4px 8px rgba(40, 24, 16, 0.05), 0 18px 36px -14px rgba(var(--brand-rgb), 0.26);
-  --sh-lg: 0 12px 28px -8px rgba(var(--brand-rgb), 0.32);
-  /* Radius */
-  --r-xl: 22px;  --r-lg: 18px;  --r-md: 14px;  --r-sm: 10px;  --r-pill: 999px;
+  /* Shadows — mềm nhiều lớp (chữ ký ArchitectUI), tông trung tính */
+  --sh-sm: 0 .25rem .6rem rgba(4, 9, 20, 0.05);
+  --sh: 0 .46875rem 2.1875rem rgba(4, 9, 20, 0.04), 0 .9375rem 1.40625rem rgba(4, 9, 20, 0.04), 0 .25rem .53125rem rgba(4, 9, 20, 0.06), 0 .125rem .1875rem rgba(4, 9, 20, 0.03);
+  --sh-md: 0 .55rem 2.6rem rgba(4, 9, 20, 0.10), 0 1rem 2rem rgba(4, 9, 20, 0.06);
+  --sh-lg: 0 1rem 2.6rem rgba(var(--accent-rgb), 0.28);
+  /* Radius — gọn hơn để giống ArchitectUI */
+  --r-xl: 14px;  --r-lg: 12px;  --r-md: 9px;  --r-sm: 7px;  --r-pill: 999px;
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -212,12 +212,13 @@ a { color: inherit; text-decoration: none; }
 /* CARD */
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl);
-  padding: 22px; box-shadow: var(--sh-sm);
+  padding: 22px; box-shadow: var(--sh);
   transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border 0.3s;
 }
-.card.hover:hover { transform: translateY(-5px); box-shadow: var(--sh-md); border-color: transparent; }
-.card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.card-h h3 { font-size: 15.5px; font-weight: 700; }
+.card.hover:hover { transform: translateY(-4px); box-shadow: var(--sh-md); border-color: color-mix(in srgb, var(--accent) 22%, var(--line)); }
+/* Header card kiểu ArchitectUI: tiêu đề IN HOA nhỏ + đường kẻ dưới */
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -22px -22px 18px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.card-h h3 { font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--tx); }
 .card-h .sub { font-size: 12px; color: var(--tx-soft); }
 
 /* KPI */
@@ -422,6 +423,24 @@ details[open] > summary { margin-bottom: 4px; }
 .kpi { border-top: 3px solid color-mix(in srgb, var(--accent) 65%, var(--line)); }
 .tone-accent .ic { background: var(--accent-soft); color: var(--accent); }
 .kpi .val { background: linear-gradient(120deg, var(--tx), color-mix(in srgb, var(--accent) 45%, var(--tx))); -webkit-background-clip: text; background-clip: text; }
+
+/* KPI gradient nhiều màu — "widget-chart" của ArchitectUI: icon mờ lớn ở góc, chữ trắng */
+.kpi.grad { color: #fff; border: none; border-top: none; overflow: hidden; position: relative; box-shadow: var(--sh); }
+.kpi.grad::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.10), transparent 60%); pointer-events: none; }
+.kpi.grad .ic { position: absolute; top: 50%; right: -10px; transform: translateY(-50%); width: 104px; height: 104px; margin: 0; background: none !important; color: rgba(255,255,255,.16); border-radius: 0; }
+.kpi.grad.hover:hover .ic { transform: translateY(-50%) rotate(-8deg) scale(1.05); }
+.kpi.grad .ic svg { width: 104px; height: 104px; }
+.kpi.grad .val { color: #fff; -webkit-text-fill-color: #fff; background: none; position: relative; }
+.kpi.grad .lbl { color: rgba(255,255,255,.9); position: relative; }
+.kpi.grad .trend { background: rgba(255,255,255,.22) !important; color: #fff !important; }
+.gr-plum { background: linear-gradient(135deg, #667eea, #764ba2); }
+.gr-azure { background: linear-gradient(135deg, #4facfe, #00aaff); }
+.gr-malinka { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.gr-mint { background: linear-gradient(135deg, #16c79a, #0e9d6e); }
+.gr-sunny { background: linear-gradient(135deg, #f6a93b, #ea580c); }
+.gr-deepblue { background: linear-gradient(135deg, #6a11cb, #2575fc); }
+.gr-crimson { background: var(--brand-grad); }
+.gr-teal { background: linear-gradient(135deg, #19c2b1, #0d9488); }
 
 /* Tiêu đề mục có thanh accent — dùng trong .card-h */
 .sec-title { display: flex; align-items: center; gap: 10px; }

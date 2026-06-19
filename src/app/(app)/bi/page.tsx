@@ -133,12 +133,12 @@ export default async function BIPage() {
 
       {/* KPI */}
       <div className="grid-k stagger" style={{ gridTemplateColumns: "repeat(6,1fr)" }}>
-        <div className="card kpi hover tone-t"><div className="ic"><Icon name="wallet" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={revenue} /></div><div className="lbl">Doanh thu đã thu (đ)</div></div>
-        <div className="card kpi hover tone-accent"><div className="ic"><Icon name="chart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={grossProfit} /></div><div className="lbl">Lãi gộp ước tính (đ)</div></div>
-        <div className="card kpi hover tone-a"><div className="ic"><Icon name="target" /></div><div className="val"><CountUp to={marginPct} />%</div><div className="lbl">Biên lãi gộp</div></div>
-        <div className="card kpi hover tone-accent"><div className="ic"><Icon name="cart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={aov} /></div><div className="lbl">AOV · đơn TB (đ)</div></div>
-        <div className="card kpi hover tone-t"><div className="ic"><Icon name="award" /></div><div className="val"><CountUp to={npsScore} /></div><div className="lbl">NPS ({npsTotal} phản hồi)</div></div>
-        <div className="card kpi hover tone-r"><div className="ic"><Icon name="alert" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={receivable} /></div><div className="lbl">Công nợ phải thu (đ)</div></div>
+        <div className="card kpi grad hover gr-mint"><div className="ic"><Icon name="wallet" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={revenue} /></div><div className="lbl">Doanh thu đã thu (đ)</div></div>
+        <div className="card kpi grad hover gr-deepblue"><div className="ic"><Icon name="chart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={grossProfit} /></div><div className="lbl">Lãi gộp ước tính (đ)</div></div>
+        <div className="card kpi grad hover gr-sunny"><div className="ic"><Icon name="target" /></div><div className="val"><CountUp to={marginPct} />%</div><div className="lbl">Biên lãi gộp</div></div>
+        <div className="card kpi grad hover gr-plum"><div className="ic"><Icon name="cart" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={aov} /></div><div className="lbl">AOV · đơn TB (đ)</div></div>
+        <div className="card kpi grad hover gr-teal"><div className="ic"><Icon name="award" /></div><div className="val"><CountUp to={npsScore} /></div><div className="lbl">NPS ({npsTotal} phản hồi)</div></div>
+        <div className="card kpi grad hover gr-malinka"><div className="ic"><Icon name="alert" /></div><div className="val" style={{ fontSize: 22 }}><CountUp to={receivable} /></div><div className="lbl">Công nợ phải thu (đ)</div></div>
       </div>
 
       {/* Doanh thu 6 tháng + Phễu */}

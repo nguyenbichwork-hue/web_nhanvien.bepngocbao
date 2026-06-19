@@ -101,22 +101,22 @@ export default async function FinancePage() {
 
       {/* KPI */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="wallet" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(receivable)}</div>
           <div className="lbl">Công nợ phải thu</div>
         </div>
-        <div className="card kpi hover tone-accent">
+        <div className="card kpi grad hover gr-deepblue">
           <div className="ic"><Icon name="chart" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(revenue)}</div>
           <div className="lbl">Doanh thu (Σ tổng đơn)</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="award" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(grossProfit)}</div>
           <div className="lbl">Lãi gộp · tỷ suất {grossMarginPct}%</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-plum">
           <div className="ic"><Icon name="building" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(netCash)}</div>
           <div className="lbl">Dòng tiền ròng (vào − ra)</div>

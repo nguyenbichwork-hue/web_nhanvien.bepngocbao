@@ -59,17 +59,17 @@ export default async function OrdersPage() {
 
       {/* KPI */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <div className="card kpi hover tone-accent">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="cart" /></div>
           <div className="val"><CountUp to={openOrders.length} /></div>
           <div className="lbl">đơn đang mở</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="wallet" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(revenue)}</div>
           <div className="lbl">doanh thu đã thu</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="alert" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(debt)}</div>
           <div className="lbl">công nợ còn lại</div>

@@ -112,32 +112,32 @@ export default async function AdminPage() {
 
       {/* KPI lớn */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(6,1fr)" }}>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="wallet" /></div>
           <div className="val" style={{ fontSize: 24 }}><CountUp to={revenue} /></div>
           <div className="lbl">Doanh thu đã thu (đ)</div>
         </div>
-        <div className="card kpi hover tone-accent">
+        <div className="card kpi grad hover gr-deepblue">
           <div className="ic"><Icon name="cart" /></div>
           <div className="val"><CountUp to={orderCount} /></div>
           <div className="lbl">Tổng số đơn</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="target" /></div>
           <div className="val" style={{ fontSize: 24 }}><CountUp to={aov} /></div>
           <div className="lbl">AOV · giá trị đơn TB (đ)</div>
         </div>
-        <div className="card kpi hover tone-accent">
+        <div className="card kpi grad hover gr-plum">
           <div className="ic"><Icon name="leads" /></div>
           <div className="val"><CountUp to={leadsThisMonth} /></div>
           <div className="lbl">Lead trong tháng</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-teal">
           <div className="ic"><Icon name="target" /></div>
           <div className="val"><CountUp to={convRate} />%</div>
           <div className="lbl">Tỷ lệ chốt (won/total)</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="alert" /></div>
           <div className="val" style={{ fontSize: 24 }}><CountUp to={receivable} /></div>
           <div className="lbl">Công nợ phải thu (đ)</div>

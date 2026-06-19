@@ -78,22 +78,22 @@ export default async function MarketingPage() {
 
       {/* KPI */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="wallet" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(totalSpend)}</div>
           <div className="lbl">Tổng chi quảng cáo</div>
         </div>
-        <div className="card kpi hover tone-accent">
+        <div className="card kpi grad hover gr-plum">
           <div className="ic"><Icon name="leads" /></div>
           <div className="val"><CountUp to={totalLeads} /></div>
           <div className="lbl">Leads từ quảng cáo</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="target" /></div>
           <div className="val" style={{ fontSize: 24 }}>{fmtVnd(cpl)}</div>
           <div className="lbl">CPL (chi phí / lead)</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="calendar" /></div>
           <div className="val"><CountUp to={scheduledCount} /></div>
           <div className="lbl">Nội dung đã/đang lên lịch</div>
