@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import {
   addPayrollAdjustmentAction,
   adjustSalaryAction,
@@ -97,10 +98,17 @@ export default async function PayslipPage({
 
   if (!emp) {
     return (
-      <div className="view-in">
-        <div className="crumbs">
-          Trang chủ <Icon name="chev" /> Tính lương <Icon name="chev" /> Phiếu lương
-        </div>
+      <div>
+        <PageHero
+          icon="wallet"
+          title="Phiếu lương"
+          crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tính lương", "/payroll"], ["Phiếu lương"]]}
+          actions={
+            <Link href="/payroll" className="btn">
+              <Icon name="chevleft" /> Về bảng lương
+            </Link>
+          }
+        />
         <div className="card">
           <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>
             Không tìm thấy nhân viên.
@@ -136,21 +144,18 @@ export default async function PayslipPage({
   const hasExtra = adj !== 0 || ot > 0 || postTaxAdj !== 0;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tính lương <Icon name="chev" /> {emp.fullName}
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Phiếu lương · {emp.fullName}</h1>
-          <p>
-            {monthLabel(ym)} · {emp.code} · {entity?.name ?? "—"} · {dept} · {title}
-          </p>
-        </div>
-        <Link href={`/payroll?month=${ym}`} className="btn">
-          <Icon name="chevleft" /> Về bảng lương
-        </Link>
-      </div>
+    <div>
+      <PageHero
+        icon="wallet"
+        title={`Phiếu lương · ${emp.fullName}`}
+        subtitle={`${monthLabel(ym)} · ${emp.code} · ${entity?.name ?? "—"} · ${dept} · ${title}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tính lương", "/payroll"], [emp.fullName]]}
+        actions={
+          <Link href={`/payroll?month=${ym}`} className="btn">
+            <Icon name="chevleft" /> Về bảng lương
+          </Link>
+        }
+      />
 
       {!emp.baseSalary && (
         <div className="card" style={{ marginBottom: 18 }}>
@@ -164,7 +169,7 @@ export default async function PayslipPage({
       <div className="grid-k g-2">
         {/* Thu nhập & khấu trừ → thực lĩnh */}
         <div className="card hover">
-          <div className="card-h"><h3>Thu nhập & khấu trừ</h3></div>
+          <div className="card-h"><h3 className="sec-title">Thu nhập & khấu trừ</h3></div>
           <Row label="Lương cơ bản" value={formatVND(s.base)} />
           <Row label="Phụ cấp" value={formatVND(s.allowance)} />
           {payAdjustments.filter((a) => a.taxable).map((a) => (
@@ -230,7 +235,7 @@ export default async function PayslipPage({
 
         {/* Tính thuế TNCN + chi phí DN */}
         <div className="card hover">
-          <div className="card-h"><h3>Cơ sở tính thuế TNCN</h3></div>
+          <div className="card-h"><h3 className="sec-title">Cơ sở tính thuế TNCN</h3></div>
           <Row label="Thu nhập chịu thuế (Gross − BH)" value={formatVND(s.taxableIncome)} />
           <Row label="Giảm trừ bản thân" value={`−${formatVND(PIT_SELF_DEDUCTION)}`} tone="rose" />
           <Row
@@ -242,7 +247,7 @@ export default async function PayslipPage({
           <Row label="Thuế TNCN phải nộp" value={formatVND(s.pit)} tone="rose" strong />
 
           <div style={{ height: 18 }} />
-          <div className="card-h"><h3>Chi phí doanh nghiệp</h3></div>
+          <div className="card-h"><h3 className="sec-title">Chi phí doanh nghiệp</h3></div>
           <Row label="Bảo hiểm NSDLĐ đóng (21,5%)" value={formatVND(s.erInsurance)} />
           <Row label="Mức lương đóng BHXH/BHYT" value={formatVND(s.insuranceBaseBhxh)} sub />
           <Row label="Mức lương đóng BHTN" value={formatVND(s.insuranceBaseBhtn)} sub />
@@ -255,7 +260,7 @@ export default async function PayslipPage({
         <div className="card" style={{ marginTop: 18 }}>
           <div className="card-h">
             <div>
-              <h3>Điều chỉnh kỳ lương · {monthLabel(ym)}</h3>
+              <h3 className="sec-title">Điều chỉnh kỳ lương · {monthLabel(ym)}</h3>
               <div className="sub">Thưởng / phụ cấp thêm / khấu trừ áp riêng cho kỳ này. Khoản chịu thuế sẽ được tính lại thuế TNCN.</div>
             </div>
           </div>
@@ -323,7 +328,7 @@ export default async function PayslipPage({
         <div className="card" style={{ marginTop: 18 }}>
           <div className="card-h">
             <div>
-              <h3>Điều chỉnh lương</h3>
+              <h3 className="sec-title">Điều chỉnh lương</h3>
               <div className="sub">Lương hiện áp cho kỳ: cơ bản <b>{formatVND(sal.baseSalary)}</b>, phụ cấp <b>{formatVND(sal.allowance)}</b>. Tạo điều chỉnh sẽ áp từ tháng hiệu lực.</div>
             </div>
           </div>
@@ -356,7 +361,7 @@ export default async function PayslipPage({
 
           {salaryRecords.length > 0 && (
             <>
-              <div className="card-h" style={{ marginTop: 18 }}><h3 style={{ fontSize: 15 }}>Lịch sử lương</h3></div>
+              <div className="card-h" style={{ marginTop: 18 }}><h3 className="sec-title" style={{ fontSize: 15 }}>Lịch sử lương</h3></div>
               <table>
                 <thead>
                   <tr><th>Hiệu lực từ</th><th style={{ textAlign: "right" }}>Lương cơ bản</th><th style={{ textAlign: "right" }}>Phụ cấp</th><th>Lý do</th></tr>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { EmployeeSelect } from "@/components/employee-select";
 import { enrollTrainingAction, setEnrollStatusAction, updateCourseStatusAction } from "@/lib/org/actions";
 import { getCourse, listEmployees, listEnrolls } from "@/lib/org/store";
@@ -44,31 +45,28 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
   const roster = employees.filter((e) => e.status !== "left" && !enrolledIds.has(e.id));
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> <Link href="/training">Đào tạo</Link> <Icon name="chev" /> {course.code}
-      </div>
-      <div className="page-head">
-        <div className="flex aic" style={{ gap: 12 }}>
-          <Link href="/training" className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
-          <div>
-            <h1>{course.name} <span className={`badge ${COURSE_STATUS_BADGE[course.status]}`} style={{ verticalAlign: "middle" }}>{COURSE_STATUS_LABEL[course.status]}</span></h1>
-            <p>
-              {course.code}{course.provider ? ` · ${course.provider}` : ""}{course.hours ? ` · ${course.hours}h` : ""}
-              {course.cost ? ` · ${formatVND(course.cost)}` : ""} · {fmt(course.startDate)}{course.endDate && course.endDate !== course.startDate ? `–${fmt(course.endDate)}` : ""}
-            </p>
-          </div>
-        </div>
-        {canManage && (
-          <form action={updateCourseStatusAction} className="flex gap aic">
-            <input type="hidden" name="id" value={course.id} />
-            <select name="status" defaultValue={course.status} style={{ height: 36 }}>
-              {(Object.keys(COURSE_STATUS_LABEL) as CourseStatus[]).map((s) => (<option key={s} value={s}>{COURSE_STATUS_LABEL[s]}</option>))}
-            </select>
-            <button type="submit" className="btn"><Icon name="check" /> Đổi trạng thái</button>
-          </form>
-        )}
-      </div>
+    <div>
+      <PageHero
+        icon="cap"
+        title={course.name}
+        subtitle={`${course.code}${course.provider ? ` · ${course.provider}` : ""}${course.hours ? ` · ${course.hours}h` : ""}${course.cost ? ` · ${formatVND(course.cost)}` : ""} · ${fmt(course.startDate)}${course.endDate && course.endDate !== course.startDate ? `–${fmt(course.endDate)}` : ""}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Đào tạo", "/training"], [course.code]]}
+        actions={
+          <>
+            <span className={`badge ${COURSE_STATUS_BADGE[course.status]}`}>{COURSE_STATUS_LABEL[course.status]}</span>
+            <Link href="/training" className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
+            {canManage && (
+              <form action={updateCourseStatusAction} className="flex gap aic">
+                <input type="hidden" name="id" value={course.id} />
+                <select name="status" defaultValue={course.status} style={{ height: 36 }}>
+                  {(Object.keys(COURSE_STATUS_LABEL) as CourseStatus[]).map((s) => (<option key={s} value={s}>{COURSE_STATUS_LABEL[s]}</option>))}
+                </select>
+                <button type="submit" className="btn"><Icon name="check" /> Đổi trạng thái</button>
+              </form>
+            )}
+          </>
+        }
+      />
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-h"><div><h3>Học viên ghi danh</h3><div className="sub">{enrolls.filter((e) => e.status !== "cancelled").length} người</div></div></div>

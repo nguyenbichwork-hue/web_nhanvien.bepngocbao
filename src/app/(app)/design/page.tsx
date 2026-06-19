@@ -1,5 +1,5 @@
 import { requirePermission } from "@/lib/auth/session";
-import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { listProducts } from "@/lib/bnb/store";
 import { FIT_SCENARIOS } from "@/lib/bnb/fit";
 import Designer from "./designer";
@@ -23,19 +23,13 @@ export default async function DesignPage() {
   }));
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Thiết kế bếp AI
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Thiết kế bếp AI</h1>
-          <p>
-            Chọn bố cục, phong cách, phân tầng và tông màu — hệ thống dựng phối cảnh
-            căn bếp bằng AI kèm gợi ý thiết bị phù hợp.
-          </p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="sparkle"
+        title="Thiết kế bếp AI"
+        subtitle="Chọn bố cục, phong cách, phân tầng và tông màu — hệ thống dựng phối cảnh căn bếp bằng AI kèm gợi ý thiết bị phù hợp."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Thiết kế bếp AI"]]}
+      />
 
       <Designer products={products} scenarios={scenarios} />
     </div>

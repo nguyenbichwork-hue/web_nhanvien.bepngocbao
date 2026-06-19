@@ -1,4 +1,4 @@
-import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { SettingsTabs } from "@/components/settings-tabs";
 import { can, requireSession } from "@/lib/auth/session";
 
@@ -11,20 +11,17 @@ export default async function SettingsLayout({ children }: { children: React.Rea
   const isAdmin = canOrg || canRbac;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Cài đặt
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Cài đặt</h1>
-          <p>
-            {isAdmin
-              ? "Hồ sơ công ty, danh mục dùng chung, phân quyền (RBAC) và tài khoản cá nhân."
-              : "Tài khoản & bảo mật cá nhân."}
-          </p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="settings"
+        title="Cài đặt"
+        subtitle={
+          isAdmin
+            ? "Hồ sơ công ty, danh mục dùng chung, phân quyền (RBAC) và tài khoản cá nhân."
+            : "Tài khoản & bảo mật cá nhân."
+        }
+        crumb={[["Trang chủ", "/dashboard"], ["Hệ thống"], ["Cài đặt"]]}
+      />
       <SettingsTabs canOrg={canOrg} canRbac={canRbac} />
       {children}
     </div>

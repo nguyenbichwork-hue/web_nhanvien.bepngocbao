@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { createJobOpeningAction } from "@/lib/org/actions";
 import {
   listCandidates,
@@ -41,48 +43,69 @@ export default async function RecruitPage() {
   const offers = totalCandidates.filter((c) => c.stage === "offer").length;
   const hired = totalCandidates.filter((c) => c.stage === "hired").length;
 
+  // Cơ cấu ứng viên theo giai đoạn (donut) — chỉ từ dữ liệu có sẵn.
+  const STAGE_COLORS = ["#2563eb", "#7c3aed", "#0e9d6e", "#d98309", "#e23b54", "#0d9488", "#9aa1ab"];
+  const stageCounts = new Map<string, number>();
+  for (const c of totalCandidates) stageCounts.set(c.stage, (stageCounts.get(c.stage) ?? 0) + 1);
+  const stageMix = [...stageCounts.entries()].map(([name, value], i) => ({
+    name,
+    value,
+    color: STAGE_COLORS[i % STAGE_COLORS.length],
+  }));
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tuyển dụng
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Tuyển dụng</h1>
-          <p>{openings.length} tin tuyển dụng · {totalCandidates.length} ứng viên.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="briefcase"
+        title="Tuyển dụng"
+        subtitle="Quản lý tin tuyển dụng và phễu ứng viên theo từng vị trí."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tuyển dụng"]]}
+        stats={[
+          { label: "Đang tuyển", value: openCount },
+          { label: "Ứng viên", value: totalCandidates.length },
+          { label: "Đã nhận việc", value: hired, tone: "up" },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
-        <div className="card kpi hover tone-i">
+        <div className="card kpi grad hover gr-deepblue">
           <div className="ic"><Icon name="briefcase" /></div>
           <div className="val"><CountUp to={openCount} /></div>
           <div className="lbl">Vị trí đang tuyển</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="users" /></div>
           <div className="val"><CountUp to={totalCandidates.length} /></div>
           <div className="lbl">Tổng ứng viên</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-plum">
           <div className="ic"><Icon name="userplus" /></div>
           <div className="val"><CountUp to={offers} /></div>
           <div className="lbl">Đang offer</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="check" /></div>
           <div className="val"><CountUp to={hired} /></div>
           <div className="lbl">Đã nhận việc</div>
         </div>
       </div>
 
+      {stageMix.length > 0 && (
+        <div className="grid-k g-2 mt" style={{ marginBottom: 20 }}>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu ứng viên theo giai đoạn</h3></div>
+            <DonutChart data={stageMix} height={250} centerValue={totalCandidates.length} centerLabel="ứng viên" unit=" ứng viên" />
+          </div>
+        </div>
+      )}
+
       <div className="grid-k g-2" style={{ alignItems: "start" }}>
         {/* Danh sách tin */}
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Tin tuyển dụng</h3>
+              <h3 className="sec-title">Tin tuyển dụng</h3>
               <div className="sub">Bấm để xem phễu ứng viên</div>
             </div>
           </div>
@@ -131,7 +154,7 @@ export default async function RecruitPage() {
         {/* Đăng tin mới — chỉ khi có quyền quản lý tuyển dụng */}
         {canManage && (
         <div className="card">
-          <div className="card-h"><h3>Đăng tin tuyển dụng</h3></div>
+          <div className="card-h"><h3 className="sec-title">Đăng tin tuyển dụng</h3></div>
           <form action={createJobOpeningAction}>
             <input type="hidden" name="legalEntityId" value={company?.id ?? ""} />
             <div className="field">

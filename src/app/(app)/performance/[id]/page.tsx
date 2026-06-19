@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { saveReviewAction, saveSelfReviewAction } from "@/lib/org/actions";
 import {
   getEmployee,
@@ -36,10 +37,15 @@ export default async function ReviewDetailPage({ params }: { params: Promise<Par
 
   if (!review) {
     return (
-      <div className="view-in">
-        <div className="crumbs">
-          Trang chủ <Icon name="chev" /> Đánh giá KPI <Icon name="chev" /> Chi tiết
-        </div>
+      <div>
+        <PageHero
+          icon="target"
+          title="Chi tiết đánh giá"
+          crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Đánh giá KPI", "/performance"], ["Chi tiết"]]}
+          actions={
+            <Link href="/performance" className="btn"><Icon name="chevleft" /> Về danh sách</Link>
+          }
+        />
         <div className="card">
           <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>
             Không tìm thấy bản đánh giá.
@@ -71,19 +77,16 @@ export default async function ReviewDetailPage({ params }: { params: Promise<Par
   const SCORE_OPTS = [1, 2, 3, 4, 5];
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Đánh giá KPI <Icon name="chev" /> {employee?.fullName ?? "—"}
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>{employee?.fullName ?? "—"}</h1>
-          <p>
-            {cycle?.name ?? "—"} · {employee?.code} · {dept} · {title}
-          </p>
-        </div>
-        <Link href="/performance" className="btn"><Icon name="chevleft" /> Về danh sách</Link>
-      </div>
+    <div>
+      <PageHero
+        icon="target"
+        title={employee?.fullName ?? "—"}
+        subtitle={`${cycle?.name ?? "—"} · ${employee?.code ?? "—"} · ${dept} · ${title}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Đánh giá KPI", "/performance"], [employee?.fullName ?? "—"]]}
+        actions={
+          <Link href="/performance" className="btn"><Icon name="chevleft" /> Về danh sách</Link>
+        }
+      />
 
       {/* Tổng quan điểm */}
       <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
@@ -116,7 +119,7 @@ export default async function ReviewDetailPage({ params }: { params: Promise<Par
       {/* Nhân viên tự đánh giá (chính chủ, chưa chốt) */}
       {canSelf && (
         <div className="card" style={{ marginBottom: 18, borderLeft: "3px solid var(--brand-1)" }}>
-          <div className="card-h"><div><h3>Tự đánh giá của bạn</h3><div className="sub">Chấm điểm bản thân (1–5) trước khi quản lý đánh giá.</div></div></div>
+          <div className="card-h"><div><h3 className="sec-title">Tự đánh giá của bạn</h3><div className="sub">Chấm điểm bản thân (1–5) trước khi quản lý đánh giá.</div></div></div>
           <form action={saveSelfReviewAction}>
             <input type="hidden" name="id" value={review.id} />
             <table>
@@ -151,7 +154,7 @@ export default async function ReviewDetailPage({ params }: { params: Promise<Par
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-h">
             <div>
-              <h3>Chấm điểm mục tiêu / KPI</h3>
+              <h3 className="sec-title">Chấm điểm mục tiêu / KPI</h3>
               <div className="sub">Điểm tổng = trung bình có trọng số các mục đã chấm.</div>
             </div>
             {locked && <span className="badge b-green">Đã chốt</span>}
@@ -190,7 +193,7 @@ export default async function ReviewDetailPage({ params }: { params: Promise<Par
         </div>
 
         <div className="card" style={{ marginBottom: 18 }}>
-          <div className="card-h"><h3>Nhận xét chung của quản lý</h3></div>
+          <div className="card-h"><h3 className="sec-title">Nhận xét chung của quản lý</h3></div>
           {review.selfComment && (
             <p className="small" style={{ background: "var(--surface-2, rgba(127,127,127,.08))", padding: "10px 12px", borderRadius: "var(--r-md)", marginTop: 0 }}>
               <b>NV tự nhận xét:</b> {review.selfComment}

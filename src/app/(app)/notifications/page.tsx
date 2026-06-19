@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
 import { markAllNotificationsReadAction, markNotificationReadAction } from "@/lib/org/actions";
 import { listNotifications } from "@/lib/org/store";
 import { requireSession } from "@/lib/auth/session";
@@ -14,22 +16,46 @@ export default async function NotificationsPage() {
   const session = await requireSession();
   const items = await listNotifications(session.user.id);
   const unread = items.filter((n) => !n.read).length;
+  const read = items.length - unread;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Thông báo
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Thông báo</h1>
-          <p>{items.length} thông báo · {unread} chưa đọc.</p>
+    <div>
+      <PageHero
+        icon="bell"
+        title="Thông báo"
+        subtitle="Tất cả thông báo gửi tới bạn từ hệ thống và quản lý."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Thông báo"]]}
+        stats={[
+          { label: "Thông báo", value: items.length },
+          { label: "Chưa đọc", value: unread, tone: unread > 0 ? "down" : "flat" },
+          { label: "Đã đọc", value: read, tone: "up" },
+        ]}
+        actions={
+          unread > 0 ? (
+            <form action={markAllNotificationsReadAction}>
+              <button type="submit" className="btn"><Icon name="check" /> Đánh dấu tất cả đã đọc</button>
+            </form>
+          ) : undefined
+        }
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="bell" /></div>
+          <div className="val"><CountUp to={items.length} /></div>
+          <div className="lbl">tổng thông báo</div>
         </div>
-        {unread > 0 && (
-          <form action={markAllNotificationsReadAction}>
-            <button type="submit" className="btn"><Icon name="check" /> Đánh dấu tất cả đã đọc</button>
-          </form>
-        )}
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="alert" /></div>
+          <div className="val"><CountUp to={unread} /></div>
+          <div className="lbl">chưa đọc</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={read} /></div>
+          <div className="lbl">đã đọc</div>
+        </div>
       </div>
 
       <div className="card">

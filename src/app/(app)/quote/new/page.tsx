@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { listProducts, listCustomers, listLeads } from "@/lib/bnb/store";
 import { QuoteBuilder } from "../quote-builder";
 
@@ -13,16 +14,14 @@ export default async function NewQuotePage() {
   ]);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/quote">Báo giá</Link> <Icon name="chev" /> Tạo báo giá
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Tạo báo giá mới</h1>
-          <p>Chọn khách, thêm sản phẩm và xem thành tiền cập nhật ngay.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="quote"
+        title="Tạo báo giá mới"
+        subtitle="Chọn khách, thêm sản phẩm và xem thành tiền cập nhật ngay."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Báo giá", "/quote"], ["Tạo báo giá"]]}
+        actions={<Link href="/quote" className="btn ghost"><Icon name="chev" /> Quay lại</Link>}
+      />
 
       <QuoteBuilder
         products={products.map((p) => ({ id: p.id, name: p.name, sku: p.sku, price: p.price, brand: p.brand }))}

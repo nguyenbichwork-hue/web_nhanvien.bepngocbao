@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { updateContractAction } from "@/lib/org/actions";
 import { getContract, getEmployee } from "@/lib/org/store";
 import { CONTRACT_TYPE_LABEL, type ContractType } from "@/lib/org/types";
@@ -16,19 +17,19 @@ export default async function ContractEditPage({ params }: { params: Promise<{ i
   const emp = await getEmployee(c.employeeId);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> <Link href="/contracts">Hợp đồng</Link> <Icon name="chev" /> {c.code}
-      </div>
-      <div className="page-head">
-        <div className="flex aic" style={{ gap: 12 }}>
-          <Link href="/contracts" className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
-          <div>
-            <h1>{c.code} <span className="badge b-indigo" style={{ verticalAlign: "middle" }}>{emp?.fullName ?? "—"}</span></h1>
-            <p>Cập nhật hợp đồng lao động</p>
-          </div>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="doc"
+        title={c.code}
+        subtitle="Cập nhật hợp đồng lao động"
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Hợp đồng", "/contracts"], [c.code]]}
+        actions={
+          <>
+            <span className="badge b-indigo">{emp?.fullName ?? "—"}</span>
+            <Link href="/contracts" className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
+          </>
+        }
+      />
 
       <div className="card" style={{ maxWidth: 820 }}>
         <form action={updateContractAction}>

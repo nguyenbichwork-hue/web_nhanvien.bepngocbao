@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { EmployeeForm, type ExistingAccount } from "@/components/employee-form";
 import { AssignRoleRow } from "@/components/assign-role-row";
 import { createDependentAction, deleteDependentAction, deleteEmployeeAction, resetEmployeePasswordAction, updateEmployeeAction } from "@/lib/org/actions";
@@ -69,40 +70,18 @@ export default async function EmployeeEditPage({
   const canManageRbac = can(session, "system.rbac");
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> <Link href="/employees">Nhân viên</Link> <Icon name="chev" /> {employee.code}
-      </div>
-      <div className="page-head">
-        <div className="flex aic" style={{ gap: 12 }}>
-          <Link href="/employees" className="iconbtn" title="Quay lại">
-            <Icon name="chevleft" />
+    <div>
+      <PageHero
+        icon="users"
+        title={employee.fullName}
+        subtitle={`${canEdit ? "Cập nhật hồ sơ" : "Xem hồ sơ"} · ${employee.code} · trạng thái hiện tại: ${EMPLOYEE_STATUS_LABEL[employee.status]}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Nhân viên", "/employees"], [employee.code]]}
+        actions={
+          <Link href="/employees" className="btn">
+            <Icon name="chevleft" /> Quay lại
           </Link>
-          {employee.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={employee.photoUrl}
-              alt={employee.fullName}
-              style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-            />
-          ) : (
-            <div className="av" style={{ width: 52, height: 52, fontSize: 18, background: "var(--brand-grad)" }}>
-              {employee.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join("").toUpperCase()}
-            </div>
-          )}
-          <div>
-            <h1>
-              {employee.fullName}{" "}
-              <span className="badge b-indigo" style={{ verticalAlign: "middle" }}>
-                {employee.code}
-              </span>
-            </h1>
-            <p>
-              {canEdit ? "Cập nhật hồ sơ" : "Xem hồ sơ"} · trạng thái hiện tại: {EMPLOYEE_STATUS_LABEL[employee.status]}
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {sp.pwreset && (
         <div className="badge b-green" style={{ marginBottom: 16 }}>
@@ -129,7 +108,7 @@ export default async function EmployeeEditPage({
       ) : (
         // Người chỉ có quyền XEM (vd Trưởng phòng) — hồ sơ chỉ-đọc, ẩn lương/thuế/ngân hàng.
         <div className="card">
-          <div className="card-h"><h3>Thông tin hồ sơ</h3></div>
+          <div className="card-h"><h3 className="sec-title">Thông tin hồ sơ</h3></div>
           <div className="grid-k g-3" style={{ gap: 14 }}>
             <Field label="Họ tên" value={employee.fullName} />
             <Field label="Mã nhân viên" value={employee.code} />
@@ -153,7 +132,7 @@ export default async function EmployeeEditPage({
         <div className="card" style={{ marginTop: 18 }}>
           <div className="card-h">
             <div>
-              <h3><Icon name="shield" /> Vai trò &amp; phân quyền</h3>
+              <h3 className="sec-title"><Icon name="shield" /> Vai trò &amp; phân quyền</h3>
               <div className="sub">Gán vai trò &amp; phạm vi dữ liệu cho tài khoản của nhân viên này. Áp dụng ngay.</div>
             </div>
             <Link href="/settings/roles" className="badge b-indigo">Ma trận quyền</Link>
@@ -175,7 +154,7 @@ export default async function EmployeeEditPage({
       <div className="card" style={{ marginTop: 18 }}>
         <div className="card-h">
           <div>
-            <h3>Người phụ thuộc</h3>
+            <h3 className="sec-title">Người phụ thuộc</h3>
             <div className="sub">{dependents.filter((d) => d.taxRegistered).length} đã đăng ký giảm trừ · dùng cho thuế TNCN</div>
           </div>
         </div>
@@ -238,7 +217,7 @@ export default async function EmployeeEditPage({
         <div className="card" style={{ marginTop: 18 }}>
           <div className="card-h">
             <div>
-              <h3>Lịch sử lương</h3>
+              <h3 className="sec-title">Lịch sử lương</h3>
               <div className="sub">Các lần điều chỉnh lương theo tháng hiệu lực · chỉnh tại trang Tính lương</div>
             </div>
           </div>
@@ -279,7 +258,7 @@ export default async function EmployeeEditPage({
         <div className="card" style={{ marginTop: 18, borderColor: "var(--c-rose)" }}>
           <div className="card-h">
             <div>
-              <h3>Xoá nhân viên</h3>
+              <h3 className="sec-title">Xoá nhân viên</h3>
               <div className="sub">Gỡ vĩnh viễn hồ sơ này khỏi hệ thống. Không thể hoàn tác.</div>
             </div>
           </div>

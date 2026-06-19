@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { listCustomers } from "@/lib/bnb/store";
 import { createOrderAction } from "../actions";
 
@@ -12,16 +13,14 @@ export default async function NewOrderPage() {
   const sorted = [...customers].sort((a, b) => a.name.localeCompare(b.name, "vi"));
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/orders">Quản lý đơn hàng</Link> <Icon name="chev" /> Tạo đơn
-      </div>
-      <div className="page-head">
-        <div>
-          <h1 style={{ fontSize: 22 }}>Tạo đơn hàng</h1>
-          <p>Nhập nhanh thông tin đơn — có thể bổ sung dòng hàng &amp; thanh toán sau khi tạo.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="cart"
+        title="Tạo đơn hàng"
+        subtitle="Nhập nhanh thông tin đơn — có thể bổ sung dòng hàng & thanh toán sau khi tạo."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Đơn hàng", "/orders"], ["Tạo đơn"]]}
+        actions={<Link href="/orders" className="btn ghost"><Icon name="chev" /> Quay lại</Link>}
+      />
 
       <div className="card" style={{ maxWidth: 760 }}>
         <form action={createOrderAction} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>

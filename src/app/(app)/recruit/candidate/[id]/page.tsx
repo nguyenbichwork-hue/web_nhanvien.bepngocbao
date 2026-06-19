@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import {
   convertCandidateAction,
   createInterviewAction,
@@ -50,32 +51,35 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
   const obDone = onboarding.filter((t) => t.done).length;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> <Link href="/recruit">Tuyển dụng</Link> <Icon name="chev" />{" "}
-        {opening ? <Link href={`/recruit/${opening.id}`}>{opening.title}</Link> : "—"} <Icon name="chev" /> {candidate.fullName}
-      </div>
-      <div className="page-head">
-        <div className="flex aic" style={{ gap: 12 }}>
-          <Link href={opening ? `/recruit/${opening.id}` : "/recruit"} className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
-          <div>
-            <h1>{candidate.fullName} <span className={`badge ${CANDIDATE_STAGE_BADGE[candidate.stage]}`} style={{ verticalAlign: "middle" }}>{CANDIDATE_STAGE_LABEL[candidate.stage]}</span></h1>
-            <p>
-              {candidate.email ?? "—"} · {candidate.phone ?? "—"} · nguồn {candidate.source ?? "—"} · ứng tuyển {fmt(candidate.appliedDate)}
-            </p>
-          </div>
-        </div>
-        {/* Tuyển → tạo hồ sơ nhân viên (1 click) */}
-        {canConvert && !candidate.employeeId && (
-          <form action={convertCandidateAction}>
-            <input type="hidden" name="candidateId" value={candidate.id} />
-            <button type="submit" className="btn primary"><Icon name="userplus" /> Tuyển → tạo hồ sơ NV</button>
-          </form>
-        )}
-        {linkedEmp && (
-          <Link href={`/employees/${linkedEmp.id}`} className="btn"><Icon name="users" /> Hồ sơ: {linkedEmp.code}</Link>
-        )}
-      </div>
+    <div>
+      <PageHero
+        icon="user"
+        title={candidate.fullName}
+        subtitle={`${candidate.email ?? "—"} · ${candidate.phone ?? "—"} · nguồn ${candidate.source ?? "—"} · ứng tuyển ${fmt(candidate.appliedDate)}`}
+        crumb={[
+          ["Trang chủ", "/dashboard"],
+          ["Nhân sự"],
+          ["Tuyển dụng", "/recruit"],
+          opening ? [opening.title, `/recruit/${opening.id}`] : ["—"],
+          [candidate.fullName],
+        ]}
+        actions={
+          <>
+            <span className={`badge ${CANDIDATE_STAGE_BADGE[candidate.stage]}`}>{CANDIDATE_STAGE_LABEL[candidate.stage]}</span>
+            <Link href={opening ? `/recruit/${opening.id}` : "/recruit"} className="iconbtn" title="Quay lại"><Icon name="chevleft" /></Link>
+            {/* Tuyển → tạo hồ sơ nhân viên (1 click) */}
+            {canConvert && !candidate.employeeId && (
+              <form action={convertCandidateAction}>
+                <input type="hidden" name="candidateId" value={candidate.id} />
+                <button type="submit" className="btn primary"><Icon name="userplus" /> Tuyển → tạo hồ sơ NV</button>
+              </form>
+            )}
+            {linkedEmp && (
+              <Link href={`/employees/${linkedEmp.id}`} className="btn"><Icon name="users" /> Hồ sơ: {linkedEmp.code}</Link>
+            )}
+          </>
+        }
+      />
 
       {/* Phỏng vấn */}
       <div className="card" style={{ marginBottom: 18 }}>

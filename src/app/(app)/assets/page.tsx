@@ -1,4 +1,7 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { EmployeeSelect } from "@/components/employee-select";
 import { allocateAssetAction, createAssetAction, deleteAssetAction, returnAllocationAction } from "@/lib/org/actions";
 import { listAllocations, listAssets, listEmployees } from "@/lib/org/store";
@@ -30,21 +33,66 @@ export default async function AssetsPage() {
     available: assets.filter((a) => a.status === "available").length,
   };
 
+  // Cơ cấu tài sản theo trạng thái (donut).
+  const STATUS_COLORS: Record<keyof typeof ASSET_STATUS_LABEL, string> = {
+    available: "#0e9d6e",
+    allocated: "#2563eb",
+    maintenance: "#d98309",
+    retired: "#9aa1ab",
+  };
+  const mix = (Object.keys(ASSET_STATUS_LABEL) as (keyof typeof ASSET_STATUS_LABEL)[])
+    .map((st) => ({
+      name: ASSET_STATUS_LABEL[st],
+      value: assets.filter((a) => a.status === st).length,
+      color: STATUS_COLORS[st],
+    }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tài sản
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Quản lý tài sản cấp phát</h1>
-          <p>{counts.total} tài sản · {counts.allocated} đang cấp phát · {counts.available} sẵn sàng.</p>
+    <div>
+      <PageHero
+        icon="box"
+        title="Quản lý tài sản cấp phát"
+        subtitle="Cấp phát tài sản cho nhân viên và thu hồi khi nghỉ việc."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tài sản"]]}
+        stats={[
+          { label: "Tài sản", value: counts.total },
+          { label: "Đang cấp phát", value: counts.allocated },
+          { label: "Sẵn sàng", value: counts.available, tone: "up" },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="box" /></div>
+          <div className="val"><CountUp to={counts.total} /></div>
+          <div className="lbl">tổng tài sản</div>
+        </div>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="userplus" /></div>
+          <div className="val"><CountUp to={counts.allocated} /></div>
+          <div className="lbl">đang cấp phát</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={counts.available} /></div>
+          <div className="lbl">sẵn sàng cấp</div>
         </div>
       </div>
 
+      {mix.length > 0 && (
+        <div className="grid-k g-2 mt" style={{ marginBottom: 20 }}>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu tài sản theo trạng thái</h3></div>
+            <DonutChart data={mix} height={250} centerValue={counts.total} centerLabel="tài sản" unit=" tài sản" />
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-h">
-          <div><h3>Danh mục tài sản</h3><div className="sub">Cấp phát cho nhân viên & thu hồi khi nghỉ việc</div></div>
+          <div><h3 className="sec-title">Danh mục tài sản</h3><div className="sub">Cấp phát cho nhân viên & thu hồi khi nghỉ việc</div></div>
         </div>
         {assets.length === 0 ? (
           <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>Chưa có tài sản nào.</p>
@@ -99,7 +147,7 @@ export default async function AssetsPage() {
 
       {canManage && (
         <div className="card" style={{ marginTop: 18 }}>
-          <div className="card-h"><h3>Thêm tài sản</h3></div>
+          <div className="card-h"><h3 className="sec-title">Thêm tài sản</h3></div>
           <form action={createAssetAction}>
             <div className="grid-k g-4" style={{ gap: 14 }}>
               <div className="field"><label>Mã tài sản *</label><input name="code" required placeholder="TS-LP-003" /></div>

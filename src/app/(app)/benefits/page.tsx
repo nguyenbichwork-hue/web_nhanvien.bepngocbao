@@ -1,4 +1,7 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { EmployeeSelect } from "@/components/employee-select";
 import {
   createBenefitAction,
@@ -9,6 +12,7 @@ import {
 } from "@/lib/org/actions";
 import { listBenefitEnrollments, listBenefits, listEmployees } from "@/lib/org/store";
 import { formatVND } from "@/lib/payroll/calc";
+import { compactVnd } from "@/lib/bnb/util";
 import { can, requirePermission } from "@/lib/auth/session";
 
 const fmt = (iso?: string) => {
@@ -30,20 +34,60 @@ export default async function BenefitsPage() {
   const countOf = (benefitId: string) => enrollments.filter((e) => e.benefitId === benefitId).length;
   const roster = employees.filter((e) => e.status !== "left");
 
+  const activeCount = benefits.filter((b) => b.isActive).length;
+  // Tổng giá trị phúc lợi/năm theo số người hưởng thực tế.
+  const totalValue = benefits.reduce((s, b) => s + (b.valuePerYear || 0) * countOf(b.id), 0);
+
+  // Cơ cấu lượt đăng ký theo phúc lợi (donut).
+  const MIX_COLORS = ["#2563eb", "#7c3aed", "#0e9d6e", "#d98309", "#e23b54", "#0d9488", "#9aa1ab"];
+  const mix = benefits
+    .map((b, i) => ({ name: b.name, value: countOf(b.id), color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Phúc lợi
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Phúc lợi</h1>
-          <p>{benefits.length} loại phúc lợi · {enrollments.length} lượt đăng ký.</p>
+    <div>
+      <PageHero
+        icon="award"
+        title="Phúc lợi"
+        subtitle="Danh mục chế độ đãi ngộ và quản lý đăng ký phúc lợi cho nhân viên."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Phúc lợi"]]}
+        stats={[
+          { label: "Loại phúc lợi", value: benefits.length },
+          { label: "Lượt đăng ký", value: enrollments.length },
+          { label: "Giá trị/năm", value: compactVnd(totalValue), tone: "up" },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="award" /></div>
+          <div className="val"><CountUp to={activeCount} /></div>
+          <div className="lbl">phúc lợi đang áp dụng</div>
+        </div>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="users" /></div>
+          <div className="val"><CountUp to={enrollments.length} /></div>
+          <div className="lbl">lượt đăng ký</div>
+        </div>
+        <div className="card kpi grad hover gr-teal">
+          <div className="ic"><Icon name="wallet" /></div>
+          <div className="val" style={{ fontSize: 24 }}>{formatVND(totalValue)}</div>
+          <div className="lbl">tổng giá trị/năm</div>
         </div>
       </div>
 
+      {mix.length > 0 && (
+        <div className="grid-k g-2 mt" style={{ marginBottom: 20 }}>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu lượt đăng ký theo phúc lợi</h3></div>
+            <DonutChart data={mix} height={250} centerValue={enrollments.length} centerLabel="lượt" unit=" lượt" />
+          </div>
+        </div>
+      )}
+
       <div className="card">
-        <div className="card-h"><div><h3>Danh mục phúc lợi</h3><div className="sub">Chế độ đãi ngộ áp dụng cho nhân viên</div></div></div>
+        <div className="card-h"><div><h3 className="sec-title">Danh mục phúc lợi</h3><div className="sub">Chế độ đãi ngộ áp dụng cho nhân viên</div></div></div>
         {benefits.length === 0 ? (
           <p className="muted" style={{ padding: "24px 0", textAlign: "center" }}>Chưa có phúc lợi nào.</p>
         ) : (
@@ -83,7 +127,7 @@ export default async function BenefitsPage() {
       {canManage && (
         <div className="grid-k g-2" style={{ marginTop: 18, alignItems: "start" }}>
           <div className="card">
-            <div className="card-h"><h3>Thêm phúc lợi</h3></div>
+            <div className="card-h"><h3 className="sec-title">Thêm phúc lợi</h3></div>
             <form action={createBenefitAction}>
               <div className="grid-k g-2" style={{ gap: 12 }}>
                 <div className="field"><label>Mã *</label><input name="code" required placeholder="BH-SK" /></div>
@@ -97,7 +141,7 @@ export default async function BenefitsPage() {
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Đăng ký phúc lợi cho nhân viên</h3></div>
+            <div className="card-h"><h3 className="sec-title">Đăng ký phúc lợi cho nhân viên</h3></div>
             <form action={enrollBenefitAction} className="flex gap aic" style={{ flexWrap: "wrap" }}>
               <select name="benefitId" required defaultValue="" style={{ height: 38, minWidth: 180 }}>
                 <option value="" disabled>— Phúc lợi —</option>

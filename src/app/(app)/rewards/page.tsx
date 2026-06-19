@@ -1,10 +1,14 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { EmployeeSelect } from "@/components/employee-select";
 import { TableFilter } from "@/components/table-filter";
 import { createRewardAction, deleteRewardAction } from "@/lib/org/actions";
 import { listEmployees, listRewards } from "@/lib/org/store";
 import { RECORD_KIND_BADGE, RECORD_KIND_LABEL, type RecordKind } from "@/lib/org/types";
 import { formatVND } from "@/lib/payroll/calc";
+import { compactVnd } from "@/lib/bnb/util";
 import { can, requirePermission } from "@/lib/auth/session";
 import { visibleEmployeeIds } from "@/lib/auth/scope";
 
@@ -26,23 +30,60 @@ export default async function RewardsPage() {
 
   const rewards = records.filter((r) => r.kind === "reward").length;
   const disciplines = records.filter((r) => r.kind === "discipline").length;
+  const rewardAmount = records.filter((r) => r.kind === "reward").reduce((s, r) => s + (r.amount || 0), 0);
+
+  // Cơ cấu khen thưởng / kỷ luật (donut).
+  const mix = [
+    { name: RECORD_KIND_LABEL.reward, value: rewards, color: "#0e9d6e" },
+    { name: RECORD_KIND_LABEL.discipline, value: disciplines, color: "#e23b54" },
+  ].filter((x) => x.value > 0);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Khen thưởng – Kỷ luật
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Khen thưởng – Kỷ luật</h1>
-          <p>{rewards} khen thưởng · {disciplines} kỷ luật trong phạm vi của bạn.</p>
+    <div>
+      <PageHero
+        icon="award"
+        title="Khen thưởng – Kỷ luật"
+        subtitle="Ghi nhận quyết định khen thưởng và kỷ luật cho nhân viên trong phạm vi của bạn."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Khen thưởng – Kỷ luật"]]}
+        stats={[
+          { label: "Khen thưởng", value: rewards, tone: "up" },
+          { label: "Kỷ luật", value: disciplines, tone: disciplines > 0 ? "down" : "flat" },
+          { label: "Tổng thưởng", value: compactVnd(rewardAmount), tone: "up" },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 20 }}>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="award" /></div>
+          <div className="val"><CountUp to={rewards} /></div>
+          <div className="lbl">quyết định khen thưởng</div>
+        </div>
+        <div className="card kpi grad hover gr-crimson">
+          <div className="ic"><Icon name="alert" /></div>
+          <div className="val"><CountUp to={disciplines} /></div>
+          <div className="lbl">quyết định kỷ luật</div>
+        </div>
+        <div className="card kpi grad hover gr-teal">
+          <div className="ic"><Icon name="wallet" /></div>
+          <div className="val" style={{ fontSize: 24 }}>{formatVND(rewardAmount)}</div>
+          <div className="lbl">tổng tiền thưởng</div>
         </div>
       </div>
+
+      {mix.length > 0 && (
+        <div className="grid-k g-2 mt" style={{ marginBottom: 20 }}>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu khen thưởng / kỷ luật</h3></div>
+            <DonutChart data={mix} height={250} centerValue={records.length} centerLabel="bản ghi" unit=" bản ghi" />
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-h">
           <div>
-            <h3>Danh sách quyết định</h3>
+            <h3 className="sec-title">Danh sách quyết định</h3>
             <div className="sub">{records.length} bản ghi</div>
           </div>
           {records.length > 8 && <TableFilter targetId="rewards-table" />}
@@ -88,7 +129,7 @@ export default async function RewardsPage() {
 
       {canManage && (
         <div className="card" style={{ marginTop: 18 }}>
-          <div className="card-h"><h3>Ghi nhận khen thưởng / kỷ luật</h3></div>
+          <div className="card-h"><h3 className="sec-title">Ghi nhận khen thưởng / kỷ luật</h3></div>
           <form action={createRewardAction}>
             <div className="grid-k g-4" style={{ gap: 14 }}>
               <div className="field">

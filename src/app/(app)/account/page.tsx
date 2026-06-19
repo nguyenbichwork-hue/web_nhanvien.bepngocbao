@@ -1,4 +1,4 @@
-import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { AccountPanel } from "@/components/account-panel";
 import { requireSession } from "@/lib/auth/session";
 
@@ -9,16 +9,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tài khoản của tôi
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Tài khoản của tôi</h1>
-          <p>Đổi mật khẩu và xem thông tin đăng nhập của bạn.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="settings"
+        title="Tài khoản của tôi"
+        subtitle="Đổi mật khẩu và xem thông tin đăng nhập của bạn."
+        crumb={[["Trang chủ", "/dashboard"], ["Tài khoản"], ["Tài khoản của tôi"]]}
+      />
 
       <AccountPanel session={session} status={sp} returnTo="/account" />
     </div>

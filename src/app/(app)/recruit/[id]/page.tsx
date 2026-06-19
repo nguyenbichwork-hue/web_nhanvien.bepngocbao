@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { createCandidateAction, moveCandidateAction, updateJobOpeningAction } from "@/lib/org/actions";
 import {
   getJobOpening,
@@ -99,10 +100,12 @@ export default async function OpeningBoardPage({ params }: { params: Promise<Par
 
   if (!opening) {
     return (
-      <div className="view-in">
-        <div className="crumbs">
-          Trang chủ <Icon name="chev" /> Tuyển dụng <Icon name="chev" /> Chi tiết
-        </div>
+      <div>
+        <PageHero
+          icon="briefcase"
+          title="Tin tuyển dụng"
+          crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tuyển dụng", "/recruit"], ["Chi tiết"]]}
+        />
         <div className="card">
           <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>
             Không tìm thấy tin tuyển dụng.
@@ -122,25 +125,19 @@ export default async function OpeningBoardPage({ params }: { params: Promise<Par
   const rejected = byStage("rejected");
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tuyển dụng <Icon name="chev" /> {opening.title}
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>{opening.title}</h1>
-          <p>
-            {deptName} · {titleName} · cần {opening.headcount} ·{" "}
-            <span className={`badge ${OPENING_STATUS_BADGE[opening.status]}`}>
-              {OPENING_STATUS_LABEL[opening.status]}
-            </span>
-          </p>
-        </div>
-        <div className="flex gap">
-          <Link href={`/recruit/${opening.id}/preview`} className="btn"><Icon name="doc" /> Xem trước tin đăng</Link>
-          <Link href="/recruit" className="btn"><Icon name="chevleft" /> Về danh sách</Link>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="briefcase"
+        title={opening.title}
+        subtitle={`${deptName} · ${titleName} · cần ${opening.headcount}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tuyển dụng", "/recruit"], [opening.title]]}
+        actions={
+          <>
+            <Link href={`/recruit/${opening.id}/preview`} className="btn"><Icon name="doc" /> Xem trước tin đăng</Link>
+            <Link href="/recruit" className="btn"><Icon name="chevleft" /> Về danh sách</Link>
+          </>
+        }
+      />
 
       {/* Thông tin tin tuyển dụng */}
       <div className="card" style={{ marginBottom: 18 }}>

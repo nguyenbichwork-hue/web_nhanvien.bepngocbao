@@ -52,9 +52,11 @@ const ROUTE_ACCENT: [string, AccentKey][] = [
   ["/marketing", "violet"], ["/inventory", "violet"], ["/purchase", "violet"],
   // Hiện trường & Hậu mãi
   ["/delivery", "amber"], ["/warranty", "amber"], ["/shift-report", "amber"], ["/tasks", "amber"],
-  // Nhân sự
+  // Nhân sự (gồm các module HR phụ)
   ["/employees", "blue"], ["/schedule", "blue"], ["/leave", "blue"],
   ["/overtime", "blue"], ["/payroll", "blue"], ["/performance", "blue"], ["/recruit", "blue"],
+  ["/contracts", "blue"], ["/benefits", "blue"], ["/assets", "blue"],
+  ["/training", "blue"], ["/rewards", "blue"], ["/notifications", "blue"],
   // Quản trị
   ["/admin", "teal"], ["/bi", "teal"], ["/finance", "teal"],
   ["/reports", "teal"], ["/integrations", "teal"],

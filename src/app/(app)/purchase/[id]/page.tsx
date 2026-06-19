@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { getPurchaseOrder } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -28,21 +29,27 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
   const nextStatus = curIdx >= 0 && curIdx < PO_FLOW.length - 1 ? PO_FLOW[curIdx + 1] : undefined;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/purchase">Nhập hàng</Link> <Icon name="chev" /> {po.code}
-      </div>
-      <div className="page-head">
-        <div>
-          <h1 style={{ fontSize: 22 }}>{po.code}</h1>
-          <p>{po.supplierName} · Tạo {fmtDate(po.createdAt)}</p>
-        </div>
-        <span className={`badge ${PO_STATUS_BADGE[po.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{PO_STATUS_LABEL[po.status]}</span>
-      </div>
+    <div>
+      <PageHero
+        icon="truck"
+        title={`Phiếu nhập ${po.code}`}
+        subtitle={`${po.supplierName} · Tạo ${fmtDate(po.createdAt)}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Vận hành"], ["Nhập hàng", "/purchase"], [po.code]]}
+        stats={[
+          { label: "Tổng giá trị", value: fmtVnd(po.total) },
+          { label: "Số dòng", value: po.items.length },
+        ]}
+        actions={
+          <>
+            <span className={`badge ${PO_STATUS_BADGE[po.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{PO_STATUS_LABEL[po.status]}</span>
+            <Link href="/purchase" className="btn ghost"><Icon name="chev" /> Quay lại</Link>
+          </>
+        }
+      />
 
       {/* Tiến trình PO */}
       <div className="card">
-        <div className="card-h"><h3>Tiến trình nhập hàng</h3>{cancelled && <span className="badge b-rose">Đã huỷ</span>}</div>
+        <div className="card-h"><h3 className="sec-title">Tiến trình nhập hàng</h3>{cancelled && <span className="badge b-rose">Đã huỷ</span>}</div>
         <div style={{ display: "flex", gap: 6, alignItems: "stretch", flexWrap: "wrap" }}>
           {PO_FLOW.map((st, i) => {
             const done = !cancelled && curIdx >= 0 && i < curIdx;
@@ -72,7 +79,7 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
         {/* Cột trái: thông tin + bảng hàng */}
         <div style={{ display: "grid", gap: 20 }}>
           <div className="card">
-            <div className="card-h"><h3>Thông tin PO</h3></div>
+            <div className="card-h"><h3 className="sec-title">Thông tin PO</h3></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Info label="Nhà cung cấp" value={po.supplierName} />
               <Info label="Dự kiến về" value={po.expectedAt ? fmtDate(po.expectedAt) : undefined} />
@@ -83,7 +90,7 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Dòng hàng</h3><span className="badge b-gray">{po.items.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Dòng hàng</h3><span className="badge b-gray">{po.items.length}</span></div>
             <table>
               <thead>
                 <tr>
@@ -120,7 +127,7 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
         <div style={{ display: "grid", gap: 20 }}>
           {canManage ? (
             <div className="card">
-              <div className="card-h"><h3>Chuyển trạng thái</h3></div>
+              <div className="card-h"><h3 className="sec-title">Chuyển trạng thái</h3></div>
               {!cancelled && nextStatus && (
                 <form action={setPOStatusAction} style={{ marginBottom: 14 }}>
                   <input type="hidden" name="id" value={po.id} />

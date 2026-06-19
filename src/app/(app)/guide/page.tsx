@@ -1,4 +1,5 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import {
   MODULE_LABEL,
   PERMISSIONS,
@@ -239,16 +240,13 @@ export default async function GuidePage() {
   });
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Hướng dẫn
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Hướng dẫn sử dụng Bếp Ngọc Bảo (BNB)</h1>
-          <p>Giải thích chức năng, logic và cách dùng từng phân hệ trong hệ thống vận hành cửa hàng.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="book"
+        title="Hướng dẫn"
+        subtitle="Giải thích chức năng, logic và cách dùng từng phân hệ trong hệ thống vận hành cửa hàng."
+        crumb={[["Trang chủ", "/dashboard"], ["Hệ thống"], ["Hướng dẫn"]]}
+      />
 
       {/* Mục lục */}
       <div className="card" style={{ marginBottom: 18 }}>

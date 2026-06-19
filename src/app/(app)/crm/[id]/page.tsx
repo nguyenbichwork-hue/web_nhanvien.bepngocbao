@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { getLead, listActivities, getCustomer } from "@/lib/bnb/store";
-import { fmtVnd, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDateTime } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL, LEAD_STAGE_BADGE, LEAD_SOURCE_LABEL, ACTIVITY_LABEL,
@@ -22,26 +23,25 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const customer = lead.customerId ? await getCustomer(lead.customerId) : undefined;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/crm">Khách hàng & Lead</Link> <Icon name="chev" /> {lead.code}
-      </div>
-      <div className="page-head">
-        <div className="urow">
-          <div className="av" style={{ width: 52, height: 52, fontSize: 18, background: avatarBg(lead.name) }}>{initials(lead.name)}</div>
-          <div>
-            <h1 style={{ fontSize: 22 }}>{lead.name}</h1>
-            <p>{lead.phone}{lead.email ? ` · ${lead.email}` : ""} · {LEAD_SOURCE_LABEL[lead.source]}</p>
-          </div>
-        </div>
-        <span className={`badge ${LEAD_STAGE_BADGE[lead.stage]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{LEAD_STAGE_LABEL[lead.stage]}</span>
-      </div>
+    <div>
+      <PageHero
+        icon="customer"
+        title={lead.name}
+        subtitle={`${lead.phone}${lead.email ? ` · ${lead.email}` : ""} · ${LEAD_SOURCE_LABEL[lead.source]}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Khách hàng & Lead", "/crm"], [lead.code]]}
+        actions={
+          <>
+            <span className={`badge ${LEAD_STAGE_BADGE[lead.stage]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{LEAD_STAGE_LABEL[lead.stage]}</span>
+            <Link href="/crm" className="btn ghost"><Icon name="chev" /> Quay lại</Link>
+          </>
+        }
+      />
 
       <div className="grid-k g-2">
         {/* Cột trái: thông tin + timeline */}
         <div style={{ display: "grid", gap: 20 }}>
           <div className="card">
-            <div className="card-h"><h3>Thông tin</h3></div>
+            <div className="card-h"><h3 className="sec-title">Thông tin</h3></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Info label="Nhu cầu" value={lead.need} />
               <Info label="Ngân sách" value={lead.budget ? fmtVnd(lead.budget) : undefined} />
@@ -56,7 +56,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Lịch sử hoạt động</h3><span className="badge b-gray">{activities.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Lịch sử hoạt động</h3><span className="badge b-gray">{activities.length}</span></div>
             {activities.length === 0 ? (
               <p className="muted small" style={{ padding: "14px 0" }}>Chưa có hoạt động.</p>
             ) : (
@@ -85,7 +85,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           {canManage && (
             <>
               <div className="card">
-                <div className="card-h"><h3>Chuyển trạng thái</h3></div>
+                <div className="card-h"><h3 className="sec-title">Chuyển trạng thái</h3></div>
                 <div className="chips">
                   {LEAD_STAGES.map((st) => (
                     <form key={st} action={setStageAction}>
@@ -104,7 +104,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </div>
 
               <div className="card">
-                <div className="card-h"><h3>Ghi nhận liên hệ</h3></div>
+                <div className="card-h"><h3 className="sec-title">Ghi nhận liên hệ</h3></div>
                 <form action={addActivityAction} style={{ display: "grid", gap: 12 }}>
                   <input type="hidden" name="leadId" value={lead.id} />
                   <div className="field" style={{ margin: 0 }}><label>Loại</label>

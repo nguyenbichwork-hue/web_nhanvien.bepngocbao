@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { getQuote, getCustomer, getLead } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, lineAmount, quoteSubtotal, quoteTotal } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -31,19 +32,24 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const total = quoteTotal(quote);
 
   return (
-    <div className="view-in">
-      <div className="crumbs no-print">
-        <Link href="/quote">Báo giá</Link> <Icon name="chev" /> {quote.code}
-      </div>
-      <div className="page-head no-print">
-        <div>
-          <h1 style={{ fontSize: 22 }}>Báo giá {quote.code}</h1>
-          <p>Tạo {fmtDate(quote.createdAt)}{quote.byId ? ` · ${names[quote.byId] || ""}` : ""}</p>
-        </div>
-        <div className="flex gap aic">
-          <span className={`badge ${QUOTE_STATUS_BADGE[quote.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{QUOTE_STATUS_LABEL[quote.status]}</span>
-          <PrintButton />
-        </div>
+    <div>
+      <div className="no-print">
+        <PageHero
+          icon="quote"
+          title={`Báo giá ${quote.code}`}
+          subtitle={`Tạo ${fmtDate(quote.createdAt)}${quote.byId ? ` · ${names[quote.byId] || ""}` : ""}`}
+          crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Báo giá", "/quote"], [quote.code]]}
+          stats={[
+            { label: "Tạm tính", value: fmtVnd(subtotal) },
+            { label: "Thành tiền", value: fmtVnd(total), tone: "up" },
+          ]}
+          actions={
+            <>
+              <span className={`badge ${QUOTE_STATUS_BADGE[quote.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{QUOTE_STATUS_LABEL[quote.status]}</span>
+              <PrintButton />
+            </>
+          }
+        />
       </div>
 
       <div className="grid-k g-2" style={{ alignItems: "start" }}>
@@ -121,7 +127,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
         {/* Hành động */}
         <div className="card no-print">
-          <div className="card-h"><h3>Thao tác</h3></div>
+          <div className="card-h"><h3 className="sec-title">Thao tác</h3></div>
           {canManage ? (
             <div style={{ display: "grid", gap: 12 }}>
               <form action={setQuoteStatusAction}>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { getOrder, getCustomer } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, fmtDateTime, orderRemaining } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -39,21 +40,28 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const nextStatus = curIdx >= 0 && curIdx < ORDER_FLOW.length - 1 ? ORDER_FLOW[curIdx + 1] : undefined;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/orders">Quản lý đơn hàng</Link> <Icon name="chev" /> {order.code}
-      </div>
-      <div className="page-head">
-        <div>
-          <h1 style={{ fontSize: 22 }}>{order.code}</h1>
-          <p>{customer ? `${customer.name} · ${customer.phone}` : "Khách lẻ"} · Tạo {fmtDate(order.createdAt)}</p>
-        </div>
-        <span className={`badge ${ORDER_STATUS_BADGE[order.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{ORDER_STATUS_LABEL[order.status]}</span>
-      </div>
+    <div>
+      <PageHero
+        icon="cart"
+        title={`Đơn hàng ${order.code}`}
+        subtitle={`${customer ? `${customer.name} · ${customer.phone}` : "Khách lẻ"} · Tạo ${fmtDate(order.createdAt)}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Đơn hàng", "/orders"], [order.code]]}
+        stats={[
+          { label: "Tổng đơn", value: fmtVnd(order.total) },
+          { label: "Đã thu", value: fmtVnd(order.paid), tone: "up" },
+          { label: "Còn lại", value: fmtVnd(remaining), tone: remaining > 0 ? "down" : "flat" },
+        ]}
+        actions={
+          <>
+            <span className={`badge ${ORDER_STATUS_BADGE[order.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{ORDER_STATUS_LABEL[order.status]}</span>
+            <Link href="/orders" className="btn ghost"><Icon name="chev" /> Quay lại</Link>
+          </>
+        }
+      />
 
       {/* Thanh tiến trình theo ORDER_FLOW */}
       <div className="card">
-        <div className="card-h"><h3>Tiến trình đơn</h3>{cancelled && <span className="badge b-rose">Đã huỷ</span>}</div>
+        <div className="card-h"><h3 className="sec-title">Tiến trình đơn</h3>{cancelled && <span className="badge b-rose">Đã huỷ</span>}</div>
         <div style={{ display: "flex", gap: 6, alignItems: "stretch", flexWrap: "wrap" }}>
           {ORDER_FLOW.map((st, i) => {
             const done = !cancelled && curIdx >= 0 && i < curIdx;
@@ -83,7 +91,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         {/* Cột trái: thông tin + dòng hàng + thanh toán */}
         <div style={{ display: "grid", gap: 20 }}>
           <div className="card">
-            <div className="card-h"><h3>Thông tin giao nhận</h3></div>
+            <div className="card-h"><h3 className="sec-title">Thông tin giao nhận</h3></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Info label="Khách hàng" value={customer ? `${customer.name}` : undefined} />
               <Info label="Điện thoại" value={customer?.phone} />
@@ -96,7 +104,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Dòng hàng</h3><span className="badge b-gray">{order.lines.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Dòng hàng</h3><span className="badge b-gray">{order.lines.length}</span></div>
             <table>
               <thead>
                 <tr>
@@ -125,7 +133,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Lịch sử thanh toán</h3><span className="badge b-gray">{order.payments?.length || 0}</span></div>
+            <div className="card-h"><h3 className="sec-title">Lịch sử thanh toán</h3><span className="badge b-gray">{order.payments?.length || 0}</span></div>
             {(!order.payments || order.payments.length === 0) ? (
               <p className="muted small" style={{ padding: "12px 0" }}>Chưa ghi nhận thanh toán.</p>
             ) : (
@@ -149,7 +157,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <div style={{ display: "grid", gap: 20 }}>
           {isHaravan ? (
             <div className="card">
-              <div className="card-h"><h3>Đơn đồng bộ Haravan</h3><span className="badge b-sky">Live</span></div>
+              <div className="card-h"><h3 className="sec-title">Đơn đồng bộ Haravan</h3><span className="badge b-sky">Live</span></div>
               <p className="muted small">
                 Đơn này được đồng bộ trực tiếp từ Haravan (chỉ đọc). Cập nhật trạng thái,
                 thanh toán và giao hàng thực hiện trên hệ thống Haravan; dữ liệu tự làm mới sau ~5 phút.
@@ -160,7 +168,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <>
               {haravanConfigured() && (
                 <div className="card">
-                  <div className="card-h"><h3>Đồng bộ Haravan</h3>{order.haravanId && <span className="badge b-green">Đã đẩy</span>}</div>
+                  <div className="card-h"><h3 className="sec-title">Đồng bộ Haravan</h3>{order.haravanId && <span className="badge b-green">Đã đẩy</span>}</div>
                   {order.haravanId ? (
                     <p className="small muted">Đơn đã tạo trên Haravan (mã <b>{order.haravanId}</b>).</p>
                   ) : (
@@ -175,7 +183,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
               <div className="card">
-                <div className="card-h"><h3>Chuyển trạng thái</h3></div>
+                <div className="card-h"><h3 className="sec-title">Chuyển trạng thái</h3></div>
                 {!cancelled && nextStatus && (
                   <form action={setOrderStatusAction} style={{ marginBottom: 14 }}>
                     <input type="hidden" name="id" value={order.id} />
@@ -206,7 +214,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </div>
 
               <div className="card">
-                <div className="card-h"><h3>Ghi nhận thanh toán</h3></div>
+                <div className="card-h"><h3 className="sec-title">Ghi nhận thanh toán</h3></div>
                 <form action={addPaymentAction} style={{ display: "grid", gap: 12 }}>
                   <input type="hidden" name="id" value={order.id} />
                   <div className="field" style={{ margin: 0 }}>

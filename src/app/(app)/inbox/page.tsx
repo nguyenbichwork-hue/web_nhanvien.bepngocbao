@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { listConversations, listMessages, getConversation } from "@/lib/bnb/store";
 import { oaConfigured } from "@/lib/zalo/oa";
 import { fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
@@ -30,18 +31,17 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   const pending = conversations.filter((c) => c.status === "pending").length;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Hộp thoại Zalo</div>
-      <div className="page-head">
-        <div>
-          <h1><Icon name="chat" /> Hộp thoại Zalo OA</h1>
-          <p>Chat hai chiều với khách qua Zalo Official Account — tư vấn, chăm sóc, chốt đơn.</p>
-        </div>
-        <div className="flex gap aic">
-          <span className="badge b-rose">{totalUnread} chưa đọc</span>
-          <span className="badge b-amber">{pending} chờ xử lý</span>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="chat"
+        title="Hộp thoại Zalo OA"
+        subtitle="Chat hai chiều với khách qua Zalo Official Account — tư vấn, chăm sóc, chốt đơn."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Hộp thoại Zalo"]]}
+        stats={[
+          { label: "Chưa đọc", value: totalUnread, tone: totalUnread ? "down" : "flat" },
+          { label: "Chờ xử lý", value: pending },
+        ]}
+      />
 
       {!oaConfigured() && (
         <div className="card mt" style={{ borderColor: "var(--c-amber)", background: "var(--surface-2)" }}>

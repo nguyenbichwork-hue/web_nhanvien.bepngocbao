@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import {
   getCustomer, listOrders, listWarranties, listNpsResponses,
   listLeads, listSurveys, listActivities,
 } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, fmtDateTime, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   ORDER_STATUS_LABEL, ORDER_STATUS_BADGE,
@@ -44,20 +45,24 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const latestNps = nps[0];
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        <Link href="/customers">Khách hàng 360</Link> <Icon name="chev" /> {customer.code || customer.name}
-      </div>
-      <div className="page-head">
-        <div className="urow">
-          <div className="av" style={{ width: 52, height: 52, fontSize: 18, background: avatarBg(customer.name) }}>{initials(customer.name)}</div>
-          <div>
-            <h1 style={{ fontSize: 22 }}>{customer.name}</h1>
-            <p>{customer.phone || "—"}{customer.email ? ` · ${customer.email}` : ""}{customer.address ? ` · ${customer.address}` : ""}</p>
-          </div>
-        </div>
-        {customer.source && <span className="badge b-indigo" style={{ fontSize: 13, padding: "7px 14px" }}>{LEAD_SOURCE_LABEL[customer.source]}</span>}
-      </div>
+    <div>
+      <PageHero
+        icon="users"
+        title={customer.name}
+        subtitle={`${customer.phone || "—"}${customer.email ? ` · ${customer.email}` : ""}${customer.address ? ` · ${customer.address}` : ""}`}
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Khách hàng 360", "/customers"], [customer.code || customer.name]]}
+        stats={[
+          { label: "Tổng chi tiêu", value: fmtVnd(spent), tone: "up" },
+          { label: "Số đơn", value: orderCount },
+          { label: "AOV", value: fmtVnd(aov) },
+        ]}
+        actions={
+          <>
+            {customer.source && <span className="badge b-indigo" style={{ fontSize: 13, padding: "7px 14px" }}>{LEAD_SOURCE_LABEL[customer.source]}</span>}
+            <Link href="/customers" className="btn ghost"><Icon name="chev" /> Quay lại</Link>
+          </>
+        }
+      />
 
       {/* KPI khách */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
@@ -87,7 +92,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         {/* Cột trái: đơn hàng + bảo hành */}
         <div style={{ display: "grid", gap: 20 }}>
           <div className="card">
-            <div className="card-h"><h3>Đơn hàng</h3><span className="badge b-gray">{orders.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Đơn hàng</h3><span className="badge b-gray">{orders.length}</span></div>
             {orders.length === 0 ? (
               <p className="muted small" style={{ padding: "14px 0" }}>Chưa có đơn hàng.</p>
             ) : (
@@ -117,7 +122,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Bảo hành & chăm sóc</h3><span className="badge b-gray">{warranties.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Bảo hành & chăm sóc</h3><span className="badge b-gray">{warranties.length}</span></div>
             {warranties.length === 0 ? (
               <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phiếu bảo hành.</p>
             ) : (
@@ -141,7 +146,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           {/* Lead & khảo sát liên quan */}
           {(leads.length > 0 || surveys.length > 0) && (
             <div className="card">
-              <div className="card-h"><h3>Lead & khảo sát</h3></div>
+              <div className="card-h"><h3 className="sec-title">Lead & khảo sát</h3></div>
               <div style={{ display: "grid", gap: 0 }}>
                 {leads.map((l) => (
                   <div key={l.id} className="flex between aic" style={{ padding: "12px 0", borderTop: "1px solid var(--line)", gap: 12 }}>
@@ -169,7 +174,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         {/* Cột phải: NPS + timeline */}
         <div style={{ display: "grid", gap: 20 }}>
           <div className="card">
-            <div className="card-h"><h3>Phản hồi NPS</h3><span className="badge b-gray">{nps.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Phản hồi NPS</h3><span className="badge b-gray">{nps.length}</span></div>
             {nps.length === 0 ? (
               <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phản hồi NPS.</p>
             ) : (
@@ -188,7 +193,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </div>
 
           <div className="card">
-            <div className="card-h"><h3>Lịch sử hoạt động</h3><span className="badge b-gray">{activities.length}</span></div>
+            <div className="card-h"><h3 className="sec-title">Lịch sử hoạt động</h3><span className="badge b-gray">{activities.length}</span></div>
             {activities.length === 0 ? (
               <p className="muted small" style={{ padding: "14px 0" }}>Chưa có hoạt động.</p>
             ) : (
