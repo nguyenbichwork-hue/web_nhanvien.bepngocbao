@@ -32,6 +32,7 @@ export const GROUP_ACCENT: Record<string, AccentKey> = {
   "Hằng ngày": "crimson",
   "Bán hàng": "crimson",
   "Marketing & Kho": "violet",
+  "Kho & Mua hàng": "violet",
   "Hiện trường & Hậu mãi": "amber",
   "Nhân sự": "blue",
   "Quản trị": "teal",
