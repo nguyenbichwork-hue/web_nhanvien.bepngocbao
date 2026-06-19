@@ -3,7 +3,7 @@ import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
   InternalTask, Lead, NpsResponse, Order, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
-  ZaloConversation, ZaloMessage,
+  ZaloConversation, ZaloMessage, ReceptionLog,
 } from "./types";
 
 // Hôm nay (demo) = 2026-06-16. Một số mốc tương đối để dashboard "hôm nay" có dữ liệu.
@@ -30,6 +30,7 @@ export type BNBSeed = {
   reviews: Review[];
   zaloConversations: ZaloConversation[];
   zaloMessages: ZaloMessage[];
+  receptionLogs: ReceptionLog[];
 };
 
 export function seedBNB(): BNBSeed {
@@ -170,5 +171,6 @@ export function seedBNB(): BNBSeed {
     leads, customers, activities, surveys, quotes, orders, deliveries, warranties,
     shiftReports, tasks, npsResponses, pillars, calendarItems, adCampaigns, purchaseOrders,
     bankTxns, reviews, zaloConversations, zaloMessages,
+    receptionLogs: [],
   };
 }

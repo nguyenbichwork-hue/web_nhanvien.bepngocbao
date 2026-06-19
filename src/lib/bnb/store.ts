@@ -18,7 +18,7 @@ import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
-  ZaloConversation, ZaloMessage, ZaloMsgDirection,
+  ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog,
 } from "./types";
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
@@ -49,6 +49,7 @@ export type BNBDB = {
   zaloConversations: ZaloConversation[];
   zaloMessages: ZaloMessage[];
   products: Product[];
+  receptionLogs: ReceptionLog[];
   seq: number;
 };
 
@@ -76,6 +77,7 @@ const TABLE: Record<Coll, string> = {
   zaloConversations: "bnb_zalo_conversations",
   zaloMessages: "bnb_zalo_messages",
   products: "bnb_products",
+  receptionLogs: "bnb_reception_logs",
 };
 
 function freshDB(): BNBDB {
@@ -610,6 +612,49 @@ export async function respondReview(id: string, response: string, byId?: string)
   const next: Review = { ...cur, response, status: "responded", byId: byId ?? cur.byId };
   await put("reviews", next);
   return clone(next);
+}
+
+/* ===== Nhật ký tiếp khách (tích hợp từ app nhân viên) ===== */
+export async function listReceptionLogs(): Promise<ReceptionLog[]> {
+  try {
+    const dbo = await getDb("receptionLogs");
+    return clone([...dbo.receptionLogs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
+  } catch {
+    // Bảng bnb_reception_logs chưa được tạo (chưa chạy migration 0009) → không vỡ trang.
+    return [];
+  }
+}
+export async function createReceptionLog(input: Omit<ReceptionLog, "id" | "createdAt">): Promise<ReceptionLog> {
+  await getDb("receptionLogs");
+  const r: ReceptionLog = { ...input, id: nextId("rl"), createdAt: now() };
+  await put("receptionLogs", r);
+  return clone(r);
+}
+export async function updateReceptionLog(id: string, patch: Partial<ReceptionLog>): Promise<ReceptionLog | undefined> {
+  const dbo = await getDb("receptionLogs");
+  const cur = dbo.receptionLogs.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: ReceptionLog = { ...cur, ...patch, id, createdAt: cur.createdAt };
+  await put("receptionLogs", next);
+  return clone(next);
+}
+export async function deleteReceptionLog(id: string): Promise<void> {
+  const dbo = await getDb("receptionLogs");
+  dbo.receptionLogs = dbo.receptionLogs.filter((x) => x.id !== id);
+  await deleteRow(TABLE.receptionLogs, id);
+}
+/** Nhập hàng loạt (import từ Google Sheet) — bỏ qua nếu id đã tồn tại. */
+export async function importReceptionLogs(rows: ReceptionLog[]): Promise<{ added: number; skipped: number }> {
+  const dbo = await getDb("receptionLogs");
+  const have = new Set(dbo.receptionLogs.map((x) => x.id));
+  let added = 0, skipped = 0;
+  for (const r of rows) {
+    if (have.has(r.id)) { skipped++; continue; }
+    await put("receptionLogs", r);
+    have.add(r.id);
+    added++;
+  }
+  return { added, skipped };
 }
 
 /* ===== Zalo OA · Hộp thoại ===== */

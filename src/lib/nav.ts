@@ -21,6 +21,7 @@ export const NAV: NavGroup[] = [
     label: "Bán hàng",
     items: [
       { href: "/crm", label: "Khách hàng & Lead", icon: "customer", perm: "lead.read" },
+      { href: "/reception", label: "Nhật ký tiếp khách", icon: "doc", perm: "lead.read" },
       { href: "/customers", label: "Khách hàng 360", icon: "users", perm: "customer.read" },
       { href: "/fit", label: "Fit Diagnostic", icon: "fit", perm: "fit.read" },
       { href: "https://thietkebep.bepngocbao.vn/", label: "Tư vấn & Báo giá", icon: "quote", perm: "quote.read", external: true },

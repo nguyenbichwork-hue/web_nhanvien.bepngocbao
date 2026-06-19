@@ -563,3 +563,39 @@ export type Product = {
   stock?: number;
   tags?: string[];
 };
+
+/* ============ Nhật ký tiếp khách (tích hợp từ app nhân viên) ============
+   Mỗi lượt tiếp khách: thông tin cơ bản + "Hành trình khách hàng" 14 mục + chi tiết
+   đơn (chỉ khi chốt). Lưu dạng chuỗi cho khớp dữ liệu sheet gốc. */
+export const RECEPTION_CANVAS = [
+  { k: "customer", icon: "👤", title: "Khách là ai?", opts: ["Cặp vợ chồng trẻ", "Gia đình có con nhỏ", "Chị nội trợ", "Anh chủ nhà", "Khách đầu tư/cho thuê", "Khách lớn tuổi"] },
+  { k: "khachxem", icon: "👀", title: "Khách xem", opts: ["bếp từ", "hút mùi", "lò nướng", "lò hấp", "máy rửa chén (mrc)", "tủ lạnh", "máy xay sinh tố", "máy lọc nước"] },
+  { k: "khachhoi", icon: "💬", title: "Khách hỏi về", opts: ["công suất", "giá và khuyến mãi", "kích thước lắp đặt", "sự khác nhau series 6 và 8", "chức năng & công nghệ", "xuất xứ", "chế độ bảo hành", "bếp mặt nghiêng và bếp âm", "đường ống/ống thoát"] },
+  { k: "nvtuvan", icon: "🗣️", title: "Nhân viên đã tư vấn", opts: ["tư vấn chức năng công nghệ", "tư vấn công suất và kích thước", "tư vấn giá kèm voucher/khuyến mãi", "so sánh series 6 và 8 cho khách", "demo sản phẩm cho khách", "hướng dẫn kích thước & đường ống lắp đặt", "cho khách dùng thử", "xin contact gửi báo giá/PDF"] },
+  { k: "trigger", icon: "💡", title: "Vì sao khách bắt đầu tìm giải pháp?", opts: ["Xây nhà mới", "Cải tạo bếp", "Chuyển nhà", "Bếp cũ hỏng", "Nâng cấp thiết bị"] },
+  { k: "whynow", icon: "⏰", title: "Vì sao mua vào thời điểm này?", opts: ["Vừa nhận nhà", "Sắp bàn giao", "Chuẩn bị cưới", "Hết đợt khuyến mãi", "Sắp có em bé", "Cuối năm/Tết"] },
+  { k: "need", icon: "📋", title: "3 nhu cầu lớn nhất?", opts: ["Tiết kiệm thời gian", "An toàn", "Thẩm mỹ", "Dễ vệ sinh", "Tiết kiệm điện", "Bền, ít hỏng", "Thương hiệu uy tín"] },
+  { k: "influencer", icon: "👥", title: "Ai ảnh hưởng mạnh nhất?", opts: ["Vợ", "Chồng", "KTS", "Nhà thầu", "Bạn bè", "Người thân", "Con cái"] },
+  { k: "solution", icon: "📦", title: "BNB đề xuất giải pháp gì?", opts: ["Bếp từ Bosch + máy rửa chén", "Combo Kaff", "Giải pháp full kitchen", "Hút mùi + bếp", "Lò nướng + lò hấp"] },
+  { k: "objection", icon: "❓", title: "Khách đắn đo điều gì nhất?", opts: ["Giá", "Bảo hành", "Kích thước", "Thương hiệu", "Phù hợp không gian", "Lắp đặt", "So với hãng khác"] },
+  { k: "whybuy", icon: "❤️", title: "Vì sao khách chọn BNB?", opts: ["Tư vấn kỹ", "Giá tốt", "Trải nghiệm showroom", "48H Promise", "Hàng chính hãng", "Hậu mãi tốt"] },
+  { k: "whynotbuy", icon: "✖️", title: "Nếu không mua, vì sao?", opts: ["Giá cao", "Chưa quyết định", "Nhà chưa xong", "Đợi so sánh", "Hỏi ý kiến gia đình", "Chưa cần gấp"] },
+  { k: "trust", icon: "🛡️", title: "Khoảnh khắc nào tạo niềm tin?", opts: ["Gặp Phú", "Trải nghiệm showroom", "Đề xuất giải pháp", "Feedback KH cũ", "Tốc độ phản hồi", "Demo sản phẩm"] },
+  { k: "decision", icon: "📝", title: "Khách quyết định như thế nào?", opts: ["Chốt ngay", "Về bàn với gia đình", "So sánh thêm", "Đợi cuối tuần", "Cần thêm báo giá", "Đặt cọc giữ hàng"] },
+] as const;
+
+export type ReceptionCanvasKey = (typeof RECEPTION_CANVAS)[number]["k"];
+
+export type ReceptionLog = {
+  id: string;
+  createdAt: string;
+  ngay?: string; gio?: string; nhanvien?: string; sdt?: string; nguon?: string;
+  donhang?: string; ngaychot?: string; tongtg?: string;
+  masp?: string; tensp?: string; cat?: string; soluong?: string; sotien?: string; datcoc?: string;
+  customer?: string; khachxem?: string; khachhoi?: string; nvtuvan?: string; trigger?: string;
+  whynow?: string; need?: string; influencer?: string; solution?: string; objection?: string;
+  whybuy?: string; whynotbuy?: string; trust?: string; decision?: string;
+};
+
+export const RECEPTION_STAFF_DEFAULT = ["Đào Kế Thịnh", "Lê Huỳnh Hiếu", "Bùi Khương Duy", "Cát An"];
+export const RECEPTION_SOURCE_DEFAULT = ["Khách văng lai", "Cư dân Royal City", "Kiến trúc sư"];
