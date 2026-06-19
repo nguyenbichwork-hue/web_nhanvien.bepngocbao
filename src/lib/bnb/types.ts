@@ -666,4 +666,5 @@ export type CxJourney = {
   readyReferral?: boolean; // đã sẵn sàng giới thiệu
   note?: string;
   history: { stage: JourneyStageKey; at: string; byId?: string }[];
+  slaDone?: string[];      // các mốc SLA đã được cron đẩy thành follow-up (chống lặp)
 };

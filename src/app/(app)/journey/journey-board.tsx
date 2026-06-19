@@ -8,7 +8,10 @@ import {
   CX_JOURNEY_STAGES, CX_PHASE_LABEL,
   type CxJourney, type JourneyStageKey, type JourneyPhase,
 } from "@/lib/bnb/types";
+import { cxAlerts } from "@/lib/bnb/cx-sla";
 import { saveJourneyAction, advanceJourneyAction, deleteJourneyAction, syncJourneysAction } from "./actions";
+
+const ALERT_BADGE: Record<string, string> = { rose: "b-rose", amber: "b-amber", indigo: "b-indigo" };
 
 const STAGE = Object.fromEntries(CX_JOURNEY_STAGES.map((s) => [s.key, s]));
 const PHASE_TONE: Record<JourneyPhase, string> = { acquisition: "b-indigo", success: "b-green", expansion: "b-amber" };
@@ -92,6 +95,13 @@ export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeys]);
 
+  // Cảnh báo SLA (48H / check-in D1-3-7 / mời review) đang đến hạn.
+  const slaList = useMemo(
+    () => journeys.map((j) => ({ j, alerts: cxAlerts(j) })).filter((x) => x.alerts.length).slice(0, 30),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [journeys],
+  );
+
   return (
     <div>
       {/* North Star stats */}
@@ -133,6 +143,25 @@ export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[];
         </div>
       </div>
       {msg && <div className="badge b-indigo mt">{msg}</div>}
+
+      {/* SLA cần xử lý */}
+      {slaList.length > 0 && (
+        <div className="card mt" style={{ borderColor: "var(--c-rose)" }}>
+          <div className="card-h"><h3 className="sec-title">⏱ SLA cần xử lý ({slaList.length})</h3><span className="badge b-rose">48H · check-in · review</span></div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {slaList.map(({ j, alerts }) => (
+              <div key={j.id} className="flex between aic" style={{ flexWrap: "wrap", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                <div className="flex aic gap" style={{ flexWrap: "wrap" }}>
+                  <b className="small">{j.name}</b>
+                  <span className="urole">{STAGE[j.stage]?.label} · {nameOf(j.ownerId)}</span>
+                  {alerts.map((a) => <span key={a.key} className={`badge ${ALERT_BADGE[a.tone]}`}>{a.label}</span>)}
+                </div>
+                <button className="btn ghost sm" onClick={() => setEdit({ ...j })}>Xử lý</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* sections theo bước */}
       <div className="mt">

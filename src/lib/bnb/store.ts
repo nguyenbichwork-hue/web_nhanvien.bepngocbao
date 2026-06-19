@@ -24,6 +24,7 @@ import type {
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
 import { seedBNB } from "./seed";
+import { cxAlerts } from "./cx-sla";
 
 const dayKeyOf = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -713,6 +714,25 @@ export async function deleteCxJourney(id: string): Promise<void> {
   dbo.cxJourneys = dbo.cxJourneys.filter((x) => x.id !== id);
   await deleteRow(TABLE.cxJourneys, id);
 }
+// Cron CX SLA: đẩy các mốc SLA đến hạn (48H/check-in D1-3-7/mời review) thành
+// follow-up hôm nay; đánh dấu đã xử lý để không lặp.
+export async function runCxSla(): Promise<{ promoted: number }> {
+  const dbo = await getDb("cxJourneys");
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let promoted = 0;
+  for (const j of dbo.cxJourneys) {
+    const alerts = cxAlerts(j);
+    if (!alerts.length) continue;
+    const done = new Set(j.slaDone || []);
+    const fresh = alerts.filter((a) => !done.has(a.key));
+    if (!fresh.length) continue;
+    fresh.forEach((a) => done.add(a.key));
+    await put("cxJourneys", { ...j, slaDone: [...done], nextFollowUpAt: todayStr, updatedAt: now() });
+    promoted++;
+  }
+  return { promoted };
+}
+
 // Đồng bộ từ Lead (Acquisition) — tạo hành trình cho lead chưa có, map theo stage lead.
 export async function syncCxJourneysFromLeads(): Promise<{ added: number }> {
   const [jdb, leads] = await Promise.all([getDb("cxJourneys"), listLeads()]);
