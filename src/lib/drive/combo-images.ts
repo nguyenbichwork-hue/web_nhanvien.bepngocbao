@@ -56,32 +56,46 @@ export function driveImageUrl(id: string, w = 1600): string {
   return `https://lh3.googleusercontent.com/d/${id}=w${w}`;
 }
 
-// Dựng map KB-0N → fileId. Hỗ trợ 2 kiểu sắp xếp trên Drive:
-//  (a) 12 file ảnh đặt thẳng trong folder (tên chứa KBx) → 1 ảnh/kịch bản.
-//  (b) 12 thư mục con KBx, mỗi thư mục chứa ảnh → lấy ảnh đầu tiên làm ảnh bìa.
+// Tìm ảnh BÌA sâu trong một thư mục (DFS). Cấu trúc Drive thực tế lồng nhiều cấp
+// không đồng nhất: KB → phân tầng (Tiết kiệm/Cân bằng/Cao cấp) → phong cách → ảnh.
+// Dừng ở ảnh đầu tiên tìm thấy (ưu tiên tên có cover/bìa/01). Giới hạn độ sâu để an toàn.
+async function firstImageDeep(folderId: string, depth = 1): Promise<string | null> {
+  if (depth > 6) return null;
+  const children = await listChildren(folderId);
+  const imgs = children.filter(isImage);
+  if (imgs.length) {
+    const cover = imgs.find((c) => /cover|bia|main|01/i.test(c.name)) ?? imgs[0];
+    return cover.id;
+  }
+  for (const f of children.filter((c) => c.mimeType === FOLDER_MIME)) {
+    const found = await firstImageDeep(f.id, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Dựng map KB-0N → fileId. Hỗ trợ cả ảnh đặt thẳng lẫn lồng nhiều cấp thư mục.
 async function buildMap(): Promise<Record<string, string>> {
   const entries = await listChildren(FOLDER_ID);
   const map: Record<string, string> = {};
 
-  // (a) ảnh đặt thẳng
+  // (a) ảnh đặt thẳng trong folder gốc
   for (const f of entries) {
     if (!isImage(f)) continue;
     const sid = scenarioIdFromName(f.name);
     if (sid && !map[sid]) map[sid] = f.id;
   }
 
-  // (b) thư mục con — lấy ảnh bìa (ưu tiên file tên có 'cover'/'bia', nếu không lấy ảnh đầu)
-  const folders = entries.filter((f) => f.mimeType === FOLDER_MIME);
+  // (b) thư mục con KBx → tìm ảnh bìa sâu bên trong
   await Promise.all(
-    folders.map(async (folder) => {
-      const sid = scenarioIdFromName(folder.name);
-      if (!sid || map[sid]) return;
-      const children = (await listChildren(folder.id)).filter(isImage);
-      if (!children.length) return;
-      const cover =
-        children.find((c) => /cover|bia|main|01|^1\b/i.test(c.name)) ?? children[0];
-      map[sid] = cover.id;
-    }),
+    entries
+      .filter((f) => f.mimeType === FOLDER_MIME)
+      .map(async (folder) => {
+        const sid = scenarioIdFromName(folder.name);
+        if (!sid || map[sid]) return;
+        const id = await firstImageDeep(folder.id, 1);
+        if (id) map[sid] = id;
+      }),
   );
 
   return map;
