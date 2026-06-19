@@ -71,6 +71,56 @@
   --font-sans: var(--font-be-vietnam), -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* ============================================================
+   TailAdmin design tokens (ported, MIT — Copyright (c) 2023 TailAdmin).
+   Brand xanh #465fff của TailAdmin → ĐỔI sang thang CRIMSON theo logo BNB.
+   Cho phép dùng trực tiếp class TailAdmin: bg-brand-50, text-brand-500,
+   text-theme-sm, text-title-sm, shadow-theme-sm, text-gray-500, rounded-2xl…
+   ============================================================ */
+@theme {
+  --font-outfit: var(--font-be-vietnam), Outfit, sans-serif;
+
+  --text-title-2xl: 72px;  --text-title-xl: 60px;  --text-title-lg: 48px;
+  --text-title-md: 36px;   --text-title-sm: 30px;
+  --text-theme-xl: 20px;   --text-theme-sm: 14px;  --text-theme-xs: 12px;
+
+  /* Brand = crimson logo (thay #465fff) */
+  --color-brand-25: #fef6f7;  --color-brand-50: #fdeef0;  --color-brand-100: #fbdde2;
+  --color-brand-200: #f5b9c3; --color-brand-300: #ec8496; --color-brand-400: #e0566c;
+  --color-brand-500: #c8203f; --color-brand-600: #a81a34; --color-brand-700: #9e1b32;
+  --color-brand-800: #821528; --color-brand-900: #6b1221; --color-brand-950: #3f0a13;
+
+  --color-gray-25: #fcfcfd;  --color-gray-50: #f9fafb;  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec; --color-gray-300: #d0d5dd; --color-gray-400: #98a2b3;
+  --color-gray-500: #667085; --color-gray-600: #475467; --color-gray-700: #344054;
+  --color-gray-800: #1d2939; --color-gray-900: #101828; --color-gray-950: #0c111d;
+  --color-gray-dark: #1a2231;
+
+  --color-success-25: #f6fef9; --color-success-50: #ecfdf3; --color-success-100: #d1fadf;
+  --color-success-500: #12b76a; --color-success-600: #039855; --color-success-700: #027a48;
+  --color-error-25: #fffbfa;   --color-error-50: #fef3f2;   --color-error-100: #fee4e2;
+  --color-error-500: #f04438;  --color-error-600: #d92d20;  --color-error-700: #b42318;
+  --color-warning-25: #fffcf5; --color-warning-50: #fffaeb; --color-warning-100: #fef0c7;
+  --color-warning-500: #f79009; --color-warning-600: #dc6803; --color-warning-700: #b54708;
+  --color-blue-light-50: #f0f9ff; --color-blue-light-500: #0ba5ec; --color-blue-light-600: #0086c9;
+
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+}
+
+/* Menu item utilities (ported từ TailAdmin) */
+@utility menu-item {
+  @apply relative flex items-center gap-3 rounded-lg px-3 py-2 font-medium;
+  font-size: 14px;
+}
+@utility menu-item-active { @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12]; }
+@utility menu-item-inactive { @apply text-gray-700 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-white/5; }
+@utility menu-group-title { @apply text-xs uppercase leading-5 text-gray-400; letter-spacing: 0.04em; }
+.menu-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.menu-item.menu-item-active svg { color: var(--color-brand-500); }
+
 /* ---------- BASE ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -132,8 +182,8 @@ a { color: inherit; text-decoration: none; }
 
 /* In ấn — chỉ giữ nội dung chính (dùng cho trang xem trước tin tuyển dụng) */
 @media print {
-  .sidebar, .topbar, .no-print { display: none !important; }
-  .main { display: block !important; }
+  aside, header, .no-print { display: none !important; }
+  main > div { padding: 0 !important; max-width: none !important; }
   .view-in { padding: 0 !important; }
   .card { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
