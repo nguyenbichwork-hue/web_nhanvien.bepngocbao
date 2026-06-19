@@ -618,3 +618,52 @@ export type ShiftCheckin = {
   photoLabels?: string[];
   sentToServer?: boolean; // đã gửi ảnh lên Apps Script/Drive thành công chưa
 };
+
+/* ============ Hành trình khách hàng CX OS (13 bước / 3 phase) ============ */
+export type JourneyPhase = "acquisition" | "success" | "expansion";
+export type JourneyStageKey =
+  | "trigger" | "discovery" | "trust" | "consultation" | "decision"
+  | "order_confirmed" | "pre_install" | "installation" | "handover" | "first7days"
+  | "review" | "referral" | "community";
+
+export const CX_PHASE_LABEL: Record<JourneyPhase, string> = {
+  acquisition: "Thu hút (Acquisition)",
+  success: "Thành công (Success)",
+  expansion: "Mở rộng (Expansion)",
+};
+
+// owner: vai trò CX phụ trách bước (Growth / Business / CX Lead; Trust đồng sở hữu)
+export const CX_JOURNEY_STAGES: {
+  key: JourneyStageKey; no: number; label: string; phase: JourneyPhase; owner: string; desc: string;
+}[] = [
+  { key: "trigger", no: 1, label: "Trigger", phase: "acquisition", owner: "Growth Lead", desc: "Khách bắt đầu có nhu cầu (xây mới/cải tạo/nhận nhà)" },
+  { key: "discovery", no: 2, label: "Discovery", phase: "acquisition", owner: "Growth Lead", desc: "Khách tìm hiểu & khám phá BNB" },
+  { key: "trust", no: 3, label: "Trust", phase: "acquisition", owner: "Growth + Business", desc: "Khách tin tưởng & chọn BNB (đồng sở hữu)" },
+  { key: "consultation", no: 4, label: "Consultation", phase: "acquisition", owner: "Business Lead", desc: "Tư vấn sâu & chốt giải pháp + báo giá" },
+  { key: "decision", no: 5, label: "Decision", phase: "acquisition", owner: "Business Lead", desc: "Đặt cọc / ký hợp đồng" },
+  { key: "order_confirmed", no: 6, label: "Order Confirmed", phase: "success", owner: "Business Lead", desc: "Xác nhận đơn < 2h, cam kết rõ ràng" },
+  { key: "pre_install", no: 7, label: "Pre-installation", phase: "success", owner: "CX Lead", desc: "Khảo sát, chuẩn bị, xác nhận lịch trước 24h" },
+  { key: "installation", no: 8, label: "Installation (48H)", phase: "success", owner: "CX Lead", desc: "Lắp đặt đúng cam kết 48H, đúng kỹ thuật" },
+  { key: "handover", no: 9, label: "Handover", phase: "success", owner: "CX Lead", desc: "Nghiệm thu 21 điểm, bàn giao, kích hoạt bảo hành" },
+  { key: "first7days", no: 10, label: "First 7 Days", phase: "success", owner: "CX Lead", desc: "Check-in ngày 1–3–7, hỗ trợ < 2h, CSAT" },
+  { key: "review", no: 11, label: "Review", phase: "expansion", owner: "CX Lead", desc: "Mời review sau 3–7 ngày (Google/FB), thu ảnh thật" },
+  { key: "referral", no: 12, label: "Referral", phase: "expansion", owner: "Growth Lead", desc: "Giới thiệu người thân, theo dõi referral → đơn" },
+  { key: "community", no: 13, label: "Community", phase: "expansion", owner: "Growth Lead", desc: "Hội viên VIP, workshop, mua lại / nâng cấp" },
+];
+
+export type CxJourney = {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  phone?: string;
+  customerId?: string;
+  leadId?: string;
+  stage: JourneyStageKey;
+  ownerId?: string;        // id nhân viên phụ trách (tuỳ chọn)
+  blocker?: string;        // vướng mắc đang chặn
+  nextFollowUpAt?: string; // yyyy-mm-dd — mốc cần follow-up
+  readyReferral?: boolean; // đã sẵn sàng giới thiệu
+  note?: string;
+  history: { stage: JourneyStageKey; at: string; byId?: string }[];
+};

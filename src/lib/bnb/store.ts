@@ -19,6 +19,7 @@ import type {
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
   ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog, ShiftCheckin,
+  CxJourney, JourneyStageKey,
 } from "./types";
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
@@ -51,6 +52,7 @@ export type BNBDB = {
   products: Product[];
   receptionLogs: ReceptionLog[];
   shiftCheckins: ShiftCheckin[];
+  cxJourneys: CxJourney[];
   seq: number;
 };
 
@@ -80,6 +82,7 @@ const TABLE: Record<Coll, string> = {
   products: "bnb_products",
   receptionLogs: "bnb_reception_logs",
   shiftCheckins: "bnb_shift_checkins",
+  cxJourneys: "bnb_cx_journeys",
 };
 
 function freshDB(): BNBDB {
@@ -673,6 +676,60 @@ export async function createShiftCheckin(input: Omit<ShiftCheckin, "id" | "creat
   const r: ShiftCheckin = { ...input, id: nextId("ck"), createdAt: now() };
   await put("shiftCheckins", r);
   return clone(r);
+}
+
+/* ===== Hành trình khách hàng CX OS ===== */
+export async function listCxJourneys(): Promise<CxJourney[]> {
+  try {
+    const dbo = await getDb("cxJourneys");
+    return clone([...dbo.cxJourneys].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)));
+  } catch {
+    return [];
+  }
+}
+export async function createCxJourney(input: Omit<CxJourney, "id" | "createdAt" | "updatedAt" | "history"> & { history?: CxJourney["history"] }): Promise<CxJourney> {
+  await getDb("cxJourneys");
+  const r: CxJourney = {
+    ...input, id: nextId("jn"), createdAt: now(), updatedAt: now(),
+    history: input.history ?? [{ stage: input.stage, at: now() }],
+  };
+  await put("cxJourneys", r);
+  return clone(r);
+}
+export async function updateCxJourney(id: string, patch: Partial<CxJourney>, byId?: string): Promise<CxJourney | undefined> {
+  const dbo = await getDb("cxJourneys");
+  const cur = dbo.cxJourneys.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const stageChanged = patch.stage && patch.stage !== cur.stage;
+  const next: CxJourney = {
+    ...cur, ...patch, id, createdAt: cur.createdAt, updatedAt: now(),
+    history: stageChanged ? [...(cur.history || []), { stage: patch.stage as JourneyStageKey, at: now(), byId }] : cur.history,
+  };
+  await put("cxJourneys", next);
+  return clone(next);
+}
+export async function deleteCxJourney(id: string): Promise<void> {
+  const dbo = await getDb("cxJourneys");
+  dbo.cxJourneys = dbo.cxJourneys.filter((x) => x.id !== id);
+  await deleteRow(TABLE.cxJourneys, id);
+}
+// Đồng bộ từ Lead (Acquisition) — tạo hành trình cho lead chưa có, map theo stage lead.
+export async function syncCxJourneysFromLeads(): Promise<{ added: number }> {
+  const [jdb, leads] = await Promise.all([getDb("cxJourneys"), listLeads()]);
+  const linked = new Set(jdb.cxJourneys.map((j) => j.leadId).filter(Boolean));
+  const map: Record<string, JourneyStageKey> = { new: "trigger", consulting: "trust", quoted: "consultation", won: "decision" };
+  let added = 0;
+  for (const l of leads) {
+    if (l.stage === "lost" || linked.has(l.id)) continue;
+    const stage = map[l.stage] || "discovery";
+    await createCxJourney({
+      name: l.name, phone: l.phone, leadId: l.id, stage,
+      nextFollowUpAt: l.nextFollowUpAt ? l.nextFollowUpAt.slice(0, 10) : undefined,
+      ownerId: l.assigneeId,
+    });
+    added++;
+  }
+  return { added };
 }
 
 /* ===== Zalo OA · Hộp thoại ===== */
