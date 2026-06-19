@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
+import { SearchSelect } from "@/components/search-select";
 import { fmtVnd } from "@/lib/bnb/util";
 import { TIER_LABEL, type QuoteTier } from "@/lib/bnb/types";
 import { createQuoteAction } from "./actions";
@@ -99,12 +100,13 @@ export function QuoteBuilder({
           </div>
           <div className="field" style={{ margin: 0 }}>
             <label>{refType === "customer" ? "Chọn khách hàng" : "Chọn lead"}</label>
-            <select value={refId} onChange={(e) => setRefId(e.target.value)}>
-              <option value="">— Khách lẻ / chưa chọn —</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} · {p.phone}</option>
-              ))}
-            </select>
+            <SearchSelect
+              options={people.map((p) => ({ value: p.id, label: p.name, sub: p.phone }))}
+              value={refId}
+              onChange={setRefId}
+              placeholder={refType === "customer" ? "Gõ tên / SĐT khách…" : "Gõ tên / SĐT lead…"}
+              emptyLabel="— Khách lẻ / chưa chọn —"
+            />
           </div>
         </div>
 
@@ -116,14 +118,17 @@ export function QuoteBuilder({
 
           <div className="field" style={{ margin: 0 }}>
             <label>Thêm sản phẩm từ danh mục</label>
-            <select value={pick} onChange={(e) => addProduct(e.target.value)}>
-              <option value="">— Chọn sản phẩm để thêm —</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}{p.brand ? ` · ${p.brand}` : ""} — {fmtVnd(p.price)}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              options={products.map((p) => ({
+                value: p.id,
+                label: p.name,
+                sub: `${p.brand ? p.brand + " · " : ""}${fmtVnd(p.price)}`,
+              }))}
+              value={pick}
+              onChange={addProduct}
+              placeholder="Gõ tên / SKU sản phẩm để thêm…"
+              resetOnPick
+            />
           </div>
 
           {rows.length > 0 && (

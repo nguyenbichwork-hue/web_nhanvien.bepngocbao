@@ -101,7 +101,7 @@ async function buildMap(): Promise<Record<string, string>> {
   return map;
 }
 
-/** Map "KB-0N" → URL ảnh combo (cache 1h). Rỗng nếu chưa cấu hình API key. */
+/** Map "KB-0N" → URL ảnh BÌA combo (cache 1h). Rỗng nếu chưa cấu hình API key. */
 export const comboImageMap = unstable_cache(
   async (): Promise<Record<string, string>> => {
     const ids = await buildMap();
@@ -110,5 +110,52 @@ export const comboImageMap = unstable_cache(
     return out;
   },
   ["combo-image-map"],
+  { revalidate: 3600, tags: ["combo-images"] },
+);
+
+/** Map "KB-0N" → id thư mục KB (để gom ảnh chi tiết). */
+const comboFolderMap = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    const entries = await listChildren(FOLDER_ID);
+    const map: Record<string, string> = {};
+    for (const f of entries) {
+      if (f.mimeType !== FOLDER_MIME) continue;
+      const sid = scenarioIdFromName(f.name);
+      if (sid && !map[sid]) map[sid] = f.id;
+    }
+    return map;
+  },
+  ["combo-folder-map"],
+  { revalidate: 3600, tags: ["combo-images"] },
+);
+
+// Gom TẤT CẢ ảnh (deep) trong 1 thư mục, kèm "nhãn" là tên thư mục cha gần nhất
+// (phân tầng/phong cách) để nhóm hiển thị. Cap 40 ảnh.
+async function collectImagesDeep(
+  folderId: string, label: string, depth: number, acc: { url: string; label: string }[],
+): Promise<void> {
+  if (depth > 6 || acc.length >= 40) return;
+  const ch = await listChildren(folderId);
+  for (const f of ch) {
+    if (acc.length >= 40) return;
+    if (isImage(f)) acc.push({ url: driveImageUrl(f.id), label });
+  }
+  for (const f of ch.filter((c) => c.mimeType === FOLDER_MIME)) {
+    if (acc.length >= 40) return;
+    await collectImagesDeep(f.id, f.name, depth + 1, acc);
+  }
+}
+
+/** Tất cả ảnh của 1 combo (cho modal chi tiết). Cache 1h theo từng kịch bản. */
+export const comboImages = unstable_cache(
+  async (scenarioId: string): Promise<{ url: string; label: string }[]> => {
+    const folders = await comboFolderMap();
+    const fid = folders[scenarioId];
+    if (!fid) return [];
+    const acc: { url: string; label: string }[] = [];
+    await collectImagesDeep(fid, scenarioId, 1, acc);
+    return acc;
+  },
+  ["combo-images-all"],
   { revalidate: 3600, tags: ["combo-images"] },
 );

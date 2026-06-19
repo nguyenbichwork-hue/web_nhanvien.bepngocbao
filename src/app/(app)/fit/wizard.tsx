@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { ProductThumb } from "@/components/product-thumb";
 import {
   FIT_QUESTIONS,
   matchScenario,
@@ -160,14 +161,17 @@ export default function FitWizard({ products, comboImages }: Props) {
 
                 <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
                   {t.lines.map((l, i) => (
-                    <div key={`${l.sku}-${i}`} className="flex between aic gap">
-                      <div style={{ minWidth: 0 }}>
-                        <div className="uname" style={{ whiteSpace: "normal" }}>
-                          {l.product?.name || l.sku}
-                        </div>
-                        <div className="urole">
-                          {l.product?.brand ? `${l.product.brand} · ` : ""}
-                          {l.sku}
+                    <div key={`${l.sku}-${i}`} className="flex aic gap" style={{ justifyContent: "space-between" }}>
+                      <div className="flex aic gap" style={{ minWidth: 0 }}>
+                        <ProductThumb src={l.product?.image} name={l.product?.name} size={40} />
+                        <div style={{ minWidth: 0 }}>
+                          <div className="uname" style={{ whiteSpace: "normal" }}>
+                            {l.product?.name || l.sku}
+                          </div>
+                          <div className="urole">
+                            {l.product?.brand ? `${l.product.brand} · ` : ""}
+                            {l.sku}
+                          </div>
                         </div>
                       </div>
                       <b className="small" style={{ whiteSpace: "nowrap" }}>

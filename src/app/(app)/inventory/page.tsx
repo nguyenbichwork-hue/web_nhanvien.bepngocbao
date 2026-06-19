@@ -28,8 +28,15 @@ export default async function InventoryPage() {
   const stockValue = products.reduce((s, p) => s + (p.price || 0) * (p.stock ?? 0), 0);
 
   // Top SKU theo giá trị tồn kho (giá × tồn) — BarsChart.
+  // Làm sạch nhãn: bỏ các tiền tố trong ngoặc như "[CHÍNH HÃNG]" (gây trùng nhau),
+  // ưu tiên brand + phần phân biệt; quá dài thì cắt gọn.
+  const cleanName = (n: string) => n.replace(/^\s*(\[[^\]]*\]|\([^)]*\))\s*/g, "").trim() || n;
+  const shortLabel = (p: { name: string; brand?: string; sku?: string }) => {
+    const base = cleanName(p.name) || p.brand || p.sku || "—";
+    return base.length > 20 ? base.slice(0, 19) + "…" : base;
+  };
   const topValue = [...products]
-    .map((p) => ({ label: p.name.length > 16 ? p.name.slice(0, 15) + "…" : p.name, value: (p.price || 0) * (p.stock ?? 0) }))
+    .map((p) => ({ label: shortLabel(p), value: (p.price || 0) * (p.stock ?? 0) }))
     .filter((x) => x.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);

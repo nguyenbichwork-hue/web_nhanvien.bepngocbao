@@ -473,10 +473,11 @@ details[open] > summary { margin-bottom: 4px; }
 @media (max-width: 1200px) { .combo-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 860px) { .combo-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .combo-grid { grid-template-columns: 1fr; } }
-.combo-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-.combo-cover { position: relative; aspect-ratio: 16 / 10; background: var(--surface-2); overflow: hidden; }
-.combo-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s var(--ease); }
-.combo-card:hover .combo-cover img { transform: scale(1.05); }
+.combo-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; text-align: left; }
+.combo-cover { position: relative; aspect-ratio: 16 / 10; background: #14161d; overflow: hidden; }
+/* contain để HIỆN ĐỦ ảnh phối cảnh (có chú thích thiết bị ở mép) — không cắt */
+.combo-cover img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 0.45s var(--ease); }
+.combo-card:hover .combo-cover img { transform: scale(1.04); }
 .combo-cover-ph { width: 100%; height: 100%; display: grid; place-items: center; background: var(--accent-grad); color: rgba(255, 255, 255, 0.55); }
 .combo-cover-ph svg { width: 46px; height: 46px; }
 .combo-code { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: var(--r-pill); backdrop-filter: blur(4px); }
@@ -521,3 +522,34 @@ details[open] > summary { margin-bottom: 4px; }
 .combo-opt.on { background: var(--surface-2); }
 .combo-opt.sel { box-shadow: inset 0 0 0 1.5px var(--brand-1); }
 .combo-empty { padding: 12px; text-align: center; color: var(--tx-muted); font-size: 13px; }
+
+/* Nút xoá chọn trong combobox tìm kiếm */
+.combo-clear {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; border: none; background: var(--surface-2); color: var(--tx-soft);
+  border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center;
+  transition: color 0.2s var(--ease);
+}
+.combo-clear:hover { color: var(--c-rose); }
+.combo:has(.combo-clear) .combo-input { padding-right: 38px; }
+
+/* Modal chi tiết combo (bấm vào thẻ KB) */
+.combo-modal {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl);
+  box-shadow: var(--sh-md); width: 100%; max-width: 920px; max-height: 90vh; overflow-y: auto;
+  animation: pop 0.18s var(--ease);
+}
+.combo-modal-hero { position: relative; background: #14161d; }
+.combo-modal-hero img { width: 100%; max-height: 460px; object-fit: contain; display: block; }
+.combo-modal-close {
+  position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%;
+  border: none; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; display: grid; place-items: center;
+  backdrop-filter: blur(4px); z-index: 2;
+}
+.combo-modal-close:hover { background: rgba(0, 0, 0, 0.8); }
+.combo-thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 22px 0; }
+.combo-thumbs img { width: 92px; height: 60px; object-fit: cover; border-radius: var(--r-sm); cursor: pointer; flex-shrink: 0; border: 2px solid transparent; }
+.combo-thumbs img.on { border-color: var(--accent); }
+.combo-modal-body { padding: 18px 22px 22px; }
+.combo-tier { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; }
+.combo-tier.feat { border-color: var(--brand-1); box-shadow: var(--sh-sm); }
