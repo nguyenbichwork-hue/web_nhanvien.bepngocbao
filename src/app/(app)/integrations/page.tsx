@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { haravanConfigured, listHaravanWebhooks, HARAVAN_WEBHOOK_TOPICS } from "@/lib/haravan/client";
 import { isSupabaseStoreConfigured } from "@/lib/org/persist";
 import { getGroup } from "@/lib/org/store";
@@ -40,15 +41,31 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
     regMsg = `Đăng ký webhook: ${c} mới tạo · ${e} đã có · ${x} lỗi.`;
   }
 
+  // Số kết nối đã cấu hình — từ trạng thái .env / Supabase sẵn có.
+  const connFlags = [
+    env("HARAVAN_API_TOKEN"),
+    env("HARAVAN_WEBHOOK_SECRET"),
+    env("ZALO_OA_ACCESS_TOKEN"),
+    env("ZALO_ZNS_ACCESS_TOKEN"),
+    env("OPENAI_API_KEY") || env("GEMINI_API_KEY"),
+    env("CRON_SECRET"),
+    isSupabaseStoreConfigured,
+  ];
+  const connCount = connFlags.filter(Boolean).length;
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Tích hợp</div>
-      <div className="page-head">
-        <div>
-          <h1><Icon name="settings" /> Tích hợp & Kết nối</h1>
-          <p>Trạng thái các kết nối bên ngoài (Haravan, Zalo, AI, Supabase) và công cụ quản trị webhook.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="settings"
+        title="Tích hợp & Kết nối"
+        subtitle="Trạng thái các kết nối bên ngoài (Haravan, Zalo, AI, Supabase) và công cụ quản trị webhook."
+        crumb={[["Trang chủ", "/dashboard"], ["Quản trị"], ["Tích hợp & Kết nối"]]}
+        stats={[
+          { label: "Kết nối đã cấu hình", value: `${connCount}/${connFlags.length}`, tone: connCount === connFlags.length ? "up" : "flat" },
+          { label: "Webhook đăng ký", value: webhooks.length },
+          { label: "Lưu trữ thật", value: isSupabaseStoreConfigured ? "Supabase" : "Mẫu", tone: isSupabaseStoreConfigured ? "up" : "flat" },
+        ]}
+      />
 
       {regMsg && <div className="card mt" style={{ borderColor: "var(--c-green)" }}><p className="small" style={{ margin: 0 }}><Icon name="check" /> {regMsg}</p></div>}
       {sp.cfg && <div className="card mt" style={{ borderColor: "var(--c-green)" }}><p className="small" style={{ margin: 0 }}><Icon name="check" /> Đã lưu cấu hình hệ thống.</p></div>}
@@ -57,7 +74,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
       {/* Cấu hình hệ thống — sửa trực tiếp, không cần đụng code */}
       <div className="card mt">
         <div className="card-h">
-          <div><h3>Cấu hình hệ thống</h3><div className="sub">Thông tin doanh nghiệp &amp; tham số chung — dùng cho hoá đơn, email, tính lương.</div></div>
+          <div><h3 className="sec-title">Cấu hình hệ thống</h3><div className="sub">Thông tin doanh nghiệp &amp; tham số chung — dùng cho hoá đơn, email, tính lương.</div></div>
         </div>
         <form action={updateSystemConfigAction} style={{ display: "grid", gap: 12 }}>
           <div className="grid-k g-2" style={{ gap: 12 }}>
@@ -76,7 +93,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
 
       {/* Trạng thái cấu hình */}
       <div className="card mt">
-        <div className="card-h"><h3>Trạng thái cấu hình (.env)</h3></div>
+        <div className="card-h"><h3 className="sec-title">Trạng thái cấu hình (.env)</h3></div>
         <table>
           <tbody>
             <StatusRow label="Haravan Admin API" on={env("HARAVAN_API_TOKEN")} hint="HARAVAN_API_TOKEN — sản phẩm/đơn/khách/tồn kho" />
@@ -93,7 +110,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
       {/* Webhook Haravan */}
       <div className="card mt">
         <div className="card-h">
-          <h3>Webhook Haravan</h3>
+          <h3 className="sec-title">Webhook Haravan</h3>
           <span className={`badge ${haravanConfigured() ? "b-green" : "b-gray"}`}>{webhooks.length} đang đăng ký</span>
         </div>
         {!haravanConfigured() ? (

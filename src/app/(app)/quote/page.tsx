@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listQuotes, listCustomers, listLeads } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, quoteTotal } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, quoteTotal, compactVnd } from "@/lib/bnb/util";
 import {
   QUOTE_STATUS_LABEL, QUOTE_STATUS_BADGE, TIER_LABEL,
 } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";
+
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 export default async function QuotePage() {
   const session = await requirePermission("quote.read");
@@ -25,39 +30,81 @@ export default async function QuotePage() {
   const sorted = [...quotes].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   const count = (st: string) => quotes.filter((q) => q.status === st).length;
 
+  const acceptedValue = quotes
+    .filter((q) => q.status === "accepted")
+    .reduce((s, q) => s + quoteTotal(q), 0);
+
   const kpis = [
-    { st: "draft", label: "Nháp", tone: "tone-i" as const, icon: "doc" },
-    { st: "sent", label: "Đã gửi", tone: "tone-a" as const, icon: "quote" },
-    { st: "accepted", label: "Đã chốt", tone: "tone-t" as const, icon: "check" },
+    { st: "draft", label: "Nháp", grad: "gr-azure", icon: "doc" },
+    { st: "sent", label: "Đã gửi", grad: "gr-sunny", icon: "quote" },
+    { st: "accepted", label: "Đã chốt", grad: "gr-mint", icon: "check" },
   ];
 
+  // Cơ cấu báo giá theo trạng thái (donut).
+  const statusKeys = Object.keys(QUOTE_STATUS_LABEL) as (keyof typeof QUOTE_STATUS_LABEL)[];
+  const statusMix = statusKeys
+    .map((st, i) => ({ name: QUOTE_STATUS_LABEL[st], value: count(st), color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Báo giá</div>
-      <div className="page-head">
-        <div>
-          <h1>Tư vấn & Báo giá</h1>
-          <p>Soạn báo giá nhiều phương án (cơ bản · cân bằng · cao cấp), gửi khách & chốt đơn.</p>
-        </div>
-        {canManage && (
-          <Link href="/quote/new" className="btn primary"><Icon name="plus" /> Tạo báo giá</Link>
-        )}
-      </div>
+    <div>
+      <PageHero
+        icon="quote"
+        title="Tư vấn & Báo giá"
+        subtitle="Soạn báo giá nhiều phương án (cơ bản · cân bằng · cao cấp), gửi khách & chốt đơn."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Báo giá"]]}
+        stats={[
+          { label: "Tổng báo giá", value: quotes.length },
+          { label: "Đã chốt", value: count("accepted"), tone: "up" },
+          { label: "Giá trị chốt", value: compactVnd(acceptedValue), tone: "up" },
+        ]}
+        actions={canManage ? <Link href="/quote/new" className="btn primary"><Icon name="plus" /> Tạo báo giá</Link> : undefined}
+      />
 
       {/* KPI */}
       <div className="grid-k g-3 stagger">
         {kpis.map((k) => (
-          <div key={k.st} className={`card kpi hover ${k.tone}`}>
+          <div key={k.st} className={`card kpi grad hover ${k.grad}`}>
             <div className="ic"><Icon name={k.icon} /></div>
-            <div className="val">{count(k.st)}</div>
+            <div className="val"><CountUp to={count(k.st)} /></div>
             <div className="lbl">báo giá {k.label.toLowerCase()}</div>
           </div>
         ))}
       </div>
 
+      {/* Biểu đồ: cơ cấu báo giá theo trạng thái */}
+      {statusMix.length > 0 && (
+        <div className="grid-k g-2 mt">
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu báo giá theo trạng thái</h3></div>
+            <DonutChart data={statusMix} height={250} centerValue={quotes.length} centerLabel="báo giá" unit=" báo giá" />
+          </div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Báo giá gần đây</h3></div>
+            <table>
+              <thead>
+                <tr><th>Mã</th><th>Khách / Lead</th><th style={{ textAlign: "right" }}>Tổng tiền</th></tr>
+              </thead>
+              <tbody>
+                {sorted.slice(0, 5).map((q) => {
+                  const who = q.customerId ? cusName[q.customerId] : q.leadId ? leadName[q.leadId] : undefined;
+                  return (
+                    <tr key={q.id}>
+                      <td><b className="small">{q.code}</b></td>
+                      <td className="small">{who || <span className="muted">— khách lẻ —</span>}</td>
+                      <td className="small" style={{ textAlign: "right", fontWeight: 700 }}>{fmtVnd(quoteTotal(q))}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Danh sách */}
       <div className="card mt">
-        <div className="card-h"><h3>Tất cả báo giá ({quotes.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tất cả báo giá ({quotes.length})</h3></div>
         {sorted.length === 0 ? (
           <p className="muted small" style={{ padding: "16px 0" }}>
             Chưa có báo giá nào. {canManage && <Link href="/quote/new" className="badge b-indigo">Tạo báo giá đầu tiên</Link>}

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { AreaTrend, DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listLeads } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, initials, avatarBg } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, initials, avatarBg, compactVnd, dayKey } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   LEAD_STAGES, LEAD_STAGE_LABEL, LEAD_STAGE_BADGE, LEAD_SOURCE_LABEL, LEAD_SOURCES,
@@ -11,6 +14,8 @@ import {
 import { createLeadAction } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 export default async function CrmPage() {
   const session = await requirePermission("lead.read");
@@ -22,26 +27,73 @@ export default async function CrmPage() {
   const won = byStage("won").length;
   const total = leads.length;
   const convRate = total ? Math.round((won / total) * 100) : 0;
+  const pipelineValue = leads
+    .filter((l) => l.stage !== "lost" && l.stage !== "won")
+    .reduce((s, l) => s + (l.budget || 0), 0);
+
+  // Phễu lead theo trạng thái (donut).
+  const funnel = LEAD_STAGES
+    .map((st, i) => ({ name: LEAD_STAGE_LABEL[st], value: byStage(st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
+  // Lead mới theo ngày — 14 ngày gần nhất.
+  const now = new Date();
+  const days: { key: string; label: string }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    days.push({ key: dayKey(d), label: `${d.getDate()}/${d.getMonth() + 1}` });
+  }
+  const newByDay = days.map((d) => ({
+    label: d.label,
+    value: leads.filter((l) => l.createdAt && dayKey(l.createdAt) === d.key).length,
+  }));
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Khách hàng & Lead</div>
-      <div className="page-head">
-        <div>
-          <h1>Khách hàng & Lead</h1>
-          <p>Lưu toàn bộ lịch sử khách hàng — không để mất thông tin. Tỷ lệ chốt: <b>{convRate}%</b></p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="customer"
+        title="Khách hàng & Lead"
+        subtitle="Lưu toàn bộ lịch sử khách hàng — không để mất thông tin."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Khách hàng & Lead"]]}
+        stats={[
+          { label: "Tổng lead", value: total },
+          { label: "Tỷ lệ chốt", value: `${convRate}%`, tone: convRate >= 30 ? "up" : "flat" },
+          { label: "Giá trị phễu", value: compactVnd(pipelineValue), tone: "up" },
+        ]}
+      />
 
       {/* Pipeline */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
-        {LEAD_STAGES.map((st) => (
-          <div key={st} className="card kpi">
-            <span className={`badge ${LEAD_STAGE_BADGE[st]}`} style={{ alignSelf: "flex-start" }}>{LEAD_STAGE_LABEL[st]}</span>
-            <div className="val" style={{ marginTop: 12 }}>{byStage(st).length}</div>
-            <div className="lbl">lead</div>
+        {LEAD_STAGES.map((st, i) => {
+          const grads = ["gr-azure", "gr-sunny", "gr-plum", "gr-mint", "gr-malinka"];
+          return (
+            <div key={st} className={`card kpi grad hover ${grads[i % grads.length]}`}>
+              <span className={`badge ${LEAD_STAGE_BADGE[st]}`} style={{ alignSelf: "flex-start" }}>{LEAD_STAGE_LABEL[st]}</span>
+              <div className="val" style={{ marginTop: 12 }}><CountUp to={byStage(st).length} /></div>
+              <div className="lbl">lead</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Biểu đồ: phễu lead + lead mới theo ngày */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phễu lead theo trạng thái</h3></div>
+          {funnel.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có lead nào.</p>
+          ) : (
+            <DonutChart data={funnel} height={250} centerValue={total} centerLabel="lead" unit=" lead" />
+          )}
+        </div>
+        <div className="card hover">
+          <div className="card-h">
+            <h3 className="sec-title">Lead mới · 14 ngày</h3>
+            <span className="badge b-indigo">{newByDay.reduce((s, d) => s + d.value, 0)} lead</span>
           </div>
-        ))}
+          <AreaTrend data={newByDay} height={250} name="Lead mới" />
+        </div>
       </div>
 
       {/* Tạo lead */}
@@ -71,7 +123,7 @@ export default async function CrmPage() {
 
       {/* Danh sách */}
       <div className="card mt">
-        <div className="card-h"><h3>Tất cả lead ({total})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tất cả lead ({total})</h3></div>
         <TableFilter
           targetId="leads-tbl"
           placeholder="Tìm tên, SĐT, nhu cầu, phụ trách…"

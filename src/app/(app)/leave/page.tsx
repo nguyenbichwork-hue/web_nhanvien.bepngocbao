@@ -1,4 +1,7 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart, type Slice } from "@/components/charts/rich";
 import { LeaveRequestForm } from "@/components/leave-request-form";
 import { TableFilter } from "@/components/table-filter";
 import {
@@ -81,48 +84,67 @@ export default async function LeavePage() {
     .filter((r) => r.status === "approved" && r.startDate.startsWith(monthPrefix))
     .reduce((s, r) => s + r.days, 0);
 
+  // Cơ cấu đơn theo trạng thái (donut).
+  const statusMix: Slice[] = (Object.keys(LEAVE_STATUS_LABEL) as (keyof typeof LEAVE_STATUS_LABEL)[])
+    .map((s, i) => ({
+      name: LEAVE_STATUS_LABEL[s],
+      value: requests.filter((r) => r.status === s).length,
+      color: ["#2563eb", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"][i % 6],
+    }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Nghỉ phép
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Quản lý nghỉ phép</h1>
-          <p>Gửi đơn, theo dõi quỹ phép năm và duyệt đơn một cấp. Đơn đã duyệt tự hiển thị trên Lịch làm việc.</p>
+    <div>
+      <PageHero
+        icon="calendar"
+        title="Quản lý nghỉ phép"
+        subtitle="Gửi đơn, theo dõi quỹ phép năm và duyệt đơn một cấp. Đơn đã duyệt tự hiển thị trên Lịch làm việc."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Nghỉ phép"]]}
+        stats={[
+          { label: "Chờ duyệt", value: pending.length, tone: pending.length > 0 ? "down" : "flat" },
+          { label: "Đang nghỉ hôm nay", value: onLeaveToday },
+          { label: "Đơn trong tháng", value: monthCount },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger">
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="calendar" /></div>
+          <div className="val"><CountUp to={pending.length} /></div>
+          <div className="lbl">đơn chờ duyệt</div>
+        </div>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="users" /></div>
+          <div className="val"><CountUp to={onLeaveToday} /></div>
+          <div className="lbl">đang nghỉ hôm nay</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={approvedDaysMonth} /></div>
+          <div className="lbl">ngày phép duyệt tháng này</div>
+        </div>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="clock" /></div>
+          <div className="val"><CountUp to={monthCount} /></div>
+          <div className="lbl">đơn trong tháng</div>
         </div>
       </div>
 
-      {/* KPI */}
-      <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
-        <div className="card kpi hover tone-a">
-          <div className="ic"><Icon name="calendar" /></div>
-          <div className="val">{pending.length}</div>
-          <div className="lbl">Đơn chờ duyệt</div>
+      {/* Biểu đồ: cơ cấu đơn theo trạng thái */}
+      {statusMix.length > 0 && (
+        <div className="card hover mt">
+          <div className="card-h"><h3 className="sec-title">Cơ cấu đơn theo trạng thái</h3></div>
+          <DonutChart data={statusMix} height={250} centerValue={requests.length} centerLabel="đơn" unit=" đơn" />
         </div>
-        <div className="card kpi hover tone-i">
-          <div className="ic"><Icon name="users" /></div>
-          <div className="val">{onLeaveToday}</div>
-          <div className="lbl">Đang nghỉ hôm nay</div>
-        </div>
-        <div className="card kpi hover tone-t">
-          <div className="ic"><Icon name="check" /></div>
-          <div className="val">{approvedDaysMonth}</div>
-          <div className="lbl">Ngày phép duyệt tháng này</div>
-        </div>
-        <div className="card kpi hover tone-r">
-          <div className="ic"><Icon name="clock" /></div>
-          <div className="val">{monthCount}</div>
-          <div className="lbl">Đơn trong tháng</div>
-        </div>
-      </div>
+      )}
 
       {/* Tạo đơn (chỉ khi có quyền gửi đơn) */}
       {canRequest && (
-        <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card mt" style={{ marginBottom: 18 }}>
           <div className="card-h">
             <div>
-              <h3>Tạo đơn nghỉ</h3>
+              <h3 className="sec-title">Tạo đơn nghỉ</h3>
               <div className="sub">Chọn nhân viên, loại nghỉ và khoảng ngày — hệ thống tự tính số ngày công.</div>
             </div>
           </div>
@@ -136,10 +158,10 @@ export default async function LeavePage() {
       )}
 
       {/* Chờ duyệt */}
-      <div className="card" style={{ marginBottom: 18 }}>
+      <div className="card mt" style={{ marginBottom: 18 }}>
         <div className="card-h">
           <div>
-            <h3>Chờ duyệt</h3>
+            <h3 className="sec-title">Chờ duyệt</h3>
             <div className="sub">{pending.length} đơn cần xử lý</div>
           </div>
         </div>
@@ -199,7 +221,7 @@ export default async function LeavePage() {
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="card-h">
           <div>
-            <h3>Tất cả đơn nghỉ</h3>
+            <h3 className="sec-title">Tất cả đơn nghỉ</h3>
             <div className="sub">{requests.length} đơn</div>
           </div>
           {sorted.length > 8 && <TableFilter targetId="leave-all-table" />}
@@ -236,7 +258,7 @@ export default async function LeavePage() {
       <div className="card">
         <div className="card-h">
           <div>
-            <h3>Quỹ phép năm {year}</h3>
+            <h3 className="sec-title">Quỹ phép năm {year}</h3>
             <div className="sub">12 ngày cơ bản + 1 ngày mỗi 5 năm thâm niên · năm đầu tính theo tỷ lệ</div>
           </div>
           {roster.length > 8 && <TableFilter targetId="leave-balance-table" />}

@@ -1,6 +1,9 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart, BarsChart } from "@/components/charts/rich";
 import { EmployeeSelect } from "@/components/employee-select";
 import { TableFilter } from "@/components/table-filter";
 import { adjustSalaryAction, closePayrollPeriodAction, reopenPayrollPeriodAction } from "@/lib/org/actions";
@@ -16,6 +19,7 @@ import {
   standardWorkdaysInMonth,
 } from "@/lib/org/store";
 import { computePayslip, formatVND, isPaidInMonth, type Region } from "@/lib/payroll/calc";
+import { compactVnd } from "@/lib/bnb/util";
 import {
   PIT_DEPENDENT_DEDUCTION,
   PIT_SELF_DEDUCTION,
@@ -101,24 +105,48 @@ export default async function PayrollPage({
 
   const missing = rows.filter((r) => !r.slip.base).length;
 
+  // ---- Dữ liệu biểu đồ (chỉ dùng field đã tính sẵn) ----
+  // Cơ cấu quỹ lương: lương cơ bản · phụ cấp · thưởng+OT · khấu trừ (BH+TNCN).
+  const totalBase = sum((r) => r.slip.base);
+  const totalAllowance = sum((r) => r.slip.allowance);
+  const totalBonusOt = sum((r) => Math.max(0, r.adj) + r.ot);
+  const totalDeduction = totalEmpIns + totalPit;
+  const salaryMix = [
+    { name: "Lương cơ bản", value: totalBase, color: "#2563eb" },
+    { name: "Phụ cấp", value: totalAllowance, color: "#7c3aed" },
+    { name: "Thưởng + OT", value: totalBonusOt, color: "#0e9d6e" },
+    { name: "Khấu trừ (BH+TNCN)", value: totalDeduction, color: "#e23b54" },
+  ].filter((x) => x.value > 0);
+
+  // Top nhân sự theo thực lĩnh (rows đã sắp theo gross giảm dần).
+  const topNet = rows
+    .slice(0, 8)
+    .map((r) => ({ label: r.e.fullName, value: r.slip.net + r.slip.postTaxAdjustment + r.adj + r.ot }));
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Tính lương
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>{isSelf ? "Phiếu lương của tôi" : "Bảng lương"}</h1>
-          <p>
-            {isSelf ? monthLabel(ym) : `${monthLabel(ym)} · ${rows.length} nhân sự`}
-          </p>
-        </div>
-        {!isSelf && can(session, "report.export") && (
-          <a className="btn" href={`/export/payroll?month=${ym}`}>
-            <Icon name="download" /> Xuất Excel
-          </a>
-        )}
-      </div>
+    <div>
+      <PageHero
+        icon="wallet"
+        title={isSelf ? "Phiếu lương của tôi" : "Bảng lương"}
+        subtitle={isSelf ? monthLabel(ym) : `${monthLabel(ym)} · ${rows.length} nhân sự · quỹ lương, BHXH & thuế TNCN`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Tính lương"]]}
+        stats={
+          isSelf
+            ? undefined
+            : [
+                { label: "Tổng quỹ lương", value: compactVnd(totalGross) },
+                { label: "Tổng thực lĩnh", value: compactVnd(totalNet), tone: "up" },
+                { label: "Thuế TNCN", value: compactVnd(totalPit), tone: "down" },
+              ]
+        }
+        actions={
+          !isSelf && can(session, "report.export") ? (
+            <a className="btn" href={`/export/payroll?month=${ym}`}>
+              <Icon name="download" /> Xuất Excel
+            </a>
+          ) : undefined
+        }
+      />
 
       {/* Bộ lọc kỳ lương */}
       <form className="card" method="get" style={{ marginBottom: 20 }}>
@@ -166,34 +194,58 @@ export default async function PayrollPage({
       {/* KPI tổng — chỉ cho người xem nhiều người (ẩn với chế độ cá nhân) */}
       {!isSelf && (
       <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
-        <div className="card kpi hover tone-i">
+        <div className="card kpi grad hover gr-deepblue">
           <div className="ic"><Icon name="wallet" /></div>
-          <div className="val" style={{ fontSize: 22 }}>{formatVND(totalGross)}</div>
+          <div className="val" style={{ fontSize: 24 }}><CountUp to={totalGross} /></div>
           <div className="lbl">Tổng quỹ lương (Gross)</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="check" /></div>
-          <div className="val" style={{ fontSize: 22 }}>{formatVND(totalNet)}</div>
+          <div className="val" style={{ fontSize: 24 }}><CountUp to={totalNet} /></div>
           <div className="lbl">Tổng thực lĩnh (Net)</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="shield" /></div>
-          <div className="val" style={{ fontSize: 22 }}>{formatVND(totalEmpIns)}</div>
+          <div className="val" style={{ fontSize: 24 }}><CountUp to={totalEmpIns} /></div>
           <div className="lbl">BHXH nhân viên đóng</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="chart" /></div>
-          <div className="val" style={{ fontSize: 22 }}>{formatVND(totalPit)}</div>
+          <div className="val" style={{ fontSize: 24 }}><CountUp to={totalPit} /></div>
           <div className="lbl">Tổng thuế TNCN</div>
         </div>
       </div>
+      )}
+
+      {/* Biểu đồ: cơ cấu quỹ lương + top thực lĩnh */}
+      {!isSelf && rows.length > 0 && (
+        <div className="grid-k g-2 stagger" style={{ marginBottom: 20 }}>
+          <div className="card hover">
+            <div className="card-h">
+              <h3 className="sec-title">Cơ cấu quỹ lương</h3>
+              <span className="badge b-indigo">{compactVnd(totalGross)}</span>
+            </div>
+            {salaryMix.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có dữ liệu lương.</p>
+            ) : (
+              <DonutChart data={salaryMix} height={250} centerValue={compactVnd(totalGross)} centerLabel="quỹ lương" unit=" đ" />
+            )}
+          </div>
+          <div className="card hover">
+            <div className="card-h">
+              <h3 className="sec-title">Thực lĩnh theo nhân sự (Top 8)</h3>
+              <span className="badge b-green">{compactVnd(totalNet)}</span>
+            </div>
+            <BarsChart data={topNet} money height={250} name="Thực lĩnh" />
+          </div>
+        </div>
       )}
 
       {/* Bảng lương */}
       <div className="card">
         <div className="card-h">
           <div>
-            <h3>Chi tiết bảng lương</h3>
+            <h3 className="sec-title">Chi tiết bảng lương</h3>
             <div className="sub">
               Chi phí doanh nghiệp (gồm BH 21,5% NSDLĐ): <b>{formatVND(totalGross + totalErIns)}</b>
             </div>
@@ -329,7 +381,7 @@ export default async function PayrollPage({
 
       {/* Ghi chú tham số */}
       <div className="card" style={{ marginTop: 18 }}>
-        <div className="card-h"><h3>Tham số tính lương đang áp dụng</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tham số tính lương đang áp dụng</h3></div>
         <ul className="small muted" style={{ lineHeight: 1.9, paddingLeft: 18 }}>
           <li>BHXH bắt buộc: NLĐ đóng <b>10,5%</b> (BHXH 8% + BHYT 1,5% + BHTN 1%); NSDLĐ <b>21,5%</b>.</li>
           <li>

@@ -1,4 +1,7 @@
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart, type Slice } from "@/components/charts/rich";
 import { EmployeeSelect } from "@/components/employee-select";
 import { TableFilter } from "@/components/table-filter";
 import { cancelOvertimeAction, createOvertimeAction, decideOvertimeAction } from "@/lib/org/actions";
@@ -38,34 +41,60 @@ export default async function OvertimePage() {
     return b.date.localeCompare(a.date);
   });
 
+  const approvedCount = items.filter((o) => o.status === "approved").length;
+
+  // Cơ cấu đơn theo trạng thái (donut).
+  const statusMix: Slice[] = (Object.keys(LEAVE_STATUS_LABEL) as (keyof typeof LEAVE_STATUS_LABEL)[])
+    .map((s, i) => ({
+      name: LEAVE_STATUS_LABEL[s],
+      value: items.filter((o) => o.status === s).length,
+      color: ["#2563eb", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"][i % 6],
+    }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Làm thêm giờ
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Làm thêm giờ (OT)</h1>
-          <p>Đăng ký & duyệt OT; giờ đã duyệt tự tính tiền vào phiếu lương.</p>
+    <div>
+      <PageHero
+        icon="clock"
+        title="Làm thêm giờ (OT)"
+        subtitle="Đăng ký & duyệt OT; giờ đã duyệt tự tính tiền vào phiếu lương."
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Làm thêm giờ"]]}
+        stats={[
+          { label: "Chờ duyệt", value: pending.length, tone: pending.length > 0 ? "down" : "flat" },
+          { label: "Giờ OT duyệt (tháng)", value: approvedHoursMonth, tone: "up" },
+          { label: "Tổng đơn", value: items.length },
+        ]}
+      />
+
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="clock" /></div>
+          <div className="val"><CountUp to={pending.length} /></div>
+          <div className="lbl">đơn chờ duyệt</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={approvedHoursMonth} /></div>
+          <div className="lbl">giờ OT duyệt (tháng)</div>
+        </div>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="calendar" /></div>
+          <div className="val"><CountUp to={approvedCount} /></div>
+          <div className="lbl">đơn đã duyệt</div>
         </div>
       </div>
 
-      <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
-        <div className="card kpi hover tone-a">
-          <div className="ic"><Icon name="clock" /></div>
-          <div className="val">{pending.length}</div>
-          <div className="lbl">Đơn chờ duyệt</div>
+      {/* Biểu đồ: cơ cấu đơn theo trạng thái */}
+      {statusMix.length > 0 && (
+        <div className="card hover mt">
+          <div className="card-h"><h3 className="sec-title">Cơ cấu đơn theo trạng thái</h3></div>
+          <DonutChart data={statusMix} height={250} centerValue={items.length} centerLabel="đơn" unit=" đơn" />
         </div>
-        <div className="card kpi hover tone-t">
-          <div className="ic"><Icon name="check" /></div>
-          <div className="val">{approvedHoursMonth}</div>
-          <div className="lbl">Giờ OT duyệt (tháng)</div>
-        </div>
-      </div>
+      )}
 
       {canRequest && (
-        <div className="card" style={{ marginBottom: 18 }}>
-          <div className="card-h"><h3>Đăng ký làm thêm giờ</h3></div>
+        <div className="card mt" style={{ marginBottom: 18 }}>
+          <div className="card-h"><h3 className="sec-title">Đăng ký làm thêm giờ</h3></div>
           <form action={createOvertimeAction}>
             <div className="grid-k g-4" style={{ gap: 14, alignItems: "end" }}>
               {session.scope !== "SELF" && (
@@ -89,9 +118,9 @@ export default async function OvertimePage() {
         </div>
       )}
 
-      <div className="card">
+      <div className="card mt">
         <div className="card-h">
-          <div><h3>Danh sách OT</h3><div className="sub">{items.length} đơn</div></div>
+          <div><h3 className="sec-title">Danh sách OT</h3><div className="sub">{items.length} đơn</div></div>
           {sorted.length > 8 && <TableFilter targetId="ot-table" />}
         </div>
         {sorted.length === 0 ? (

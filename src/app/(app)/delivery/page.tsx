@@ -1,6 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
+import { DonutChart, BarsChart } from "@/components/charts/rich";
 import { listDeliveries, listOrders, listCustomers } from "@/lib/bnb/store";
 import { fmtDate, fmtDateTime, dayKey, isSameDay } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -12,6 +14,8 @@ import { createDeliveryAction, setDeliveryStatusAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
+
 // Bước trạng thái kế tiếp gợi ý cho nút chuyển nhanh.
 const NEXT_STATUS: Partial<Record<DeliveryStatus, DeliveryStatus[]>> = {
   scheduled: ["enroute", "rescheduled", "failed"],
@@ -19,17 +23,6 @@ const NEXT_STATUS: Partial<Record<DeliveryStatus, DeliveryStatus[]>> = {
   installing: ["done", "failed"],
   rescheduled: ["enroute", "failed"],
 };
-
-function Kpi({ icon, tone, value, label, sub }: { icon: string; tone: string; value: number; label: string; sub?: string }) {
-  return (
-    <div className={`card kpi hover ${tone}`}>
-      <div className="ic"><Icon name={icon} /></div>
-      <div className="val"><CountUp to={value} /></div>
-      <div className="lbl">{label}</div>
-      {sub && <div className="trend up" style={{ background: "var(--surface-2)", color: "var(--tx-muted)" }}>{sub}</div>}
-    </div>
-  );
-}
 
 const DOW = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
 const dayHeading = (iso?: string) => {
@@ -70,22 +63,78 @@ export default async function DeliveryPage() {
   // Đơn còn mở để gợi ý tạo lịch.
   const openOrders = orders.filter((o) => !["completed", "cancelled"].includes(o.status));
 
+  // Cơ cấu lịch theo trạng thái (donut).
+  const statuses = Object.keys(DELIVERY_STATUS_LABEL) as DeliveryStatus[];
+  const mix = statuses
+    .map((st, i) => ({ name: DELIVERY_STATUS_LABEL[st], value: deliveries.filter((d) => d.status === st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
+  // Lịch theo ngày — 14 ngày gần nhất tính theo scheduledAt.
+  const now = new Date();
+  const days: { key: string; label: string }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const dt = new Date(now);
+    dt.setDate(now.getDate() - i);
+    days.push({ key: dayKey(dt), label: `${dt.getDate()}/${dt.getMonth() + 1}` });
+  }
+  const byDay = days.map((d) => ({
+    label: d.label,
+    value: deliveries.filter((dl) => dayKey(dl.scheduledAt) === d.key).length,
+  }));
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Giao – Lắp đặt</div>
-      <div className="page-head">
-        <div>
-          <h1>Lịch giao – Lắp đặt</h1>
-          <p>Điều phối đội kỹ thuật, tránh trễ lịch — bám sát từng buổi giao và nghiệm thu tại nhà khách.</p>
+    <div>
+      <PageHero
+        icon="truck"
+        title="Lịch giao – Lắp đặt"
+        subtitle="Điều phối đội kỹ thuật, tránh trễ lịch — bám sát từng buổi giao và nghiệm thu tại nhà khách."
+        crumb={[["Trang chủ", "/dashboard"], ["Hiện trường & Hậu mãi"], ["Giao – Lắp đặt"]]}
+        stats={[
+          { label: "Lịch hôm nay", value: todayCount },
+          { label: "Đang giao / lắp", value: inProgress, tone: "up" },
+          { label: "Đã nghiệm thu", value: doneCount, tone: "up" },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="today" /></div>
+          <div className="val"><CountUp to={todayCount} /></div>
+          <div className="lbl">lịch hôm nay</div>
+        </div>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="truck" /></div>
+          <div className="val"><CountUp to={inProgress} /></div>
+          <div className="lbl">đang giao / lắp</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={doneCount} /></div>
+          <div className="lbl">đã nghiệm thu</div>
         </div>
       </div>
 
-      <div className="grid-k g-4 stagger">
-        <Kpi icon="today" tone="tone-i" value={todayCount} label="Lịch hôm nay" sub={`${deliveries.length} lịch tổng`} />
-        <Kpi icon="truck" tone="tone-a" value={inProgress} label="Đang giao / lắp" />
-        <Kpi icon="check" tone="tone-t" value={doneCount} label="Đã nghiệm thu" />
-        <Kpi icon="calendar" tone="tone-r" value={groups.size} label="Ngày có lịch" />
-      </div>
+      {/* Biểu đồ: lịch 14 ngày + cơ cấu trạng thái */}
+      {deliveries.length > 0 && (
+        <div className="grid-k g-2 mt">
+          <div className="card hover">
+            <div className="card-h">
+              <h3 className="sec-title">Lịch giao – lắp · 14 ngày</h3>
+              <span className="badge b-gray">{byDay.reduce((s, d) => s + d.value, 0)} lịch</span>
+            </div>
+            <BarsChart data={byDay} height={250} name="Số lịch" />
+          </div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu lịch theo trạng thái</h3></div>
+            {mix.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có lịch nào.</p>
+            ) : (
+              <DonutChart data={mix} height={250} centerValue={deliveries.length} centerLabel="lịch" unit=" lịch" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tạo lịch giao – lắp */}
       {canManage && (
@@ -139,7 +188,7 @@ export default async function DeliveryPage() {
           return (
             <div key={k} className="card mt" style={isToday ? { borderColor: "var(--brand)", boxShadow: "0 0 0 1px var(--brand) inset" } : undefined}>
               <div className="card-h">
-                <h3 className="flex aic" style={{ gap: 10 }}>
+                <h3 className="sec-title flex aic" style={{ gap: 10 }}>
                   <Icon name="calendar" /> {dayHeading(jobs[0].scheduledAt)}
                   {isToday && <span className="badge b-amber">Hôm nay</span>}
                 </h3>

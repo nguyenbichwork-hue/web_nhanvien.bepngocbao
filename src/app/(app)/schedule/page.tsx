@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
 import { ScheduleGrid, type ScheduleRow } from "@/components/schedule-grid";
 import { TableFilter } from "@/components/table-filter";
 import { clearScheduleEntryAction } from "@/lib/org/actions";
@@ -92,37 +94,59 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   const defaultShift = shifts.find((s) => s.id === config.defaultShiftId);
   const activeShifts = shifts.filter((s) => s.isActive);
 
+  const subtitle = `Lịch hành chính nền (${defaultShift?.startTime}–${defaultShift?.endTime}, nghỉ trưa ${defaultShift?.breakStart}–${defaultShift?.breakEnd}) · T2–T6. ` +
+    (canManage
+      ? "Bấm vào một ô để xếp/đổi ca cho ngày đó."
+      : selfEditOnly
+        ? "Bấm vào ô trên hàng của bạn để xếp/đổi ca cho ngày đó."
+        : "Bạn đang xem ở chế độ chỉ đọc.");
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Lịch làm việc
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Lịch làm việc</h1>
-          <p>
-            Lịch hành chính nền ({defaultShift?.startTime}–{defaultShift?.endTime}, nghỉ trưa{" "}
-            {defaultShift?.breakStart}–{defaultShift?.breakEnd}) · T2–T6.{" "}
-            {canManage
-              ? <><b>Bấm vào một ô</b> để xếp/đổi ca cho ngày đó.</>
-              : selfEditOnly
-                ? <><b>Bấm vào ô trên hàng của bạn</b> để xếp/đổi ca cho ngày đó.</>
-                : "Bạn đang xem ở chế độ chỉ đọc."}
-          </p>
+    <div>
+      <PageHero
+        icon="clock"
+        title="Lịch làm việc"
+        subtitle={subtitle}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Lịch làm việc"]]}
+        stats={[
+          { label: "Nhân viên", value: rows.length },
+          { label: "Ngoại lệ tháng", value: monthOverrides.length, tone: monthOverrides.length > 0 ? "flat" : undefined },
+          { label: "Đang xem", value: `${VN_MONTH(month)}/${year}` },
+        ]}
+        actions={
+          <div className="flex aic gap">
+            <Link href={qs({ y: prev.y, m: prev.m })} className="iconbtn" title="Tháng trước">
+              <Icon name="chevleft" />
+            </Link>
+            <strong style={{ minWidth: 110, textAlign: "center" }}>{VN_MONTH(month)}/{year}</strong>
+            <Link href={qs({ y: next.y, m: next.m })} className="iconbtn" title="Tháng sau">
+              <Icon name="chev" />
+            </Link>
+          </div>
+        }
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="users" /></div>
+          <div className="val"><CountUp to={rows.length} /></div>
+          <div className="lbl">nhân viên xếp lịch</div>
         </div>
-        <div className="flex aic gap">
-          <Link href={qs({ y: prev.y, m: prev.m })} className="iconbtn" title="Tháng trước">
-            <Icon name="chevleft" />
-          </Link>
-          <strong style={{ minWidth: 110, textAlign: "center" }}>{VN_MONTH(month)}/{year}</strong>
-          <Link href={qs({ y: next.y, m: next.m })} className="iconbtn" title="Tháng sau">
-            <Icon name="chev" />
-          </Link>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="calendar" /></div>
+          <div className="val"><CountUp to={daysInMonth} /></div>
+          <div className="lbl">ngày trong tháng</div>
+        </div>
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="edit" /></div>
+          <div className="val"><CountUp to={monthOverrides.length} /></div>
+          <div className="lbl">ngoại lệ đã xếp</div>
         </div>
       </div>
 
       {/* Bộ lọc phòng ban */}
-      <form className="card" method="get" style={{ marginBottom: 18 }}>
+      <form className="card mt" method="get" style={{ marginBottom: 18 }}>
         <input type="hidden" name="y" value={year} />
         <input type="hidden" name="m" value={month} />
         <div className="grid-k g-2" style={{ alignItems: "end" }}>
@@ -146,7 +170,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       <div className="card" style={{ overflowX: "auto" }}>
         <div className="card-h">
           <div>
-            <h3>Bảng lịch — {VN_MONTH(month)}/{year}</h3>
+            <h3 className="sec-title">Bảng lịch — {VN_MONTH(month)}/{year}</h3>
             <div className="sub">{rows.length} nhân viên · viền cam = ngoại lệ đã xếp</div>
           </div>
           <div className="flex gap small muted" style={{ flexWrap: "wrap" }}>
@@ -173,7 +197,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       <div className="card" style={{ marginTop: 18 }}>
         <div className="card-h">
           <div>
-            <h3>Ngoại lệ trong {VN_MONTH(month)}</h3>
+            <h3 className="sec-title">Ngoại lệ trong {VN_MONTH(month)}</h3>
             <div className="sub">{monthOverrides.length} mục đã ghi đè lịch nền</div>
           </div>
         </div>

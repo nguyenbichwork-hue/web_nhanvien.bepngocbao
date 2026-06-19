@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { AreaTrend, DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listPurchaseOrders } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate } from "@/lib/bnb/util";
-import { PO_STATUS_LABEL, PO_STATUS_BADGE } from "@/lib/bnb/types";
+import { fmtVnd, fmtDate, compactVnd } from "@/lib/bnb/util";
+import { PO_STATUS_LABEL, PO_STATUS_BADGE, type POStatus } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";
+
+const MIX_COLORS = ["#7c3aed", "#2563eb", "#0e9d6e", "#d98309", "#e23b54", "#0d9488", "#9aa1ab"];
 
 export default async function PurchasePage() {
   await requirePermission("purchase.read");
@@ -15,43 +20,92 @@ export default async function PurchasePage() {
 
   const ordering = pos.filter((p) => p.status === "ordered");
   const received = pos.filter((p) => p.status === "received");
+  const draft = pos.filter((p) => p.status === "draft");
   const totalValue = pos
     .filter((p) => p.status !== "cancelled")
     .reduce((s, p) => s + (p.total || 0), 0);
 
+  // Cơ cấu PO theo trạng thái — DonutChart.
+  const statuses = Object.keys(PO_STATUS_LABEL) as POStatus[];
+  const mix = statuses
+    .map((st, i) => ({ name: PO_STATUS_LABEL[st], value: pos.filter((p) => p.status === st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
+  // Giá trị PO theo tháng — 6 tháng gần nhất (AreaTrend), theo ngày tạo, bỏ PO huỷ.
+  const now = new Date();
+  const months: { key: string; label: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: `T${d.getMonth() + 1}` });
+  }
+  const valByMonth = months.map((m) => ({
+    label: m.label,
+    value: pos
+      .filter((p) => p.status !== "cancelled" && (p.createdAt || "").slice(0, 7) === m.key)
+      .reduce((s, p) => s + (p.total || 0), 0),
+  }));
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Nhập hàng</div>
-      <div className="page-head">
-        <div>
-          <h1>Nhập hàng (PO)</h1>
-          <p>Đặt hàng nhà cung cấp, theo dõi hàng về và nhập kho.</p>
-        </div>
-        <Link href="/purchase/new" className="btn primary"><Icon name="plus" /> Tạo PO</Link>
-      </div>
+    <div>
+      <PageHero
+        icon="truck"
+        title="Nhập hàng (PO)"
+        subtitle="Đặt hàng nhà cung cấp, theo dõi hàng về và nhập kho."
+        crumb={[["Trang chủ", "/dashboard"], ["Marketing & Kho"], ["Nhập hàng"]]}
+        stats={[
+          { label: "Đang đặt", value: ordering.length },
+          { label: "Đã nhận", value: received.length, tone: "up" },
+          { label: "Giá trị PO", value: compactVnd(totalValue) },
+        ]}
+        actions={<Link href="/purchase/new" className="btn primary"><Icon name="plus" /> Tạo PO</Link>}
+      />
 
       {/* KPI */}
-      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-amber-soft)", color: "var(--c-amber)" }}><Icon name="truck" /></div>
-          <div className="val">{ordering.length}</div>
+      <div className="grid-k g-4 stagger">
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="truck" /></div>
+          <div className="val"><CountUp to={ordering.length} /></div>
           <div className="lbl">PO đang đặt</div>
         </div>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-teal-soft)", color: "var(--c-teal)" }}><Icon name="box" /></div>
-          <div className="val">{received.length}</div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="box" /></div>
+          <div className="val"><CountUp to={received.length} /></div>
           <div className="lbl">PO đã nhận</div>
         </div>
-        <div className="card kpi">
-          <div className="ic" style={{ background: "var(--c-indigo-soft)", color: "var(--c-indigo)" }}><Icon name="wallet" /></div>
-          <div className="val">{fmtVnd(totalValue)}</div>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="edit" /></div>
+          <div className="val"><CountUp to={draft.length} /></div>
+          <div className="lbl">PO nháp</div>
+        </div>
+        <div className="card kpi grad hover gr-plum">
+          <div className="ic"><Icon name="wallet" /></div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(totalValue)}</div>
           <div className="lbl">tổng giá trị PO</div>
+        </div>
+      </div>
+
+      {/* Biểu đồ: giá trị PO theo tháng + cơ cấu trạng thái */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h">
+            <h3 className="sec-title">Giá trị PO · 6 tháng</h3>
+            <span className="badge b-green">{fmtVnd(valByMonth.reduce((s, m) => s + m.value, 0))}</span>
+          </div>
+          <AreaTrend data={valByMonth} money height={250} name="Giá trị PO" />
+        </div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Cơ cấu PO theo trạng thái</h3></div>
+          {mix.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có PO nào.</p>
+          ) : (
+            <DonutChart data={mix} height={250} centerValue={pos.length} centerLabel="PO" unit=" PO" />
+          )}
         </div>
       </div>
 
       {/* Danh sách PO */}
       <div className="card mt">
-        <div className="card-h"><h3>Tất cả PO ({pos.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tất cả PO ({pos.length})</h3></div>
         <TableFilter
           targetId="po-tbl"
           placeholder="Tìm mã PO, nhà cung cấp…"

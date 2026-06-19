@@ -1,7 +1,10 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { AreaTrend, DonutChart } from "@/components/charts/rich";
 import { listShiftReports } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate } from "@/lib/bnb/util";
+import { fmtVnd, fmtDate, dayKey, compactVnd } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import { SHIFT_LABEL, type ShiftKind } from "@/lib/bnb/types";
 import { createShiftReportAction } from "./actions";
@@ -10,6 +13,7 @@ import { ChipSelect } from "./chip-select";
 export const dynamic = "force-dynamic";
 
 const SHIFTS = Object.keys(SHIFT_LABEL) as ShiftKind[];
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 const SHIFT_BADGE: Record<ShiftKind, string> = {
   morning: "b-amber",
@@ -37,39 +41,82 @@ export default async function ShiftReportPage() {
   const wkLeads = sum((r) => r.leads);
   const wkVisitors = sum((r) => r.visitors);
 
+  // Doanh thu theo ngày — 14 ngày gần nhất (gộp các ca cùng ngày).
+  const now = new Date();
+  const days: { key: string; label: string }[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    days.push({ key: dayKey(d), label: `${d.getDate()}/${d.getMonth() + 1}` });
+  }
+  const revByDay = days.map((d) => ({
+    label: d.label,
+    value: reports.filter((r) => r.date === d.key).reduce((s, r) => s + (r.revenue || 0), 0),
+  }));
+
+  // Cơ cấu doanh thu theo ca (donut).
+  const shiftMix = SHIFTS
+    .map((k, i) => ({ name: SHIFT_LABEL[k], value: reports.filter((r) => r.shift === k).reduce((s, r) => s + (r.revenue || 0), 0), color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Báo cáo ca & bàn giao</div>
-      <div className="page-head">
-        <div>
-          <h1>Báo cáo ca & bàn giao</h1>
-          <p>Chuẩn hoá báo cáo cuối ca — không phụ thuộc Zalo. Tổng hợp 7 ngày gần đây.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="handover"
+        title="Báo cáo ca & bàn giao"
+        subtitle="Chuẩn hoá báo cáo cuối ca — không phụ thuộc Zalo. Tổng hợp 7 ngày gần đây."
+        crumb={[["Trang chủ", "/dashboard"], ["Hiện trường & Hậu mãi"], ["Báo cáo ca"]]}
+        stats={[
+          { label: "Doanh thu 7 ngày", value: compactVnd(wkRevenue), tone: "up" },
+          { label: "Đơn 7 ngày", value: wkOrders },
+          { label: "Lead 7 ngày", value: wkLeads },
+        ]}
+      />
 
       {/* KPI tuần */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi tone-i">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="wallet" /></div>
-          <div className="val">{fmtVnd(wkRevenue)}</div>
+          <div className="val" style={{ fontSize: 24 }}>{fmtVnd(wkRevenue)}</div>
           <div className="lbl">doanh thu 7 ngày</div>
         </div>
-        <div className="card kpi tone-t">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="cart" /></div>
-          <div className="val">{wkOrders}</div>
+          <div className="val"><CountUp to={wkOrders} /></div>
           <div className="lbl">đơn 7 ngày</div>
         </div>
-        <div className="card kpi tone-a">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="leads" /></div>
-          <div className="val">{wkLeads}</div>
+          <div className="val"><CountUp to={wkLeads} /></div>
           <div className="lbl">lead 7 ngày</div>
         </div>
-        <div className="card kpi tone-r">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="users" /></div>
-          <div className="val">{wkVisitors}</div>
+          <div className="val"><CountUp to={wkVisitors} /></div>
           <div className="lbl">khách ghé 7 ngày</div>
         </div>
       </div>
+
+      {/* Biểu đồ: doanh thu 14 ngày + cơ cấu theo ca */}
+      {reports.length > 0 && (
+        <div className="grid-k g-2 mt">
+          <div className="card hover">
+            <div className="card-h">
+              <h3 className="sec-title">Doanh thu theo ngày · 14 ngày</h3>
+              <span className="badge b-green">{fmtVnd(revByDay.reduce((s, d) => s + d.value, 0))}</span>
+            </div>
+            <AreaTrend data={revByDay} money height={250} name="Doanh thu" />
+          </div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu doanh thu theo ca</h3></div>
+            {shiftMix.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có doanh thu theo ca.</p>
+            ) : (
+              <DonutChart data={shiftMix} height={250} centerValue={compactVnd(shiftMix.reduce((s, d) => s + d.value, 0))} centerLabel="doanh thu" unit="đ" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tạo báo cáo */}
       {canManage && (
@@ -118,7 +165,7 @@ export default async function ShiftReportPage() {
 
       {/* Danh sách */}
       <div className="card mt">
-        <div className="card-h"><h3>Lịch sử báo cáo ca ({reports.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Lịch sử báo cáo ca ({reports.length})</h3></div>
         {sorted.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có báo cáo ca nào.</p>
         ) : (

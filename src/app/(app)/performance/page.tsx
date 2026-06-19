@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
-import { CountUp, HBars } from "@/components/charts";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listDepartments, listEmployees, listReviewCycles, listReviews } from "@/lib/org/store";
 import {
@@ -58,19 +60,21 @@ export default async function PerformancePage({
   const ratingLabel: Record<string, string> = { A: "A · Xuất sắc", B: "B · Tốt", C: "C · Đạt", D: "D · Cần cải thiện", "—": "Chưa chấm" };
   const distribution = ["A", "B", "C", "D", "—"]
     .filter((c) => ratingCounts.get(c))
-    .map((c) => ({ label: ratingLabel[c], count: ratingCounts.get(c) ?? 0, color: ratingColor[c] }));
+    .map((c) => ({ name: ratingLabel[c], value: ratingCounts.get(c) ?? 0, color: ratingColor[c] }));
 
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Đánh giá KPI
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>{isSelf ? "KPI của tôi" : "Đánh giá hiệu suất"}</h1>
-          <p>{cycle ? `${cycle.name} · ${rows.length} bản đánh giá` : "Chưa có kỳ đánh giá."}</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="target"
+        title={isSelf ? "KPI của tôi" : "Đánh giá hiệu suất"}
+        subtitle={cycle ? `${cycle.name} · ${rows.length} bản đánh giá` : "Chưa có kỳ đánh giá."}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Đánh giá KPI"]]}
+        stats={[
+          { label: "Bản đánh giá", value: rows.length },
+          { label: "Đã chốt", value: finalized, tone: "up" },
+          { label: "Điểm TB", value: avg == null ? "—" : avg.toFixed(2).replace(".", ",") },
+        ]}
+      />
 
       {/* Bộ lọc */}
       <form className="card" method="get" style={{ marginBottom: 20 }}>
@@ -95,22 +99,22 @@ export default async function PerformancePage({
 
       {/* KPI */}
       <div className="grid-k g-4 stagger" style={{ marginBottom: 20 }}>
-        <div className="card kpi hover tone-i">
+        <div className="card kpi grad hover gr-deepblue">
           <div className="ic"><Icon name="target" /></div>
           <div className="val"><CountUp to={rows.length} /></div>
           <div className="lbl">Bản đánh giá</div>
         </div>
-        <div className="card kpi hover tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="check" /></div>
           <div className="val"><CountUp to={finalized} /></div>
           <div className="lbl">Đã chốt</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="chart" /></div>
           <div className="val">{avg == null ? "—" : avg.toFixed(2).replace(".", ",")}</div>
           <div className="lbl">Điểm trung bình</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="clock" /></div>
           <div className="val"><CountUp to={rows.length - finalized} /></div>
           <div className="lbl">Chưa chốt</div>
@@ -121,7 +125,7 @@ export default async function PerformancePage({
         {/* Danh sách */}
         <div className="card" style={{ gridColumn: "span 1" }}>
           <div className="card-h">
-            <h3>Danh sách đánh giá</h3>
+            <h3 className="sec-title">Danh sách đánh giá</h3>
             {rows.length > 8 && <TableFilter targetId="perf-table" />}
           </div>
           {rows.length === 0 ? (
@@ -173,8 +177,15 @@ export default async function PerformancePage({
 
         {/* Phân bố xếp loại */}
         <div className="card hover">
-          <div className="card-h"><h3>Phân bố xếp loại</h3></div>
-          <HBars data={distribution} unit=" NV" />
+          <div className="card-h">
+            <h3 className="sec-title">Phân bố xếp loại</h3>
+            <span className="badge b-indigo">{rows.length} NV</span>
+          </div>
+          {distribution.length === 0 ? (
+            <p className="muted" style={{ padding: "28px 0", textAlign: "center" }}>Chưa có dữ liệu.</p>
+          ) : (
+            <DonutChart data={distribution} height={260} centerValue={rows.length} centerLabel="bản đánh giá" unit=" NV" />
+          )}
         </div>
       </div>
     </div>

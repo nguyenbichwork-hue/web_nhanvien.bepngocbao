@@ -1,6 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp, HBars } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listReviews } from "@/lib/bnb/store";
 import { fmtDate, initials, avatarBg } from "@/lib/bnb/util";
@@ -33,12 +35,15 @@ export default async function ReviewsPage() {
   const flagged = reviews.filter((r) => r.status === "flagged").length;
   const fresh = reviews.filter((r) => !r.response).length;
 
-  // Phân bố theo số sao (5 → 1).
-  const starData = [5, 4, 3, 2, 1].map((star) => ({
-    label: `${star} ★`,
-    count: reviews.filter((r) => Math.round(r.rating) === star).length,
-    color: star >= 4 ? "var(--c-teal)" : star === 3 ? "var(--c-amber)" : "var(--c-rose)",
-  }));
+  // Phân bố theo số sao (5 → 1) — donut.
+  const STAR_COLOR: Record<number, string> = { 5: "#0e9d6e", 4: "#0d9488", 3: "#d98309", 2: "#e07a1f", 1: "#e23b54" };
+  const starData = [5, 4, 3, 2, 1]
+    .map((star) => ({
+      name: `${star} ★`,
+      value: reviews.filter((r) => Math.round(r.rating) === star).length,
+      color: STAR_COLOR[star],
+    }))
+    .filter((d) => d.value > 0);
 
   // Phân bố theo kênh.
   const channelData = REVIEW_CHANNELS
@@ -50,33 +55,37 @@ export default async function ReviewsPage() {
     .filter((d) => d.count > 0);
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Đánh giá</div>
-      <div className="page-head">
-        <div>
-          <h1>Đánh giá khách hàng</h1>
-          <p>Theo dõi và phản hồi đánh giá từ các kênh Google, Facebook, sàn TMĐT và website.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="chat"
+        title="Đánh giá khách hàng"
+        subtitle="Theo dõi và phản hồi đánh giá từ các kênh Google, Facebook, sàn TMĐT và website."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Đánh giá"]]}
+        stats={[
+          { label: "Tổng đánh giá", value: total },
+          { label: "Điểm TB", value: avg.toFixed(1), tone: avg >= 4 ? "up" : avg >= 3 ? "flat" : "down" },
+          { label: "Chưa phản hồi", value: fresh, tone: fresh > 0 ? "down" : "flat" },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger">
-        <div className="card kpi tone-i">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="chat" /></div>
           <div className="val"><CountUp to={total} /></div>
           <div className="lbl">Tổng đánh giá</div>
         </div>
-        <div className="card kpi tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="award" /></div>
           <div className="val">{avg.toFixed(1)}</div>
           <div className="lbl">Điểm trung bình</div>
         </div>
-        <div className="card kpi tone-r">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="alert" /></div>
           <div className="val"><CountUp to={flagged} /></div>
           <div className="lbl">Cần xử lý</div>
         </div>
-        <div className="card kpi tone-t">
+        <div className="card kpi grad hover gr-teal">
           <div className="ic"><Icon name="bell" /></div>
           <div className="val"><CountUp to={fresh} /></div>
           <div className="lbl">Chưa phản hồi</div>
@@ -85,12 +94,16 @@ export default async function ReviewsPage() {
 
       {/* Phân bố */}
       <div className="grid-k g-2 mt">
-        <div className="card">
-          <div className="card-h"><h3>Phân bố theo số sao</h3><span className="badge b-amber">{total}</span></div>
-          <HBars data={starData} />
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phân bố theo số sao</h3><span className="badge b-amber">{total}</span></div>
+          {starData.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có đánh giá nào.</p>
+          ) : (
+            <DonutChart data={starData} height={250} centerValue={avg.toFixed(1)} centerLabel="điểm TB" unit=" đánh giá" />
+          )}
         </div>
-        <div className="card">
-          <div className="card-h"><h3>Phân bố theo kênh</h3><span className="badge b-indigo">{channelData.length}</span></div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phân bố theo kênh</h3><span className="badge b-indigo">{channelData.length}</span></div>
           <HBars data={channelData} />
         </div>
       </div>
@@ -133,7 +146,7 @@ export default async function ReviewsPage() {
 
       {/* Bảng đánh giá */}
       <div className="card mt">
-        <div className="card-h"><h3>Danh sách đánh giá</h3><span className="badge b-gray">{total}</span></div>
+        <div className="card-h"><h3 className="sec-title">Danh sách đánh giá</h3><span className="badge b-gray">{total}</span></div>
         {reviews.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có đánh giá nào.</p>
         ) : (

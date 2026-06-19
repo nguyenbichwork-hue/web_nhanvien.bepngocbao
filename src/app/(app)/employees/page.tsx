@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { DonutChart, BarsChart, type Slice } from "@/components/charts/rich";
 import { listDepartments, listEmployees, listJobTitles } from "@/lib/org/store";
 import { EMPLOYEE_STATUS_LABEL, type EmployeeStatus } from "@/lib/org/types";
 import { can, requirePermission } from "@/lib/auth/session";
@@ -11,6 +14,8 @@ const STATUS_BADGE: Record<EmployeeStatus, string> = {
   inactive: "b-gray",
   left: "b-rose",
 };
+
+const MIX_COLORS = ["#2563eb", "#7c3aed", "#0e9d6e", "#d98309", "#e23b54", "#0d9488", "#9aa1ab"];
 
 type SP = { q?: string; dept?: string; status?: string };
 
@@ -44,37 +49,100 @@ export default async function EmployeesPage({
 
   const filterDepts = departments;
 
+  // Tổng hợp KPI từ dữ liệu sẵn có.
+  const activeCount = employees.filter((e) => e.status === "active").length;
+  const probationCount = employees.filter((e) => e.status === "probation").length;
+  const workingCount = employees.filter((e) => e.status !== "left").length;
+
+  // Cơ cấu theo trạng thái (donut).
+  const statusMix: Slice[] = (Object.keys(EMPLOYEE_STATUS_LABEL) as EmployeeStatus[])
+    .map((s, i) => ({
+      name: EMPLOYEE_STATUS_LABEL[s],
+      value: employees.filter((e) => e.status === s).length,
+      color: MIX_COLORS[i % MIX_COLORS.length],
+    }))
+    .filter((x) => x.value > 0);
+
+  // Phân bố theo phòng ban (cột) — chỉ phòng có người.
+  const byDept = departments
+    .map((d) => ({ label: d.name, value: employees.filter((e) => e.departmentId === d.id).length }))
+    .filter((x) => x.value > 0)
+    .sort((a, b) => b.value - a.value);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">
-        Trang chủ <Icon name="chev" /> Nhân viên
-      </div>
-      <div className="page-head">
-        <div>
-          <h1>Danh bạ nhân viên</h1>
-          <p>Hồ sơ nhân sự trong phạm vi của bạn — {employees.length} người.</p>
+    <div>
+      <PageHero
+        icon="users"
+        title="Danh bạ nhân viên"
+        subtitle={`Hồ sơ nhân sự trong phạm vi của bạn — ${employees.length} người.`}
+        crumb={[["Trang chủ", "/dashboard"], ["Nhân sự"], ["Nhân viên"]]}
+        stats={[
+          { label: "Tổng nhân viên", value: employees.length },
+          { label: "Đang làm", value: workingCount, tone: "up" },
+          { label: "Thử việc", value: probationCount, tone: probationCount > 0 ? "flat" : undefined },
+        ]}
+        actions={
+          <div className="flex gap">
+            {can(session, "report.export") && (
+              <a className="btn" href="/export/employees">
+                <Icon name="download" /> Xuất Excel
+              </a>
+            )}
+            {canCreate && (
+              <Link href="/employees/import" className="btn">
+                <Icon name="download" /> Nhập Excel
+              </Link>
+            )}
+            {canCreate && (
+              <Link href="/employees/new" className="btn primary">
+                <Icon name="userplus" /> Thêm nhân viên
+              </Link>
+            )}
+          </div>
+        }
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+        <div className="card kpi grad hover gr-deepblue">
+          <div className="ic"><Icon name="users" /></div>
+          <div className="val"><CountUp to={employees.length} /></div>
+          <div className="lbl">tổng nhân viên</div>
         </div>
-        <div className="flex gap">
-          {can(session, "report.export") && (
-            <a className="btn" href="/export/employees">
-              <Icon name="download" /> Xuất Excel
-            </a>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={activeCount} /></div>
+          <div className="lbl">chính thức</div>
+        </div>
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="clock" /></div>
+          <div className="val"><CountUp to={probationCount} /></div>
+          <div className="lbl">đang thử việc</div>
+        </div>
+      </div>
+
+      {/* Biểu đồ: cơ cấu trạng thái + phân bố phòng ban */}
+      <div className="grid-k g-2 mt">
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Cơ cấu theo trạng thái</h3></div>
+          {statusMix.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có nhân viên nào.</p>
+          ) : (
+            <DonutChart data={statusMix} height={250} centerValue={employees.length} centerLabel="người" unit=" người" />
           )}
-          {canCreate && (
-            <Link href="/employees/import" className="btn">
-              <Icon name="download" /> Nhập Excel
-            </Link>
-          )}
-          {canCreate && (
-            <Link href="/employees/new" className="btn primary">
-              <Icon name="userplus" /> Thêm nhân viên
-            </Link>
+        </div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phân bố theo phòng ban</h3></div>
+          {byDept.length === 0 ? (
+            <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có dữ liệu phòng ban.</p>
+          ) : (
+            <BarsChart data={byDept} height={250} name="Số nhân viên" />
           )}
         </div>
       </div>
 
       {/* Bộ lọc */}
-      <form className="card" method="get" style={{ marginBottom: 18 }}>
+      <form className="card mt" method="get">
         <div className="grid-k g-3" style={{ gap: 14, alignItems: "end" }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>Tìm kiếm</label>
@@ -114,10 +182,10 @@ export default async function EmployeesPage({
       </form>
 
       {/* Bảng */}
-      <div className="card">
+      <div className="card mt">
         <div className="card-h">
           <div>
-            <h3>Kết quả</h3>
+            <h3 className="sec-title">Kết quả</h3>
             <div className="sub">{filtered.length} nhân viên</div>
           </div>
         </div>

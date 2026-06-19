@@ -1,6 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
 import { listWarranties, listOrders, listCustomers } from "@/lib/bnb/store";
 import { fmtDate } from "@/lib/bnb/util";
@@ -14,17 +16,7 @@ import { createWarrantyAction, markCareDoneAction } from "./actions";
 export const dynamic = "force-dynamic";
 
 const MILESTONES = [...CARE_MILESTONES] as number[];
-
-function Kpi({ icon, tone, value, label, sub }: { icon: string; tone: string; value: number; label: string; sub?: string }) {
-  return (
-    <div className={`card kpi hover ${tone}`}>
-      <div className="ic"><Icon name={icon} /></div>
-      <div className="val"><CountUp to={value} /></div>
-      <div className="lbl">{label}</div>
-      {sub && <div className="trend up" style={{ background: "var(--surface-2)", color: "var(--tx-muted)" }}>{sub}</div>}
-    </div>
-  );
-}
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 /** Chip các mốc 1/7/30/90: mốc đã chăm = xanh, chưa = xám. */
 function CareChips({ careDone }: { careDone: number[] }) {
@@ -70,6 +62,19 @@ export default async function WarrantyPage() {
   const dueList = sorted.filter((w) => w.status === "due");
   const today = new Date().toISOString().slice(0, 10);
 
+  // Cơ cấu phiếu theo trạng thái (donut).
+  const statuses = Object.keys(WARRANTY_STATUS_LABEL) as (keyof typeof WARRANTY_STATUS_LABEL)[];
+  const mix = statuses
+    .map((st, i) => ({ name: WARRANTY_STATUS_LABEL[st], value: warranties.filter((w) => w.status === st).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
+  // Tiến độ chăm sóc theo từng mốc (đã chăm trên tổng phiếu).
+  const careMix = MILESTONES.map((m, i) => ({
+    name: `Mốc ${m} ngày`,
+    value: warranties.filter((w) => (w.careDone || []).includes(m)).length,
+    color: MIX_COLORS[i % MIX_COLORS.length],
+  })).filter((x) => x.value > 0);
+
   const CareButton = ({ w }: { w: WarrantyTicket }) => {
     const ms = nextMilestone(w.careDone || []);
     if (!canManage || ms === undefined) return null;
@@ -85,21 +90,59 @@ export default async function WarrantyPage() {
   };
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Bảo hành & Hậu mãi</div>
-      <div className="page-head">
-        <div>
-          <h1>Bảo hành & Hậu mãi</h1>
-          <p>Tự động nhắc chăm sóc sau 1 / 7 / 30 / 90 ngày kể từ ngày lắp — giữ khách quay lại và an tâm.</p>
+    <div>
+      <PageHero
+        icon="warranty"
+        title="Bảo hành & Hậu mãi"
+        subtitle="Tự động nhắc chăm sóc sau 1 / 7 / 30 / 90 ngày kể từ ngày lắp — giữ khách quay lại và an tâm."
+        crumb={[["Trang chủ", "/dashboard"], ["Hiện trường & Hậu mãi"], ["Bảo hành & Hậu mãi"]]}
+        stats={[
+          { label: "Đang theo dõi", value: tracking },
+          { label: "Đến hạn", value: due, tone: due > 0 ? "down" : "flat" },
+          { label: "Đã xử lý", value: resolved, tone: "up" },
+        ]}
+      />
+
+      {/* KPI */}
+      <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+        <div className="card kpi grad hover gr-azure">
+          <div className="ic"><Icon name="warranty" /></div>
+          <div className="val"><CountUp to={tracking} /></div>
+          <div className="lbl">đang theo dõi</div>
+        </div>
+        <div className="card kpi grad hover gr-sunny">
+          <div className="ic"><Icon name="phone" /></div>
+          <div className="val"><CountUp to={due} /></div>
+          <div className="lbl">đến hạn chăm sóc</div>
+        </div>
+        <div className="card kpi grad hover gr-mint">
+          <div className="ic"><Icon name="check" /></div>
+          <div className="val"><CountUp to={resolved} /></div>
+          <div className="lbl">đã xử lý</div>
         </div>
       </div>
 
-      <div className="grid-k g-4 stagger">
-        <Kpi icon="warranty" tone="tone-i" value={tracking} label="Đang theo dõi" sub={`${warranties.length} phiếu tổng`} />
-        <Kpi icon="phone" tone="tone-a" value={due} label="Đến hạn chăm sóc" />
-        <Kpi icon="check" tone="tone-t" value={resolved} label="Đã xử lý" />
-        <Kpi icon="sparkle" tone="tone-r" value={MILESTONES.length} label="Mốc chăm sóc" sub="1/7/30/90 ngày" />
-      </div>
+      {/* Biểu đồ: cơ cấu trạng thái + tiến độ mốc chăm sóc */}
+      {warranties.length > 0 && (
+        <div className="grid-k g-2 mt">
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu phiếu theo trạng thái</h3></div>
+            {mix.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có phiếu nào.</p>
+            ) : (
+              <DonutChart data={mix} height={250} centerValue={warranties.length} centerLabel="phiếu" unit=" phiếu" />
+            )}
+          </div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Tiến độ chăm sóc theo mốc</h3></div>
+            {careMix.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa chăm sóc mốc nào.</p>
+            ) : (
+              <DonutChart data={careMix} height={250} centerValue={warranties.length} centerLabel="phiếu" unit=" phiếu" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tạo phiếu bảo hành */}
       {canManage && (
@@ -138,7 +181,7 @@ export default async function WarrantyPage() {
       {dueList.length > 0 && (
         <div className="card mt" style={{ borderColor: "var(--brand)", boxShadow: "0 0 0 1px var(--brand) inset" }}>
           <div className="card-h">
-            <h3 className="flex aic" style={{ gap: 10 }}><Icon name="phone" /> Cần chăm sóc ngay</h3>
+            <h3 className="sec-title flex aic" style={{ gap: 10 }}><Icon name="phone" /> Cần chăm sóc ngay</h3>
             <span className="badge b-amber">{dueList.length} phiếu</span>
           </div>
           <div style={{ display: "grid", gap: 14 }}>
@@ -164,7 +207,7 @@ export default async function WarrantyPage() {
 
       {/* Bảng tất cả phiếu */}
       <div className="card mt">
-        <div className="card-h"><h3>Phiếu bảo hành ({warranties.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Phiếu bảo hành ({warranties.length})</h3></div>
         {warranties.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phiếu bảo hành nào.</p>
         ) : (

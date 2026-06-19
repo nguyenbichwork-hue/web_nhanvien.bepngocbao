@@ -1,5 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
+import { BarsChart, DonutChart } from "@/components/charts/rich";
 import { listTasks } from "@/lib/bnb/store";
 import { fmtDate } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -15,6 +18,7 @@ export const dynamic = "force-dynamic";
 
 const CATS = Object.keys(TASK_CAT_LABEL) as TaskCategory[];
 const PRIOS = Object.keys(PRIORITY_LABEL) as TaskPriority[];
+const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9488", "#9aa1ab"];
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -49,34 +53,71 @@ export default async function TasksPage() {
 
   const employees = Object.entries(names);
 
+  // Biểu đồ: số việc theo nhóm (cột) + cơ cấu theo ưu tiên (donut).
+  const byCat = CATS
+    .map((c) => ({ label: TASK_CAT_LABEL[c], value: tasks.filter((t) => t.category === c).length }))
+    .filter((x) => x.value > 0);
+  const byPrio = PRIOS
+    .map((p, i) => ({ name: PRIORITY_LABEL[p], value: tasks.filter((t) => t.priority === p).length, color: MIX_COLORS[i % MIX_COLORS.length] }))
+    .filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Việc nội bộ & Sự cố</div>
-      <div className="page-head">
-        <div>
-          <h1>Việc nội bộ & Sự cố</h1>
-          <p>Giao task, xử lý vấn đề vận hành, IT và showroom — không để việc rơi rớt.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="alert"
+        title="Việc nội bộ & Sự cố"
+        subtitle="Giao task, xử lý vấn đề vận hành, IT và showroom — không để việc rơi rớt."
+        crumb={[["Trang chủ", "/dashboard"], ["Hiện trường & Hậu mãi"], ["Việc nội bộ & Sự cố"]]}
+        stats={[
+          { label: "Đang mở", value: openCount },
+          { label: "Khẩn", value: urgentCount, tone: urgentCount > 0 ? "down" : "flat" },
+          { label: "Quá hạn", value: overdueCount, tone: overdueCount > 0 ? "down" : "flat" },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k g-3 stagger">
-        <div className="card kpi hover tone-i">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="briefcase" /></div>
-          <div className="val">{openCount}</div>
-          <div className="lbl">Việc đang mở</div>
+          <div className="val"><CountUp to={openCount} /></div>
+          <div className="lbl">việc đang mở</div>
         </div>
-        <div className="card kpi hover tone-r">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="alert" /></div>
-          <div className="val">{urgentCount}</div>
-          <div className="lbl">Việc khẩn chưa xong</div>
+          <div className="val"><CountUp to={urgentCount} /></div>
+          <div className="lbl">việc khẩn chưa xong</div>
         </div>
-        <div className="card kpi hover tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="clock" /></div>
-          <div className="val">{overdueCount}</div>
-          <div className="lbl">Quá hạn</div>
+          <div className="val"><CountUp to={overdueCount} /></div>
+          <div className="lbl">quá hạn</div>
         </div>
       </div>
+
+      {/* Biểu đồ: theo nhóm + theo ưu tiên */}
+      {tasks.length > 0 && (
+        <div className="grid-k g-2 mt">
+          <div className="card hover">
+            <div className="card-h">
+              <h3 className="sec-title">Việc & sự cố theo nhóm</h3>
+              <span className="badge b-gray">{tasks.length} việc</span>
+            </div>
+            {byCat.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có việc nào.</p>
+            ) : (
+              <BarsChart data={byCat} height={250} name="Số việc" />
+            )}
+          </div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Cơ cấu theo mức ưu tiên</h3></div>
+            {byPrio.length === 0 ? (
+              <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có việc nào.</p>
+            ) : (
+              <DonutChart data={byPrio} height={250} centerValue={tasks.length} centerLabel="việc" unit=" việc" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Form tạo việc / sự cố */}
       {canManage && (
@@ -135,7 +176,7 @@ export default async function TasksPage() {
         {cols.map(({ key, items }) => (
           <div key={key} className="card">
             <div className="card-h">
-              <h3>{TASK_STATUS_LABEL[key]}</h3>
+              <h3 className="sec-title">{TASK_STATUS_LABEL[key]}</h3>
               <span className={`badge ${TASK_STATUS_BADGE[key]}`}>{items.length}</span>
             </div>
             {items.length === 0 ? (
@@ -203,7 +244,7 @@ export default async function TasksPage() {
 
       {/* Bảng đầy đủ */}
       <div className="card mt">
-        <div className="card-h"><h3>Tất cả việc & sự cố ({tasks.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Tất cả việc & sự cố ({tasks.length})</h3></div>
         <table>
           <thead>
             <tr><th>Việc</th><th>Nhóm</th><th>Ưu tiên</th><th>Phụ trách</th><th>Hạn</th><th>Trạng thái</th></tr>

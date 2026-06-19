@@ -1,6 +1,8 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
+import { DonutChart } from "@/components/charts/rich";
 import {
   listLeads, listSurveys, listQuotes, listOrders, listDeliveries,
   listWarranties, listCustomers, listNpsResponses,
@@ -27,19 +29,30 @@ export default async function CxPage() {
   const stat = computeNps(nps);
   const pct = (n: number) => (stat.total ? Math.round((n / stat.total) * 100) : 0);
 
+  // Cơ cấu NPS (donut): khuyến nghị / trung lập / không hài lòng.
+  const npsMix = [
+    { name: "Khuyến nghị", value: stat.promoters, color: "#0e9d6e" },
+    { name: "Trung lập", value: stat.passives, color: "#d98309" },
+    { name: "Không hài lòng", value: stat.detractors, color: "#e23b54" },
+  ].filter((x) => x.value > 0);
+
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> CX · Hành trình & NPS</div>
-      <div className="page-head">
-        <div>
-          <h1>CX · Hành trình & NPS</h1>
-          <p>Theo dõi trải nghiệm khách hàng qua 12 bước và đo lường mức độ hài lòng (NPS).</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="award"
+        title="CX · Hành trình & NPS"
+        subtitle="Theo dõi trải nghiệm khách hàng qua 12 bước và đo lường mức độ hài lòng (NPS)."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["CX · Hành trình & NPS"]]}
+        stats={[
+          { label: "Chỉ số NPS", value: `${stat.score >= 0 ? "+" : ""}${stat.score}`, tone: stat.score >= 0 ? "up" : "down" },
+          { label: "Phản hồi", value: stat.total },
+          { label: "Khuyến nghị", value: `${pct(stat.promoters)}%`, tone: "up" },
+        ]}
+      />
 
       {/* Hành trình 12 bước */}
-      <div className="card">
-        <div className="card-h"><h3>Hành trình khách hàng · 12 bước</h3><span className="badge b-indigo">Customer Journey</span></div>
+      <div className="card hover">
+        <div className="card-h"><h3 className="sec-title">Hành trình khách hàng · 12 bước</h3><span className="badge b-indigo">Customer Journey</span></div>
         <div style={{ display: "grid", gap: 10 }}>
           {funnel.map(({ stage, count }, i) => (
             <div key={stage.key} style={{ display: "grid", gridTemplateColumns: "28px minmax(120px,22%) 1fr auto", alignItems: "center", gap: 12 }}>
@@ -59,34 +72,44 @@ export default async function CxPage() {
 
       {/* NPS */}
       <div className="grid-k g-4 stagger mt">
-        <div className="card kpi tone-i">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="award" /></div>
-          <div className="val" style={{ color: stat.score >= 0 ? "var(--c-teal)" : "var(--c-rose)" }}>
+          <div className="val">
             {stat.score >= 0 ? "+" : ""}<CountUp to={stat.score} />
           </div>
           <div className="lbl">Chỉ số NPS</div>
         </div>
-        <div className="card kpi tone-t">
+        <div className="card kpi grad hover gr-mint">
           <div className="ic"><Icon name="check" /></div>
           <div className="val"><CountUp to={pct(stat.promoters)} />%</div>
           <div className="lbl">Khuyến nghị ({stat.promoters})</div>
         </div>
-        <div className="card kpi tone-a">
+        <div className="card kpi grad hover gr-sunny">
           <div className="ic"><Icon name="user" /></div>
           <div className="val"><CountUp to={pct(stat.passives)} />%</div>
           <div className="lbl">Trung lập ({stat.passives})</div>
         </div>
-        <div className="card kpi tone-r">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="x" /></div>
           <div className="val"><CountUp to={pct(stat.detractors)} />%</div>
           <div className="lbl">Không hài lòng ({stat.detractors})</div>
         </div>
       </div>
 
+      {/* Cơ cấu NPS (donut) */}
+      <div className="card mt hover">
+        <div className="card-h"><h3 className="sec-title">Cơ cấu phản hồi NPS</h3><span className="badge b-gray">{stat.total}</span></div>
+        {npsMix.length === 0 ? (
+          <p className="muted small" style={{ padding: "40px 0", textAlign: "center" }}>Chưa có phản hồi NPS.</p>
+        ) : (
+          <DonutChart data={npsMix} height={260} centerValue={stat.total} centerLabel="phản hồi" unit=" phản hồi" />
+        )}
+      </div>
+
       <div className="grid-k g-2 mt">
         {/* Phản hồi gần đây */}
-        <div className="card">
-          <div className="card-h"><h3>Phản hồi NPS gần đây</h3><span className="badge b-gray">{stat.total}</span></div>
+        <div className="card hover">
+          <div className="card-h"><h3 className="sec-title">Phản hồi NPS gần đây</h3><span className="badge b-gray">{stat.total}</span></div>
           {nps.length === 0 ? (
             <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phản hồi.</p>
           ) : (
@@ -119,8 +142,8 @@ export default async function CxPage() {
 
         {/* Ghi nhận NPS */}
         {canManage && (
-          <div className="card">
-            <div className="card-h"><h3>Ghi nhận phản hồi NPS</h3></div>
+          <div className="card hover">
+            <div className="card-h"><h3 className="sec-title">Ghi nhận phản hồi NPS</h3></div>
             <form action={recordNpsAction} style={{ display: "grid", gap: 12 }}>
               <div className="field" style={{ margin: 0 }}><label>Khách hàng *</label><input name="customerName" required placeholder="Tên khách hàng" /></div>
               <div className="field" style={{ margin: 0 }}>

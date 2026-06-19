@@ -1,5 +1,7 @@
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
+import { PageHero } from "@/components/page-hero";
+import { CountUp } from "@/components/charts";
 import { ImageUpload } from "@/components/image-upload";
 import { listSurveys, listLeads, listCustomers } from "@/lib/bnb/store";
 import { fmtDate } from "@/lib/bnb/util";
@@ -39,30 +41,34 @@ export default async function SurveyPage() {
   const withPhotos = surveys.filter((s) => (s.photos?.length || 0) > 0).length;
 
   return (
-    <div className="view-in">
-      <div className="crumbs">Trang chủ <Icon name="chev" /> Khảo sát nhà khách</div>
-      <div className="page-head">
-        <div>
-          <h1>Khảo sát nhà khách</h1>
-          <p>Ghi nhận kích thước, hình ảnh và hiện trạng bếp tại nhà khách để tư vấn & báo giá chuẩn.</p>
-        </div>
-      </div>
+    <div>
+      <PageHero
+        icon="survey"
+        title="Khảo sát nhà khách"
+        subtitle="Ghi nhận kích thước, hình ảnh và hiện trạng bếp tại nhà khách để tư vấn & báo giá chuẩn."
+        crumb={[["Trang chủ", "/dashboard"], ["Bán hàng"], ["Khảo sát nhà khách"]]}
+        stats={[
+          { label: "Phiếu khảo sát", value: surveys.length },
+          { label: "Có ảnh hiện trạng", value: withPhotos },
+          { label: "Khách/lead", value: leads.length + customers.length },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <div className="card kpi">
+        <div className="card kpi grad hover gr-crimson">
           <div className="ic"><Icon name="survey" /></div>
-          <div className="val">{surveys.length}</div>
+          <div className="val"><CountUp to={surveys.length} /></div>
           <div className="lbl">phiếu khảo sát</div>
         </div>
-        <div className="card kpi">
+        <div className="card kpi grad hover gr-malinka">
           <div className="ic"><Icon name="stove" /></div>
-          <div className="val">{withPhotos}</div>
+          <div className="val"><CountUp to={withPhotos} /></div>
           <div className="lbl">phiếu có ảnh hiện trạng</div>
         </div>
-        <div className="card kpi">
+        <div className="card kpi grad hover gr-azure">
           <div className="ic"><Icon name="pin" /></div>
-          <div className="val">{leads.length + customers.length}</div>
+          <div className="val"><CountUp to={leads.length + customers.length} /></div>
           <div className="lbl">khách/lead có thể khảo sát</div>
         </div>
       </div>
@@ -144,7 +150,7 @@ export default async function SurveyPage() {
 
       {/* Danh sách */}
       <div className="card mt">
-        <div className="card-h"><h3>Danh sách khảo sát ({surveys.length})</h3></div>
+        <div className="card-h"><h3 className="sec-title">Danh sách khảo sát ({surveys.length})</h3></div>
         {sorted.length === 0 ? (
           <p className="muted small" style={{ padding: "14px 0" }}>Chưa có phiếu khảo sát nào.</p>
         ) : (
