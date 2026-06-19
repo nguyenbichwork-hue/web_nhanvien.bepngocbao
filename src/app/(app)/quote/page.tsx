@@ -60,7 +60,7 @@ export default async function QuotePage() {
           { label: "Đã chốt", value: count("accepted"), tone: "up" },
           { label: "Giá trị chốt", value: compactVnd(acceptedValue), tone: "up" },
         ]}
-        actions={canManage ? <Link href="/quote/new" className="btn primary"><Icon name="plus" /> Tạo báo giá</Link> : undefined}
+        actions={canManage ? <a href="https://thietkebep.bepngocbao.vn/" target="_blank" rel="noopener noreferrer" className="btn primary"><Icon name="plus" /> Tạo báo giá</a> : undefined}
       />
 
       {/* KPI */}
@@ -118,7 +118,7 @@ export default async function QuotePage() {
         <div className="card-h"><h3 className="sec-title">Tất cả báo giá ({quotes.length})</h3></div>
         {sorted.length === 0 ? (
           <p className="muted small" style={{ padding: "16px 0" }}>
-            Chưa có báo giá nào. {canManage && <Link href="/quote/new" className="badge b-indigo">Tạo báo giá đầu tiên</Link>}
+            Chưa có báo giá nào. {canManage && <a href="https://thietkebep.bepngocbao.vn/" target="_blank" rel="noopener noreferrer" className="badge b-indigo">Tạo báo giá đầu tiên</a>}
           </p>
         ) : (
           <>

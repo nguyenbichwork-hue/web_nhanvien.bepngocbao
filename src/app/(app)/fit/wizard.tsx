@@ -196,9 +196,9 @@ export default function FitWizard({ products, comboImages }: Props) {
         </div>
 
         <div className="flex gap mt" style={{ flexWrap: "wrap" }}>
-          <Link href="/quote" className="btn primary">
+          <a href="https://thietkebep.bepngocbao.vn/" target="_blank" rel="noopener noreferrer" className="btn primary">
             <Icon name="quote" /> Tạo báo giá
-          </Link>
+          </a>
           <button type="button" className="btn ghost" onClick={restart}>
             <Icon name="chev" /> Bắt đầu lại
           </button>

@@ -140,7 +140,7 @@ function ComboModal({ combo, onClose }: { combo: ComboCard; onClose: () => void 
           </div>
 
           <div className="flex gap mt" style={{ flexWrap: "wrap" }}>
-            <Link href="/quote/new" className="btn primary"><Icon name="quote" /> Tạo báo giá theo combo</Link>
+            <a href="https://thietkebep.bepngocbao.vn/" target="_blank" rel="noopener noreferrer" className="btn primary"><Icon name="quote" /> Tạo báo giá theo combo</a>
             <Link href="/fit" className="btn ghost"><Icon name="fit" /> Chẩn đoán cho khách</Link>
           </div>
         </div>
