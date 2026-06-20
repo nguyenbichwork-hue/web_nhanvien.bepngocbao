@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
-import { createQuote, updateQuote } from "@/lib/bnb/store";
+import { createQuote, updateQuote, acceptQuoteToOrder } from "@/lib/bnb/store";
 import type { QuoteLine, QuoteStatus, QuoteTier } from "@/lib/bnb/types";
 
 const s = (fd: FormData, k: string) => (fd.get(k)?.toString() || "").trim();
@@ -62,7 +62,7 @@ export async function createQuoteAction(fd: FormData) {
 
 /** Đổi trạng thái báo giá (Gửi → sent, Chốt → accepted, Từ chối → rejected). */
 export async function setQuoteStatusAction(fd: FormData) {
-  await requirePermission("quote.manage");
+  const sess = await requirePermission("quote.manage");
   const id = s(fd, "id");
   const status = s(fd, "status") as QuoteStatus;
   if (!id || !status) return;
@@ -71,6 +71,18 @@ export async function setQuoteStatusAction(fd: FormData) {
   if (status === "sent") patch.sentAt = new Date().toISOString();
   await updateQuote(id, patch);
 
+  // Báo giá CHỐT → tự tạo Đơn (kế thừa dòng hàng + khách/lead), đẩy hành trình & lịch giao.
+  let newOrderId: string | undefined;
+  if (status === "accepted") {
+    const order = await acceptQuoteToOrder(id, sess.employee?.id);
+    newOrderId = order?.id;
+  }
+
   revalidatePath("/quote");
   revalidatePath(`/quote/${id}`);
+  revalidatePath("/orders");
+  revalidatePath("/journey");
+  revalidatePath("/delivery");
+  revalidatePath("/dashboard");
+  if (newOrderId) redirect(`/orders/${newOrderId}`);
 }

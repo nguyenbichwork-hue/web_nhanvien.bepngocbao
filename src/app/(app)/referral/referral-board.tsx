@@ -15,7 +15,7 @@ import {
 } from "./actions";
 
 type Owner = { id: string; name: string };
-type Candidate = { id: string; name: string; phone?: string; ownerId?: string };
+type Candidate = { id: string; name: string; phone?: string; ownerId?: string; customerId?: string };
 type Filter = "all" | "open" | "won" | "reward" | ReferralStatus;
 
 const STATUS_BADGE = Object.fromEntries(REFERRAL_STATUS.map((s) => [s.key, s.badge])) as Record<ReferralStatus, string>;
@@ -101,7 +101,7 @@ export function ReferralBoard({
           <div className="flex gap" style={{ flexWrap: "wrap" }}>
             {candidates.map((c) => (
               <button key={c.id} className="btn ghost sm" disabled={busy}
-                onClick={() => setEdit({ referrerName: c.name, referrerPhone: c.phone, referrerJourneyId: c.id, ownerId: c.ownerId, status: "invited" })}>
+                onClick={() => setEdit({ referrerName: c.name, referrerPhone: c.phone, referrerJourneyId: c.id, referrerCustomerId: c.customerId, ownerId: c.ownerId, status: "invited" })}>
                 <Icon name="plus" /> {c.name}
               </button>
             ))}
@@ -139,7 +139,7 @@ export function ReferralBoard({
                     <div className="flex between aic" style={{ flexWrap: "wrap", gap: 8 }}>
                       <div className="flex aic gap" style={{ flexWrap: "wrap" }}>
                         <span className="badge b-gray" title="Mã giới thiệu">{r.code}</span>
-                        <b className="small">{r.referrerName}</b>
+                        {r.referrerCustomerId ? <Link href={`/customers/${r.referrerCustomerId}`} style={{ color: "var(--accent)" }}><b className="small">{r.referrerName}</b></Link> : <b className="small">{r.referrerName}</b>}
                         {r.referrerPhone && <span className="urole">📞 {r.referrerPhone}</span>}
                         <span className="urole">→ giới thiệu: <b style={{ color: "var(--tx)" }}>{r.refereeName || "(chưa rõ)"}</b>{r.refereePhone ? ` · ${r.refereePhone}` : ""}</span>
                         <span className={`badge ${STATUS_BADGE[r.status]}`}>{REFERRAL_STATUS_LABEL[r.status]}</span>

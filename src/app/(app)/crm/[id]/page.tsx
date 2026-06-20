@@ -51,7 +51,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <Info label="Liên hệ gần nhất" value={lead.lastContactAt ? fmtDateTime(lead.lastContactAt) : undefined} />
             </div>
             {customer && (
-              <p className="small mt">Đã là khách hàng: <Link href="/crm" className="badge b-green">{customer.code}</Link></p>
+              <p className="small mt">Đã là khách hàng: <Link href={`/customers/${customer.id}`} className="badge b-green">{customer.code} · Hồ sơ 360</Link></p>
             )}
           </div>
 

@@ -444,10 +444,26 @@ export default async function GuidePage() {
             <li><b>Tri ân:</b> mỗi lượt ghi hình thức ({REFERRAL_REWARD_KIND.map((k) => k.label).join(" · ")}) + giá trị + trạng thái đã/chưa gửi. Việc cần tri ân hiện cả trên <a href="#today">Dashboard “Hôm nay”</a>.</li>
           </ul>
         </Block>
+        <Block title="Liên thông một mạch (cascade tự động)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>Báo giá CHỐT → tự tạo Đơn</b> (kế thừa dòng hàng + khách/lead; tạo khách từ lead nếu chưa có; lead → <i>won</i>), đẩy hành trình sang <i>Order Confirmed</i> và tự xếp một lịch <a href="#delivery">Giao-lắp</a>. Mở thẳng đơn vừa tạo.</li>
+            <li><b>Lead → khách hàng</b> (CRM): đẩy hành trình CX của khách sang <i>Decision</i>.</li>
+            <li><b>Đổi trạng thái Đơn</b>: <i>confirmed/paid</i> → tạo lịch Giao-lắp + bước <i>Order Confirmed</i>; <i>delivering</i> → <i>Pre-install</i>; <i>installing</i> → <i>Installation</i>; <i>completed</i> → <i>Handover</i> + tự tạo phiếu <a href="#warranty">Bảo hành</a>.</li>
+            <li><b>Giao-lắp “Nghiệm thu”</b> → đẩy hành trình sang <i>Handover</i>, tự tạo phiếu Bảo hành, sinh <a href="#tasks">việc</a> “mời khách đánh giá”, và bật cờ <i>sẵn sàng giới thiệu</i> (mở cơ hội Referral).</li>
+            <li>Mọi mốc đều idempotent (không tạo trùng) và <b>bỏ qua đơn đồng bộ từ Haravan</b>. Đơn POS quầy không tự sinh bảo hành/giao-lắp (bán lẻ).</li>
+          </ul>
+        </Block>
+        <Block title="Điều hướng liền mạch (đi theo một khách)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b><a href="#customers">Khách hàng 360</a> là trung tâm</b>: hiển thị dải tiến trình hành trình CX + lối tắt sang Lead/Báo giá/Đơn/Giao-lắp/Bảo hành/Giới thiệu, và các đơn/lead bấm được để mở chi tiết.</li>
+            <li>Từ <b>Đơn hàng</b>, <b>Hành trình CX</b>, <b>Giao-lắp</b>, <b>Bảo hành</b>, <b>Đơn ở Hôm nay</b> đều bấm được tên khách → mở Hồ sơ 360; thẻ hành trình có lối tắt sang Khách/Đơn.</li>
+          </ul>
+        </Block>
         <Block title="Cách dùng">
           <ol style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
             <li>Vào <b>/journey</b>, bấm “Đồng bộ CRM” để nạp khách, rồi chuyển bước theo thực tế; xử lý mục SLA &amp; bottleneck mỗi ngày.</li>
-            <li>Khi khách hài lòng (bàn giao/đánh giá), mở <b>/referral</b> → mời họ giới thiệu (cấp mã), theo dõi đến khi ra đơn rồi gửi tri ân.</li>
+            <li>Để dữ liệu chảy một mạch: chốt <a href="#quote">báo giá</a> (tự ra đơn) → cập nhật trạng thái đơn → nghiệm thu <a href="#delivery">giao-lắp</a> (tự sinh bảo hành + mời review). Hành trình CX tự tiến theo.</li>
+            <li>Khi khách hài lòng, mở <b>/referral</b> → mời họ giới thiệu (cấp mã), theo dõi đến khi ra đơn rồi gửi tri ân.</li>
             <li>Quyền: dùng chung <code>lead.read</code> (cùng nhóm Bán hàng).</li>
           </ol>
         </Block>

@@ -91,6 +91,7 @@ export type Activity = {
   id: string;
   leadId?: string;
   customerId?: string;
+  orderId?: string;
   type: ActivityType;
   content: string;
   byId?: string;
@@ -206,6 +207,8 @@ export type Order = {
   id: string;
   code: string;
   customerId?: string;
+  leadId?: string;       // lead nguồn (nối ngược CRM → đơn)
+  journeyId?: string;    // hành trình CX gắn với đơn
   quoteId?: string;
   haravanId?: string;
   lines: QuoteLine[];
@@ -664,6 +667,7 @@ export type CxJourney = {
   blocker?: string;        // vướng mắc đang chặn
   nextFollowUpAt?: string; // yyyy-mm-dd — mốc cần follow-up
   readyReferral?: boolean; // đã sẵn sàng giới thiệu
+  orderId?: string;        // đơn hàng gắn với hành trình (nối Success/Expansion)
   note?: string;
   history: { stage: JourneyStageKey; at: string; byId?: string }[];
   slaDone?: string[];      // các mốc SLA đã được cron đẩy thành follow-up (chống lặp)

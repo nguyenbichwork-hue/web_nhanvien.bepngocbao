@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/session";
 import {
-  createLead, updateLead, setLeadStage, logActivity, createCustomer, getLead,
+  createLead, updateLead, setLeadStage, logActivity, createCustomer, getLead, advanceJourney,
 } from "@/lib/bnb/store";
 import type { LeadSource, LeadStage, ActivityType } from "@/lib/bnb/types";
 
@@ -73,6 +73,9 @@ export async function convertToCustomerAction(fd: FormData) {
   });
   await updateLead(leadId, { customerId: cus.id, stage: "won" });
   await logActivity({ leadId, customerId: cus.id, type: "stage", content: `Chuyển thành khách hàng ${cus.code}` });
+  // Đẩy hành trình CX của khách này tới bước Decision (nối CRM → Hành trình).
+  await advanceJourney({ leadId, customerId: cus.id, phone: lead.phone, name: lead.name }, "decision");
   revalidatePath(`/crm/${leadId}`);
   revalidatePath("/crm");
+  revalidatePath("/journey");
 }

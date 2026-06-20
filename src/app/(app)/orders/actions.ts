@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
-import { createOrder, getOrder, updateOrder, pushOrderToHaravan } from "@/lib/bnb/store";
+import { createOrder, getOrder, updateOrder, pushOrderToHaravan, cascadeOrderStatus, advanceJourney } from "@/lib/bnb/store";
 import type { OrderStatus, PaymentMethod, Payment, QuoteLine } from "@/lib/bnb/types";
 
 const s = (fd: FormData, k: string) => (fd.get(k)?.toString() || "").trim();
@@ -14,15 +14,20 @@ const num = (fd: FormData, k: string) => {
 
 /** Chuyển trạng thái đơn theo ORDER_FLOW. */
 export async function setOrderStatusAction(fd: FormData) {
-  await requirePermission("order.manage");
+  const sess = await requirePermission("order.manage");
   const id = s(fd, "id");
   const status = s(fd, "status") as OrderStatus;
   if (!id || !status) return;
   const patch: Partial<{ status: OrderStatus; confirmedAt: string }> = { status };
   if (status === "confirmed") patch.confirmedAt = new Date().toISOString();
   await updateOrder(id, patch);
+  // Cascade: đẩy hành trình + tự tạo Giao-lắp/Bảo hành theo trạng thái đơn.
+  await cascadeOrderStatus(id, status, sess.employee?.id);
   revalidatePath("/orders");
   revalidatePath(`/orders/${id}`);
+  revalidatePath("/delivery");
+  revalidatePath("/warranty");
+  revalidatePath("/journey");
   revalidatePath("/dashboard");
 }
 
@@ -84,7 +89,12 @@ export async function createOrderAction(fd: FormData) {
       : [],
     note: s(fd, "note") || undefined,
   });
+  // Nối đơn mới vào hành trình CX của khách (bước Decision) nếu có khách.
+  if (order.customerId) {
+    await advanceJourney({ customerId: order.customerId }, "decision", { byId: sess.employee?.id, orderId: order.id });
+  }
   revalidatePath("/orders");
+  revalidatePath("/journey");
   revalidatePath("/dashboard");
   redirect(`/orders/${order.id}`);
 }

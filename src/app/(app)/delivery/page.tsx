@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
@@ -201,8 +202,9 @@ export default async function DeliveryPage() {
                       <div className="flex aic" style={{ gap: 8 }}>
                         <b className="small">{d.code}</b>
                         <span className={`badge ${DELIVERY_STATUS_BADGE[d.status]}`}>{DELIVERY_STATUS_LABEL[d.status]}</span>
+                        {d.orderId && <Link href={`/orders/${d.orderId}`} className="badge b-gray">đơn</Link>}
                       </div>
-                      <div className="uname">{cusName(d.customerId) || "Khách lẻ"}</div>
+                      <div className="uname">{d.customerId ? <Link href={`/customers/${d.customerId}`} style={{ color: "var(--accent)" }}>{cusName(d.customerId) || "Khách lẻ"}</Link> : (cusName(d.customerId) || "Khách lẻ")}</div>
                       <div className="urole flex aic" style={{ gap: 6 }}><Icon name="clock" /> {fmtDateTime(d.scheduledAt)}</div>
                       <div className="urole flex aic" style={{ gap: 6 }}><Icon name="pin" /> {d.address || "—"}</div>
                       <div className="urole flex aic" style={{ gap: 6 }}><Icon name="wrench" /> {d.teamId ? names[d.teamId] || d.teamId : "Chưa phân đội"}</div>

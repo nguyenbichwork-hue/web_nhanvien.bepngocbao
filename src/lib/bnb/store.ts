@@ -19,9 +19,9 @@ import type {
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
   ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog, ShiftCheckin,
-  CxJourney, JourneyStageKey, CxReferral,
+  CxJourney, JourneyStageKey, CxReferral, OrderStatus,
 } from "./types";
-import { CARE_MILESTONES } from "./types";
+import { CARE_MILESTONES, CX_JOURNEY_STAGES, ORDER_STATUS_LABEL } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
 import { seedBNB } from "./seed";
 import { cxAlerts } from "./cx-sla";
@@ -805,6 +805,170 @@ export async function deleteReferral(id: string): Promise<void> {
   const dbo = await getDb("referrals");
   dbo.referrals = dbo.referrals.filter((x) => x.id !== id);
   await deleteRow(TABLE.referrals, id);
+}
+
+/* ============================================================================
+ * CASCADE — nối các bước thành MỘT MẠCH: Lead → Báo giá → Đơn → Giao-lắp →
+ * Bảo hành → (Review/Referral), bám theo một CxJourney duy nhất.
+ * Mọi trigger đều idempotent (không tạo trùng) và bỏ qua đơn Haravan (hrv-*).
+ * ========================================================================== */
+const STAGE_KEYS = CX_JOURNEY_STAGES.map((s) => s.key);
+const stageRank = (k?: JourneyStageKey) => (k ? STAGE_KEYS.indexOf(k) : -1);
+const addDaysStr = (isoOrDate: string, days: number): string => {
+  const d = new Date(isoOrDate);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+type JourneyMatch = { journeyId?: string; leadId?: string; customerId?: string; phone?: string; name?: string };
+
+function findJourneyIn(list: CxJourney[], m: JourneyMatch): CxJourney | undefined {
+  return (
+    (m.journeyId && list.find((x) => x.id === m.journeyId)) ||
+    (m.leadId && list.find((x) => x.leadId === m.leadId)) ||
+    (m.customerId && list.find((x) => x.customerId === m.customerId)) ||
+    (m.phone && list.find((x) => x.phone && x.phone === m.phone)) ||
+    undefined
+  );
+}
+
+/** Đẩy hành trình của một khách TỚI ÍT NHẤT bước `stage` (không bao giờ lùi);
+ * gắn link đơn & các cờ. Tạo hành trình mới nếu chưa có. */
+export async function advanceJourney(
+  match: JourneyMatch,
+  stage: JourneyStageKey,
+  opts: { byId?: string; orderId?: string; readyReferral?: boolean } = {},
+): Promise<void> {
+  const dbo = await getDb("cxJourneys");
+  const cur = findJourneyIn(dbo.cxJourneys, match);
+  if (cur) {
+    const patch: Partial<CxJourney> = {};
+    if (stageRank(stage) > stageRank(cur.stage)) patch.stage = stage;
+    if (opts.orderId && !cur.orderId) patch.orderId = opts.orderId;
+    if (opts.readyReferral && !cur.readyReferral) patch.readyReferral = true;
+    if (match.customerId && !cur.customerId) patch.customerId = match.customerId;
+    if (match.leadId && !cur.leadId) patch.leadId = match.leadId;
+    if (Object.keys(patch).length) await updateCxJourney(cur.id, patch, opts.byId);
+  } else if (match.name || match.customerId || match.leadId) {
+    await createCxJourney({
+      name: match.name || "Khách",
+      phone: match.phone,
+      customerId: match.customerId,
+      leadId: match.leadId,
+      stage,
+      orderId: opts.orderId,
+      readyReferral: opts.readyReferral,
+    });
+  }
+}
+
+/** Đơn `confirmed` → tự tạo lịch Giao-lắp (nếu chưa có). */
+async function ensureDeliveryForOrder(order: Order): Promise<void> {
+  if (order.id.startsWith("hrv-")) return;
+  const dbo = await getDb("deliveries");
+  if (dbo.deliveries.some((d) => d.orderId === order.id)) return;
+  // deliveryDate có thể là 'yyyy-mm-dd' hoặc datetime ISO → parse an toàn, lỗi thì lùi 3 ngày.
+  let scheduledAt = new Date(Date.now() + 3 * 86400000).toISOString();
+  if (order.deliveryDate) {
+    const raw = order.deliveryDate.includes("T") ? order.deliveryDate : `${order.deliveryDate}T08:00`;
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) scheduledAt = d.toISOString();
+  }
+  await createDelivery({ orderId: order.id, customerId: order.customerId, scheduledAt, address: order.address, status: "scheduled" });
+}
+
+/** Đơn hoàn tất / bàn giao → tự tạo phiếu Bảo hành (nếu chưa có). */
+async function ensureWarrantyForOrder(order: Order): Promise<void> {
+  if (order.id.startsWith("hrv-")) return;
+  const dbo = await getDb("warranties");
+  if (dbo.warranties.some((w) => w.orderId === order.id)) return;
+  const installedAt = new Date().toISOString().slice(0, 10);
+  const nextCareAt = addDaysStr(installedAt, CARE_MILESTONES[0]);
+  await createWarranty({
+    customerId: order.customerId, orderId: order.id,
+    productName: order.lines?.[0]?.name, installedAt,
+    status: "active", careDone: [], nextCareAt,
+  });
+}
+
+/** Báo giá CHỐT → tạo Đơn (kế thừa dòng hàng + khách/lead) + đẩy hành trình + lịch giao. */
+export async function acceptQuoteToOrder(quoteId: string, byId?: string): Promise<Order | undefined> {
+  const q = await getQuote(quoteId);
+  if (!q) return undefined;
+  let customerId = q.customerId;
+  const leadId = q.leadId;
+  let name = ""; let phone = ""; let address: string | undefined;
+  if (leadId) {
+    const lead = await getLead(leadId);
+    if (lead) {
+      name = lead.name; phone = lead.phone; address = lead.address;
+      if (lead.customerId) customerId = customerId || lead.customerId;
+      else if (!customerId) {
+        const cus = await createCustomer({ name: lead.name, phone: lead.phone, email: lead.email, address: lead.address, source: lead.source });
+        customerId = cus.id;
+      }
+      await updateLead(leadId, { customerId, stage: "won" });
+    }
+  }
+  if (customerId) {
+    const cus = await getCustomer(customerId);
+    if (cus) { address = address || cus.address; name = name || cus.name; phone = phone || cus.phone; }
+  }
+  // Dedup: đã có đơn từ báo giá này chưa?
+  const orders = (await getDb("orders")).orders;
+  let order = orders.find((o) => o.quoteId === quoteId);
+  if (!order) {
+    const total = Math.max(0, q.lines.reduce((sum, l) => sum + (l.unitPrice * l.qty - (l.discount || 0)), 0) - (q.discount || 0));
+    order = await createOrder({
+      customerId, quoteId, leadId, lines: q.lines, total, paid: 0,
+      status: "confirmed", assigneeId: byId, address, confirmedAt: now(),
+    });
+  }
+  await advanceJourney({ leadId, customerId, phone, name }, "order_confirmed", { byId, orderId: order.id });
+  await ensureDeliveryForOrder(order);
+  return clone(order);
+}
+
+/** Cascade theo trạng thái Đơn: đẩy hành trình + tạo Giao/Bảo hành + ghi nhật ký. */
+export async function cascadeOrderStatus(orderId: string, status: OrderStatus, byId?: string): Promise<void> {
+  const order = await getOrder(orderId);
+  if (!order) return;
+  const match: JourneyMatch = { customerId: order.customerId, leadId: order.leadId, journeyId: order.journeyId };
+  if (status === "confirmed" || status === "paid") {
+    await advanceJourney(match, "order_confirmed", { byId, orderId });
+    await ensureDeliveryForOrder(order);
+  } else if (status === "delivering") {
+    await advanceJourney(match, "pre_install", { byId, orderId });
+  } else if (status === "installing") {
+    await advanceJourney(match, "installation", { byId, orderId });
+  } else if (status === "completed") {
+    await advanceJourney(match, "handover", { byId, orderId, readyReferral: true });
+    await ensureWarrantyForOrder(order);
+  }
+  if (order.customerId) {
+    await logActivity({ customerId: order.customerId, orderId, type: "order", content: `Đơn ${order.code} → ${ORDER_STATUS_LABEL[status]}`, byId });
+  }
+}
+
+/** Cascade theo trạng thái Giao-lắp: bàn giao xong → tạo bảo hành + mời review + mở referral. */
+export async function cascadeDeliveryStatus(deliveryId: string, status: string, byId?: string): Promise<void> {
+  const dbo = await getDb("deliveries");
+  const d = dbo.deliveries.find((x) => x.id === deliveryId);
+  if (!d) return;
+  const order = d.orderId ? await getOrder(d.orderId) : undefined;
+  const match: JourneyMatch = { customerId: d.customerId, leadId: order?.leadId, journeyId: order?.journeyId };
+  if (status === "installing") {
+    await advanceJourney(match, "installation", { byId, orderId: d.orderId });
+  } else if (status === "done") {
+    await advanceJourney(match, "handover", { byId, orderId: d.orderId, readyReferral: true });
+    if (order) await ensureWarrantyForOrder(order);
+    await createTask({
+      title: `Mời khách đánh giá sau bàn giao (${order?.code || d.code})`,
+      detail: "Mời khách để lại review Google/Facebook sau 3–7 ngày; thu ảnh thật. Gắn với bước Review của hành trình CX.",
+      type: "task", category: "ops", status: "open", priority: "normal", assigneeId: byId,
+    });
+    if (d.customerId) await logActivity({ customerId: d.customerId, orderId: d.orderId, type: "order", content: `Nghiệm thu & bàn giao (${d.code})`, byId });
+  }
 }
 
 /* ===== Zalo OA · Hộp thoại ===== */

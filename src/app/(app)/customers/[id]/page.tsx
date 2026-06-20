@@ -5,7 +5,7 @@ import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import {
   getCustomer, listOrders, listWarranties, listNpsResponses,
-  listLeads, listSurveys, listActivities,
+  listLeads, listSurveys, listActivities, listCxJourneys, listReferrals,
 } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -15,6 +15,7 @@ import {
   LEAD_STAGE_LABEL, LEAD_STAGE_BADGE, LEAD_SOURCE_LABEL,
   npsCategory, NPS_BADGE, NPS_CHANNEL_LABEL,
   ACTIVITY_LABEL,
+  CX_JOURNEY_STAGES, CX_PHASE_LABEL, REFERRAL_STATUS_LABEL,
 } from "@/lib/bnb/types";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +26,8 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const customer = await getCustomer(id);
   if (!customer) notFound();
 
-  const [allOrders, allWarranties, allNps, allLeads, allSurveys, activities, names] = await Promise.all([
-    listOrders(), listWarranties(), listNpsResponses(), listLeads(), listSurveys(), listActivities(id), employeeNameMap(),
+  const [allOrders, allWarranties, allNps, allLeads, allSurveys, allJourneys, allReferrals, activities, names] = await Promise.all([
+    listOrders(), listWarranties(), listNpsResponses(), listLeads(), listSurveys(), listCxJourneys(), listReferrals(), listActivities(id), employeeNameMap(),
   ]);
 
   const orders = allOrders
@@ -36,6 +37,15 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const nps = allNps.filter((r) => r.customerId === id);
   const leads = allLeads.filter((l) => l.customerId === id);
   const surveys = allSurveys.filter((s) => s.customerId === id);
+  // Hành trình CX của khách: ưu tiên match theo customerId, dự phòng theo SĐT.
+  const journey = allJourneys.find((j) => j.customerId === id)
+    || (customer.phone ? allJourneys.find((j) => j.phone === customer.phone) : undefined);
+  const journeyStage = journey ? CX_JOURNEY_STAGES.find((sg) => sg.key === journey.stage) : undefined;
+  const journeyIdx = journey ? CX_JOURNEY_STAGES.findIndex((sg) => sg.key === journey.stage) : -1;
+  // Referral liên quan: khách là người giới thiệu hoặc được giới thiệu.
+  const refs = allReferrals.filter((r) =>
+    r.referrerCustomerId === id
+    || (customer.phone && (r.referrerPhone === customer.phone || r.refereePhone === customer.phone)));
 
   // KPI khách: doanh thu = Σ tổng đơn chưa huỷ; AOV = doanh thu / số đơn.
   const billable = orders.filter((o) => o.status !== "cancelled");
@@ -88,6 +98,46 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </div>
       </div>
 
+      {/* Hành trình CX của khách — một mạch xuyên các phân hệ */}
+      <div className="card mt">
+        <div className="card-h">
+          <h3 className="sec-title">Hành trình CX</h3>
+          {journeyStage ? (
+            <Link href="/journey" className={`badge ${journeyStage.phase === "acquisition" ? "b-indigo" : journeyStage.phase === "success" ? "b-green" : "b-amber"}`}>
+              Bước {journeyStage.no}/{CX_JOURNEY_STAGES.length}: {journeyStage.label} · {CX_PHASE_LABEL[journeyStage.phase]}
+            </Link>
+          ) : <Link href="/journey" className="badge b-gray">Chưa vào hành trình</Link>}
+        </div>
+        <div className="flex" style={{ gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+          {CX_JOURNEY_STAGES.map((sg, i) => (
+            <span key={sg.key} title={sg.label}
+              style={{
+                flex: 1, minWidth: 16, height: 6, borderRadius: 3,
+                background: journeyIdx >= 0 && i <= journeyIdx ? "var(--c-green)" : "var(--line)",
+              }} />
+          ))}
+        </div>
+        {/* Lối tắt liên thông sang mọi mắt xích của khách này */}
+        <div className="flex gap" style={{ flexWrap: "wrap" }}>
+          {leads[0] && <Link href={`/crm/${leads[0].id}`} className="btn ghost sm"><Icon name="customer" /> Lead nguồn</Link>}
+          <Link href="/quote" className="btn ghost sm"><Icon name="quote" /> Báo giá</Link>
+          {orders[0] && <Link href={`/orders/${orders[0].id}`} className="btn ghost sm"><Icon name="cart" /> Đơn mới nhất</Link>}
+          <Link href="/delivery" className="btn ghost sm"><Icon name="truck" /> Giao-lắp</Link>
+          <Link href="/warranty" className="btn ghost sm"><Icon name="warranty" /> Bảo hành</Link>
+          <Link href="/referral" className="btn ghost sm"><Icon name="users" /> Giới thiệu</Link>
+        </div>
+        {refs.length > 0 && (
+          <div className="flex gap aic small muted" style={{ flexWrap: "wrap", marginTop: 10 }}>
+            <b style={{ color: "var(--tx)" }}>Giới thiệu:</b>
+            {refs.map((r) => (
+              <span key={r.id} className="badge b-gray">
+                {r.referrerCustomerId === id ? "Đã giới thiệu" : "Được giới thiệu"} {r.refereeName || r.referrerName} · {REFERRAL_STATUS_LABEL[r.status]}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid-k g-2 mt">
         {/* Cột trái: đơn hàng + bảo hành */}
         <div style={{ display: "grid", gap: 20 }}>
@@ -108,7 +158,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                   {orders.map((o) => (
                     <tr key={o.id}>
                       <td>
-                        <div className="uname">{o.code}</div>
+                        <Link href={`/orders/${o.id}`} className="uname" style={{ color: "var(--accent)" }}>{o.code}</Link>
                         <div className="urole">{fmtDate(o.createdAt)}</div>
                       </td>
                       <td><span className={`badge ${ORDER_STATUS_BADGE[o.status]}`}>{ORDER_STATUS_LABEL[o.status]}</span></td>
@@ -149,13 +199,13 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <div className="card-h"><h3 className="sec-title">Lead & khảo sát</h3></div>
               <div style={{ display: "grid", gap: 0 }}>
                 {leads.map((l) => (
-                  <div key={l.id} className="flex between aic" style={{ padding: "12px 0", borderTop: "1px solid var(--line)", gap: 12 }}>
+                  <Link key={l.id} href={`/crm/${l.id}`} className="flex between aic" style={{ padding: "12px 0", borderTop: "1px solid var(--line)", gap: 12, color: "inherit" }}>
                     <div>
-                      <div className="uname">{l.code} · {LEAD_SOURCE_LABEL[l.source]}</div>
+                      <div className="uname" style={{ color: "var(--accent)" }}>{l.code} · {LEAD_SOURCE_LABEL[l.source]}</div>
                       <div className="urole">{l.need || "—"}</div>
                     </div>
                     <span className={`badge ${LEAD_STAGE_BADGE[l.stage]}`}>{LEAD_STAGE_LABEL[l.stage]}</span>
-                  </div>
+                  </Link>
                 ))}
                 {surveys.map((s) => (
                   <div key={s.id} className="flex between aic" style={{ padding: "12px 0", borderTop: "1px solid var(--line)", gap: 12 }}>

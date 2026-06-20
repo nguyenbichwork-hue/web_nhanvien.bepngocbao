@@ -4,7 +4,7 @@ import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
 import { AreaTrend, DonutChart } from "@/components/charts/rich";
-import { listOrders } from "@/lib/bnb/store";
+import { listOrders, listCustomers } from "@/lib/bnb/store";
 import { TableFilter } from "@/components/table-filter";
 import { fmtVnd, fmtDate, dayKey, orderRemaining, compactVnd } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
@@ -16,7 +16,8 @@ const MIX_COLORS = ["#2b78c5", "#7c3aed", "#d98309", "#0e9d6e", "#e23b54", "#0d9
 
 export default async function OrdersPage() {
   await requirePermission("order.read");
-  const [orders, names] = await Promise.all([listOrders(), employeeNameMap()]);
+  const [orders, customers, names] = await Promise.all([listOrders(), listCustomers(), employeeNameMap()]);
+  const custName = Object.fromEntries(customers.map((c) => [c.id, c.name]));
   const sorted = [...orders].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
 
   const openOrders = orders.filter((o) => o.status !== "completed" && o.status !== "cancelled");
@@ -119,12 +120,16 @@ export default async function OrdersPage() {
           </thead>
           <tbody>
             {sorted.map((o) => (
-              <tr key={o.id} data-status={o.status} data-search={`${o.code} ${o.customerId || ""} ${ORDER_STATUS_LABEL[o.status]} ${o.assigneeId ? names[o.assigneeId] || "" : ""}`}>
+              <tr key={o.id} data-status={o.status} data-search={`${o.code} ${o.customerId ? custName[o.customerId] || "" : ""} ${ORDER_STATUS_LABEL[o.status]} ${o.assigneeId ? names[o.assigneeId] || "" : ""}`}>
                 <td>
                   <div className="uname">{o.code}</div>
                   <div className="urole">{fmtDate(o.createdAt)}</div>
                 </td>
-                <td className="small muted">{o.customerId || "—"}</td>
+                <td className="small">
+                  {o.customerId
+                    ? <Link href={`/customers/${o.customerId}`} style={{ color: "var(--accent)" }}>{custName[o.customerId] || o.customerId}</Link>
+                    : <span className="muted">Khách lẻ</span>}
+                </td>
                 <td><span className={`badge ${ORDER_STATUS_BADGE[o.status]}`}>{ORDER_STATUS_LABEL[o.status]}</span></td>
                 <td className="small" style={{ textAlign: "right", fontWeight: 600 }}>{fmtVnd(o.total)}</td>
                 <td className="small" style={{ textAlign: "right" }}>{fmtVnd(o.paid)}</td>

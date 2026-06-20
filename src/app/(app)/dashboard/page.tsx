@@ -257,7 +257,7 @@ export default async function TodayPage() {
             <tbody>
               {openOrders.map((o) => (
                 <tr key={o.id}>
-                  <td><Link href="/orders" className="uname">{o.code}</Link></td>
+                  <td><Link href={`/orders/${o.id}`} className="uname">{o.code}</Link></td>
                   <td className="small muted">{o.assigneeId ? names[o.assigneeId] || o.assigneeId : "—"}</td>
                   <td className="small">{o.status}</td>
                   <td style={{ textAlign: "right" }}><b>{fmtVnd(Math.max(0, o.total - o.paid))}</b></td>

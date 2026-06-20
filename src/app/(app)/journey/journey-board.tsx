@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { SearchSelect } from "@/components/search-select";
 import {
@@ -192,6 +193,9 @@ export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[];
                         {j.readyReferral && <span className="badge b-green">❤ referral</span>}
                       </div>
                       <div className="flex gap">
+                        {j.customerId && <Link className="btn ghost sm" href={`/customers/${j.customerId}`} title="Hồ sơ khách 360"><Icon name="users" /></Link>}
+                        {!j.customerId && j.leadId && <Link className="btn ghost sm" href={`/crm/${j.leadId}`} title="Lead nguồn"><Icon name="customer" /></Link>}
+                        {j.orderId && <Link className="btn ghost sm" href={`/orders/${j.orderId}`} title="Đơn hàng"><Icon name="cart" /></Link>}
                         {next && <button className="btn ghost sm" disabled={busy} onClick={() => run(() => advanceJourneyAction(j.id, next.key))} title={`Chuyển sang ${next.label}`}>→ {next.label}</button>}
                         <button className="btn ghost sm" onClick={() => setEdit({ ...j })}>✎</button>
                         <button className="btn ghost sm" disabled={busy} onClick={() => { if (confirm("Xoá khách khỏi hành trình?")) run(() => deleteJourneyAction(j.id)); }}>🗑</button>

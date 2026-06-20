@@ -54,6 +54,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         actions={
           <>
             <span className={`badge ${ORDER_STATUS_BADGE[order.status]}`} style={{ fontSize: 13, padding: "7px 14px" }}>{ORDER_STATUS_LABEL[order.status]}</span>
+            {order.customerId && <Link href={`/customers/${order.customerId}`} className="btn ghost"><Icon name="users" /> Hồ sơ 360</Link>}
             <Link href="/orders" className="btn ghost"><Icon name="chev" /> Quay lại</Link>
           </>
         }
@@ -93,7 +94,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="card">
             <div className="card-h"><h3 className="sec-title">Thông tin giao nhận</h3></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Info label="Khách hàng" value={customer ? `${customer.name}` : undefined} />
+              <div>
+                <div className="urole" style={{ marginBottom: 2 }}>Khách hàng</div>
+                {order.customerId
+                  ? <Link href={`/customers/${order.customerId}`} className="small" style={{ fontWeight: 600, color: "var(--accent)" }}>{customer?.name || "Hồ sơ khách"}</Link>
+                  : <div className="small" style={{ fontWeight: 600 }}>Khách lẻ</div>}
+              </div>
               <Info label="Điện thoại" value={customer?.phone} />
               <Info label="Địa chỉ giao" value={order.address || customer?.address} />
               <Info label="Ngày giao" value={order.deliveryDate ? fmtDate(order.deliveryDate) : undefined} />

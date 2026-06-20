@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/session";
-import { createDelivery, updateDelivery, getOrder, getCustomer } from "@/lib/bnb/store";
+import { createDelivery, updateDelivery, getOrder, getCustomer, cascadeDeliveryStatus } from "@/lib/bnb/store";
 import type { DeliveryStatus } from "@/lib/bnb/types";
 
 const s = (fd: FormData, k: string) => (fd.get(k)?.toString() || "").trim();
@@ -51,7 +51,7 @@ export async function createDeliveryAction(fd: FormData) {
 
 /** Chuyển trạng thái một lịch giao – lắp; sang "done" thì ghi mốc nghiệm thu. */
 export async function setDeliveryStatusAction(fd: FormData) {
-  await requirePermission("delivery.manage");
+  const sess = await requirePermission("delivery.manage");
   const id = s(fd, "id");
   const status = s(fd, "status") as DeliveryStatus;
   if (!id || !DELIVERY_STATUSES.includes(status)) return;
@@ -59,6 +59,11 @@ export async function setDeliveryStatusAction(fd: FormData) {
     status,
     doneAt: status === "done" ? new Date().toISOString() : undefined,
   });
+  // Cascade: lắp xong → đẩy hành trình sang Bàn giao, tạo Bảo hành + việc mời review, mở Referral.
+  await cascadeDeliveryStatus(id, status, sess.employee?.id);
   revalidatePath("/delivery");
+  revalidatePath("/warranty");
+  revalidatePath("/journey");
+  revalidatePath("/tasks");
   revalidatePath("/dashboard");
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
@@ -191,8 +192,9 @@ export default async function WarrantyPage() {
                   <div className="flex aic" style={{ gap: 8 }}>
                     <b className="small">{w.code}</b>
                     <span className="badge b-amber">{WARRANTY_STATUS_LABEL.due}</span>
+                    {w.orderId && <Link href={`/orders/${w.orderId}`} className="badge b-gray">đơn</Link>}
                   </div>
-                  <div className="uname">{cusName(w.customerId) || "Khách lẻ"}</div>
+                  <div className="uname">{w.customerId ? <Link href={`/customers/${w.customerId}`} style={{ color: "var(--accent)" }}>{cusName(w.customerId) || "Khách lẻ"}</Link> : (cusName(w.customerId) || "Khách lẻ")}</div>
                   <div className="urole">{w.productName || "—"} · Lắp {fmtDate(w.installedAt)}</div>
                   <CareChips careDone={w.careDone || []} />
                 </div>
@@ -226,7 +228,7 @@ export default async function WarrantyPage() {
                 <tr key={w.id} data-status={w.status} data-search={`${w.code} ${cusName(w.customerId) || ""} ${w.productName || ""} ${w.assigneeId ? names[w.assigneeId] || "" : ""}`} style={w.status === "due" ? { background: "var(--surface-2)" } : undefined}>
                   <td className="small"><b>{w.code}</b></td>
                   <td>
-                    <div className="uname">{cusName(w.customerId) || "Khách lẻ"}</div>
+                    <div className="uname">{w.customerId ? <Link href={`/customers/${w.customerId}`} style={{ color: "var(--accent)" }}>{cusName(w.customerId) || "Khách lẻ"}</Link> : (cusName(w.customerId) || "Khách lẻ")}</div>
                     <div className="urole">{w.assigneeId ? names[w.assigneeId] || w.assigneeId : "—"}</div>
                   </td>
                   <td className="small muted" style={{ maxWidth: 220 }}>{w.productName || "—"}</td>
