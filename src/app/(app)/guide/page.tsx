@@ -49,6 +49,10 @@ import {
   AD_STATUS_BADGE,
   AD_STATUS_LABEL,
   CARE_MILESTONES,
+  CX_JOURNEY_STAGES,
+  CX_PHASE_LABEL,
+  REFERRAL_STATUS,
+  REFERRAL_REWARD_KIND,
   CONTENT_STATUS_BADGE,
   CONTENT_STATUS_LABEL,
   DELIVERY_STATUS_BADGE,
@@ -190,6 +194,7 @@ export default async function GuidePage() {
     { id: "today", icon: "today", label: "Hôm nay (Dashboard)" },
     { id: "crm", icon: "customer", label: "CRM & Lead" },
     { id: "customers", icon: "users", label: "Khách hàng 360" },
+    { id: "cxos", icon: "award", label: "Hành trình CX & Giới thiệu" },
     { id: "inbox", icon: "chat", label: "Hộp thoại Zalo OA" },
     { id: "fit", icon: "fit", label: "Fit Diagnostic" },
     { id: "design", icon: "sparkle", label: "Thiết kế bếp AI" },
@@ -416,6 +421,34 @@ export default async function GuidePage() {
           <ol style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
             <li>Mở <b>Khách hàng 360</b>, tìm khách theo tên/SĐT → bấm <b>“Hồ sơ 360”</b> để xem toàn cảnh.</li>
             <li>Khách mới sinh ra khi <a href="#crm">chốt lead</a>, tạo đơn, hoặc đồng bộ từ Haravan — không cần nhập tay trùng lặp.</li>
+          </ol>
+        </Block>
+      </Section>
+
+      {/* ===== CX OS · Hành trình khách hàng & Chương trình giới thiệu ===== */}
+      <Section id="cxos" icon="award" title="Hành trình khách hàng &amp; Giới thiệu (CX OS)" routes="/journey · /referral · /api/cron/cx-sla"
+        purpose="Hiện thực hoá CX OS Handbook theo triết lý Visible · Measurable · Improving. Mỗi khách được gắn vào hành trình 13 bước để biết đang ở đâu, ai phụ trách, vướng gì, cần follow-up; rồi đóng vòng bằng chương trình giới thiệu — North Star của BNB là % khách sẵn sàng giới thiệu.">
+        <Block title="Hành trình khách hàng (/journey)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>13 bước · 3 phase:</b> {CX_PHASE_LABEL.acquisition} → {CX_PHASE_LABEL.success} → {CX_PHASE_LABEL.expansion}. Mỗi bước có owner (Growth/Business/CX Lead): {CX_JOURNEY_STAGES.map((s) => `${s.no}.${s.label}`).join(" · ")}.</li>
+            <li><b>Bảng visibility (North Star):</b> tổng khách trong hành trình, đang ở phase Thành công, cần follow-up hôm nay, sẵn sàng giới thiệu, đang vướng (blocker); kèm dải chỉ số vận hành (lead/tỷ lệ chốt/đã thu/pipeline/AOV) và cảnh báo <b>bottleneck</b> (bước đọng nhiều khách nhất).</li>
+            <li><b>Đồng bộ CRM:</b> nút “Đồng bộ CRM” tạo hành trình cho mọi <a href="#crm">lead</a> chưa có (map stage lead → bước hành trình); chuyển bước 1 chạm, lưu lịch sử từng mốc.</li>
+            <li><b>SLA &amp; tự động hoá:</b> panel “⏱ SLA cần xử lý” cảnh báo <b>trễ cam kết 48H</b> lắp đặt, <b>check-in ngày 1/3/7</b> sau bàn giao, <b>mời đánh giá</b> sau 3 ngày. Cron <code>/api/cron/cx-sla</code> (chạy hằng ngày, bảo vệ bằng <code>CRON_SECRET</code>) đẩy các mốc đến hạn thành follow-up hôm nay (cờ chống lặp).</li>
+          </ul>
+        </Block>
+        <Block title="Chương trình giới thiệu — Referral (/referral)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>Mô hình:</b> mỗi lượt = một khách cũ hài lòng (người giới thiệu, được cấp <b>mã giới thiệu</b> dùng chung theo SĐT) giới thiệu một khách mới. Vòng đời: {REFERRAL_STATUS.map((s) => s.label).join(" → ")}.</li>
+            <li><b>North Star giới thiệu:</b> số khách đang giới thiệu, số lượt, <b>tỉ lệ ra đơn</b> (won/tổng), <b>doanh thu</b> từ giới thiệu, và số cần <b>tri ân</b> (đã ra đơn nhưng chưa gửi quà) kèm tổng giá trị.</li>
+            <li><b>Mời tham gia:</b> khách “sẵn sàng giới thiệu” trong Hành trình CX nhưng chưa có lượt nào được gợi ý ở đầu trang — bấm để cấp mã &amp; tạo lượt ngay (đóng vòng từ /journey).</li>
+            <li><b>Tri ân:</b> mỗi lượt ghi hình thức ({REFERRAL_REWARD_KIND.map((k) => k.label).join(" · ")}) + giá trị + trạng thái đã/chưa gửi. Việc cần tri ân hiện cả trên <a href="#today">Dashboard “Hôm nay”</a>.</li>
+          </ul>
+        </Block>
+        <Block title="Cách dùng">
+          <ol style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li>Vào <b>/journey</b>, bấm “Đồng bộ CRM” để nạp khách, rồi chuyển bước theo thực tế; xử lý mục SLA &amp; bottleneck mỗi ngày.</li>
+            <li>Khi khách hài lòng (bàn giao/đánh giá), mở <b>/referral</b> → mời họ giới thiệu (cấp mã), theo dõi đến khi ra đơn rồi gửi tri ân.</li>
+            <li>Quyền: dùng chung <code>lead.read</code> (cùng nhóm Bán hàng).</li>
           </ol>
         </Block>
       </Section>

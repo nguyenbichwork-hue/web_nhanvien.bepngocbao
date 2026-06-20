@@ -668,3 +668,53 @@ export type CxJourney = {
   history: { stage: JourneyStageKey; at: string; byId?: string }[];
   slaDone?: string[];      // các mốc SLA đã được cron đẩy thành follow-up (chống lặp)
 };
+
+/* ============ Chương trình giới thiệu — Referral (CX OS Đợt 4) ============ */
+// Vòng đời 1 lượt giới thiệu: khách cũ (referrer) giới thiệu người mới (referee)
+// → liên hệ → báo giá → chốt đơn (doanh thu) → tri ân người giới thiệu.
+export type ReferralStatus = "invited" | "contacted" | "quoted" | "won" | "lost";
+export const REFERRAL_STATUS: { key: ReferralStatus; label: string; badge: string }[] = [
+  { key: "invited", label: "Đã cấp mã / mời", badge: "b-gray" },
+  { key: "contacted", label: "Đã liên hệ", badge: "b-sky" },
+  { key: "quoted", label: "Đã báo giá", badge: "b-indigo" },
+  { key: "won", label: "Đã chốt đơn", badge: "b-green" },
+  { key: "lost", label: "Không thành", badge: "b-rose" },
+];
+export const REFERRAL_STATUS_LABEL: Record<ReferralStatus, string> =
+  Object.fromEntries(REFERRAL_STATUS.map((s) => [s.key, s.label])) as Record<ReferralStatus, string>;
+
+export type ReferralRewardKind = "voucher" | "cash" | "gift" | "none";
+export const REFERRAL_REWARD_KIND: { key: ReferralRewardKind; label: string }[] = [
+  { key: "voucher", label: "Voucher / mã giảm" },
+  { key: "cash", label: "Tiền mặt / chuyển khoản" },
+  { key: "gift", label: "Quà tặng" },
+  { key: "none", label: "Chưa định" },
+];
+export const REFERRAL_REWARD_LABEL: Record<ReferralRewardKind, string> =
+  Object.fromEntries(REFERRAL_REWARD_KIND.map((r) => [r.key, r.label])) as Record<ReferralRewardKind, string>;
+
+export type RewardStatus = "pending" | "sent";
+
+export type CxReferral = {
+  id: string;
+  code: string;            // mã giới thiệu (vd GT-1042) — dùng chung cho 1 người giới thiệu
+  createdAt: string;
+  updatedAt: string;
+  // Người giới thiệu (khách cũ hài lòng)
+  referrerName: string;
+  referrerPhone?: string;
+  referrerCustomerId?: string;
+  referrerJourneyId?: string;
+  // Người được giới thiệu (khách tiềm năng mới)
+  refereeName?: string;
+  refereePhone?: string;
+  status: ReferralStatus;
+  orderId?: string;        // đơn phát sinh khi đã chốt (won)
+  revenue?: number;        // doanh thu ghi nhận từ lượt giới thiệu (vnd)
+  // Tri ân người giới thiệu
+  rewardKind?: ReferralRewardKind;
+  rewardValue?: number;    // giá trị tri ân (vnd)
+  rewardStatus?: RewardStatus;
+  ownerId?: string;        // nhân viên Growth phụ trách theo dõi
+  note?: string;
+};

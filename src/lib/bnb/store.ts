@@ -19,7 +19,7 @@ import type {
   InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
   ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog, ShiftCheckin,
-  CxJourney, JourneyStageKey,
+  CxJourney, JourneyStageKey, CxReferral,
 } from "./types";
 import { CARE_MILESTONES } from "./types";
 import { sendCareZNS } from "@/lib/zalo/zns";
@@ -54,6 +54,7 @@ export type BNBDB = {
   receptionLogs: ReceptionLog[];
   shiftCheckins: ShiftCheckin[];
   cxJourneys: CxJourney[];
+  referrals: CxReferral[];
   seq: number;
 };
 
@@ -84,10 +85,11 @@ const TABLE: Record<Coll, string> = {
   receptionLogs: "bnb_reception_logs",
   shiftCheckins: "bnb_shift_checkins",
   cxJourneys: "bnb_cx_journeys",
+  referrals: "bnb_cx_referrals",
 };
 
 function freshDB(): BNBDB {
-  return { ...seedBNB(), products: [...STUB_PRODUCTS], seq: 1000 };
+  return { ...seedBNB(), referrals: [], products: [...STUB_PRODUCTS], seq: 1000 };
 }
 
 // Singleton tồn tại qua HMR của dev server.
@@ -750,6 +752,59 @@ export async function syncCxJourneysFromLeads(): Promise<{ added: number }> {
     added++;
   }
   return { added };
+}
+
+/* ===== Chương trình giới thiệu — Referral (CX OS Đợt 4) ===== */
+export async function listReferrals(): Promise<CxReferral[]> {
+  try {
+    const dbo = await getDb("referrals");
+    return clone([...dbo.referrals].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)));
+  } catch {
+    return [];
+  }
+}
+
+// Mã giới thiệu dùng CHUNG cho 1 người giới thiệu: nếu đã có lượt giới thiệu
+// trùng SĐT (hoặc trùng tên khi thiếu SĐT) thì tái dùng mã cũ, ngược lại sinh mã mới.
+function referralCodeFor(existing: CxReferral[], phone?: string, name?: string): string {
+  const key = (r: CxReferral) => (r.referrerPhone || "").trim() || (r.referrerName || "").trim().toLowerCase();
+  const myKey = (phone || "").trim() || (name || "").trim().toLowerCase();
+  if (myKey) {
+    const prev = existing.find((r) => key(r) === myKey && r.code);
+    if (prev) return prev.code;
+  }
+  return nextCode("GT");
+}
+
+export async function createReferral(
+  input: Omit<CxReferral, "id" | "code" | "createdAt" | "updatedAt" | "status"> & { code?: string; status?: CxReferral["status"] },
+): Promise<CxReferral> {
+  const dbo = await getDb("referrals");
+  const r: CxReferral = {
+    ...input,
+    id: nextId("ref"),
+    code: input.code || referralCodeFor(dbo.referrals, input.referrerPhone, input.referrerName),
+    status: input.status || "invited",
+    createdAt: now(),
+    updatedAt: now(),
+  };
+  await put("referrals", r);
+  return clone(r);
+}
+
+export async function updateReferral(id: string, patch: Partial<CxReferral>): Promise<CxReferral | undefined> {
+  const dbo = await getDb("referrals");
+  const cur = dbo.referrals.find((x) => x.id === id);
+  if (!cur) return undefined;
+  const next: CxReferral = { ...cur, ...patch, id, code: cur.code, createdAt: cur.createdAt, updatedAt: now() };
+  await put("referrals", next);
+  return clone(next);
+}
+
+export async function deleteReferral(id: string): Promise<void> {
+  const dbo = await getDb("referrals");
+  dbo.referrals = dbo.referrals.filter((x) => x.id !== id);
+  await deleteRow(TABLE.referrals, id);
 }
 
 /* ===== Zalo OA · Hộp thoại ===== */

@@ -4,7 +4,7 @@ import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { CountUp } from "@/components/charts";
 import {
-  listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports, listCxJourneys,
+  listLeads, listDeliveries, listWarranties, listOrders, listTasks, listShiftReports, listCxJourneys, listReferrals,
 } from "@/lib/bnb/store";
 import { CX_JOURNEY_STAGES } from "@/lib/bnb/types";
 import { fmtVnd, fmtDate, fmtDateTime, isSameDay } from "@/lib/bnb/util";
@@ -29,9 +29,10 @@ function Kpi({ icon, tone, value, label, sub }: { icon: string; tone: string; va
 
 export default async function TodayPage() {
   const session = await requireSession();
-  const [leads, deliveries, warranties, orders, tasks, shifts, journeys, names] = await Promise.all([
-    listLeads(), listDeliveries(), listWarranties(), listOrders(), listTasks(), listShiftReports(), listCxJourneys(), employeeNameMap(),
+  const [leads, deliveries, warranties, orders, tasks, shifts, journeys, referrals, names] = await Promise.all([
+    listLeads(), listDeliveries(), listWarranties(), listOrders(), listTasks(), listShiftReports(), listCxJourneys(), listReferrals(), employeeNameMap(),
   ]);
+  const referralRewards = referrals.filter((r) => r.status === "won" && r.rewardStatus !== "sent");
   const STAGE_LABEL = Object.fromEntries(CX_JOURNEY_STAGES.map((s) => [s.key, s.label]));
   const todayStr = new Date().toISOString().slice(0, 10);
   const cxFollowUps = journeys.filter((j) => j.nextFollowUpAt && j.nextFollowUpAt <= todayStr && j.stage !== "community");
@@ -219,6 +220,31 @@ export default async function TodayPage() {
           </table>
         )}
       </div>
+
+      {/* Referral · tri ân cần gửi */}
+      {referralRewards.length > 0 && (
+        <div className="card mt">
+          <div className="card-h">
+            <h3>Giới thiệu · Cần tri ân ({referralRewards.length})</h3>
+            <Link href="/referral" className="badge b-amber">Chương trình giới thiệu</Link>
+          </div>
+          <table>
+            <tbody>
+              {referralRewards.slice(0, 8).map((r) => (
+                <tr key={r.id}>
+                  <td>
+                    <div className="uname">{r.referrerName} <span className="urole">({r.code})</span></div>
+                    <div className="urole">giới thiệu {r.refereeName || "khách mới"} → đã ra đơn{r.revenue ? ` · ${fmtVnd(r.revenue)}` : ""}</div>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <Link href="/referral" className="badge b-amber">🎁 Gửi tri ân{r.rewardValue ? ` ${fmtVnd(r.rewardValue)}` : ""}</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Đơn đang xử lý nhanh */}
       <div className="card mt">
