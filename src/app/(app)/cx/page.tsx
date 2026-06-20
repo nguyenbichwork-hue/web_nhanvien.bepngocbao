@@ -10,9 +10,9 @@ import {
 import { computeJourneyFunnel, computeNps } from "@/lib/bnb/cx";
 import { fmtDateTime } from "@/lib/bnb/util";
 import {
-  npsCategory, NPS_BADGE, NPS_LABEL, NPS_CHANNEL_LABEL, type NpsChannel,
+  npsCategory, NPS_BADGE, NPS_LABEL, NPS_CHANNEL_LABEL,
 } from "@/lib/bnb/types";
-import { recordNpsAction } from "./actions";
+import { NpsForm } from "./nps-form";
 
 export const dynamic = "force-dynamic";
 
@@ -144,23 +144,7 @@ export default async function CxPage() {
         {canManage && (
           <div className="card hover">
             <div className="card-h"><h3 className="sec-title">Ghi nhận phản hồi NPS</h3></div>
-            <form action={recordNpsAction} style={{ display: "grid", gap: 12 }}>
-              <div className="field" style={{ margin: 0 }}><label>Khách hàng *</label><input name="customerName" required placeholder="Tên khách hàng" /></div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Điểm (0–10) *</label>
-                <select name="score" defaultValue="10" required>
-                  {Array.from({ length: 11 }, (_, i) => 10 - i).map((n) => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Kênh</label>
-                <select name="channel" defaultValue="zalo">
-                  {(Object.keys(NPS_CHANNEL_LABEL) as NpsChannel[]).map((c) => <option key={c} value={c}>{NPS_CHANNEL_LABEL[c]}</option>)}
-                </select>
-              </div>
-              <div className="field" style={{ margin: 0 }}><label>Nhận xét</label><textarea name="comment" placeholder="Ý kiến của khách..." /></div>
-              <button type="submit" className="btn primary"><Icon name="plus" /> Ghi nhận</button>
-            </form>
+            <NpsForm customers={customers.map((c) => ({ id: c.id, name: c.name }))} />
           </div>
         )}
       </div>

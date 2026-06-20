@@ -393,6 +393,7 @@ export type NpsResponse = {
   comment?: string;
   channel?: NpsChannel;
   orderId?: string;
+  journeyId?: string;
   byId?: string;
   createdAt: string;
 };
@@ -498,6 +499,7 @@ export const REVIEW_STATUS_BADGE: Record<ReviewStatus, Badge> = {
 };
 export type Review = {
   id: string;
+  customerId?: string;
   customerName: string;
   channel: ReviewChannel;
   rating: number; // 1..5

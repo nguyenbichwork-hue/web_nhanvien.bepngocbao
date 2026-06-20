@@ -6,7 +6,7 @@ import { createReferral, updateReferral, deleteReferral } from "@/lib/bnb/store"
 import type { CxReferral } from "@/lib/bnb/types";
 
 export async function saveReferralAction(input: { id?: string } & Partial<CxReferral>) {
-  await requirePermission("lead.read");
+  await requirePermission("lead.manage");
   const { id, ...rest } = input;
   if (id) {
     await updateReferral(id, rest);
@@ -32,19 +32,19 @@ export async function saveReferralAction(input: { id?: string } & Partial<CxRefe
 }
 
 export async function setReferralStatusAction(id: string, status: CxReferral["status"]) {
-  await requirePermission("lead.read");
+  await requirePermission("lead.manage");
   await updateReferral(id, { status });
   revalidatePath("/referral");
 }
 
 export async function setRewardSentAction(id: string, sent: boolean) {
-  await requirePermission("lead.read");
+  await requirePermission("lead.manage");
   await updateReferral(id, { rewardStatus: sent ? "sent" : "pending" });
   revalidatePath("/referral");
 }
 
 export async function deleteReferralAction(id: string) {
-  await requirePermission("lead.read");
+  await requirePermission("lead.manage");
   await deleteReferral(id);
   revalidatePath("/referral");
 }

@@ -21,12 +21,16 @@ const fmt = (s?: string) => (s ? new Date(s).toLocaleDateString("vi-VN", { day: 
 
 type Owner = { id: string; name: string };
 type Ops = { leads: number; conv: number; revenue: string; pipeline: string; aov: string };
+type North = {
+  recommendPct: number; npsScore: number; npsTotal: number; csatAvg: number;
+  confirm2h: number; confirm2hBase: number; install48h: number; install48hBase: number;
+};
 type Filter = "all" | "followup" | "referral" | "blocked" | JourneyPhase;
 
 const fmtFull = (s?: string) =>
   s ? new Date(s).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
-export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[]; owners: Owner[]; ops: Ops }) {
+export function JourneyBoard({ journeys, owners, ops, north }: { journeys: CxJourney[]; owners: Owner[]; ops: Ops; north: North }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
@@ -105,6 +109,29 @@ export function JourneyBoard({ journeys, owners, ops }: { journeys: CxJourney[];
 
   return (
     <div>
+      {/* NORTH STAR thật — % khách trả lời "sẽ giới thiệu BNB" (promoter NPS) + KPI Success */}
+      <div className="card" style={{ background: "var(--accent-soft, var(--c-rose-soft))", borderColor: "var(--accent, var(--c-rose))", marginBottom: 14 }}>
+        <div className="flex between aic" style={{ flexWrap: "wrap", gap: 14 }}>
+          <div className="flex aic gap">
+            <div className="ic" style={{ width: 46, height: 46, background: "var(--c-rose-soft)", color: "var(--c-rose)" }}><Icon name="award" /></div>
+            <div>
+              <div className="urole">NORTH STAR · “Tôi sẽ giới thiệu BNB cho người thân”</div>
+              <div className="flex aic gap" style={{ flexWrap: "wrap" }}>
+                <b style={{ fontSize: 26 }}>{north.recommendPct}%</b>
+                <span className="small muted">khuyến nghị · NPS {north.npsScore >= 0 ? "+" : ""}{north.npsScore} · {north.npsTotal} phản hồi</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap" style={{ flexWrap: "wrap" }}>
+            <span className="badge b-green" title={`Trên ${north.confirm2hBase} đơn đã xác nhận`}>Xác nhận &lt;2h: <b>{north.confirm2h}%</b></span>
+            <span className="badge b-indigo" title={`Trên ${north.install48hBase} ca đã nghiệm thu`}>Lắp đúng 48H: <b>{north.install48h}%</b></span>
+            <span className="badge b-amber">CSAT TB: <b>{north.csatAvg}/10</b></span>
+            <a href="/cx" className="badge b-gray">Chi tiết NPS →</a>
+          </div>
+        </div>
+        {north.npsTotal === 0 && <p className="small muted" style={{ margin: "8px 0 0" }}>Chưa có phản hồi NPS — ghi nhận ở tab <a href="/cx" style={{ color: "var(--accent)" }}>CX · NPS</a> (điểm ≥9 tự bật “sẵn sàng giới thiệu”).</p>}
+      </div>
+
       {/* North Star stats */}
       <div className="grid-k g-4 stagger" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
         <div className="card kpi"><div className="ic" style={{ background: "var(--c-indigo-soft)", color: "var(--c-indigo)" }}><Icon name="users" /></div><div className="val">{stats.total}</div><div className="lbl">Tổng khách trong hành trình</div></div>

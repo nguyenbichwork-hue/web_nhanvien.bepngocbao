@@ -444,6 +444,14 @@ export default async function GuidePage() {
             <li><b>Tri ân:</b> mỗi lượt ghi hình thức ({REFERRAL_REWARD_KIND.map((k) => k.label).join(" · ")}) + giá trị + trạng thái đã/chưa gửi. Việc cần tri ân hiện cả trên <a href="#today">Dashboard “Hôm nay”</a>.</li>
           </ul>
         </Block>
+        <Block title="Đo North Star &amp; KPI Success (từ dữ liệu thật)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li><b>North Star</b> trên /journey = <b>% khách trả lời “sẽ giới thiệu”</b> = tỉ lệ promoter NPS (điểm ≥ 9), tính từ phản hồi NPS thật ở <a href="#cxos">CX · NPS</a> — không còn đếm cờ thủ công.</li>
+            <li><b>Ghi nhận NPS chọn khách</b> (gắn <code>customerId</code>) → vào thẳng <a href="#customers">Khách 360</a>; điểm ≥ 9 tự bật “sẵn sàng giới thiệu” cho hành trình (đóng vòng sang <a href="#cxos">Referral</a>).</li>
+            <li><b>KPI Success</b> đo từ dữ liệu thật: <i>% đơn xác nhận &lt; 2h</i> (từ <code>confirmedAt</code> − <code>createdAt</code>), <i>% lắp đúng 48H</i> (từ lịch giao-lắp: <code>doneAt</code> − <code>scheduledAt</code>), <i>CSAT TB</i> (điểm NPS bình quân).</li>
+            <li><a href="#reviews">Đánh giá</a> nay gắn được khách (chọn khi nhập) → tên khách bấm sang Khách 360.</li>
+          </ul>
+        </Block>
         <Block title="Liên thông một mạch (cascade tự động)">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
             <li><b>Báo giá CHỐT → tự tạo Đơn</b> (kế thừa dòng hàng + khách/lead; tạo khách từ lead nếu chưa có; lead → <i>won</i>), đẩy hành trình sang <i>Order Confirmed</i> và tự xếp một lịch <a href="#delivery">Giao-lắp</a>. Mở thẳng đơn vừa tạo.</li>

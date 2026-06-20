@@ -19,7 +19,7 @@ export default async function ReferralPage() {
     (phone || "").trim() || (name || "").trim().toLowerCase();
   const referredKeys = new Set(referrals.map((r) => refKey(r.referrerPhone, r.referrerName)));
   const candidates = journeys
-    .filter((j) => j.readyReferral || ["handover", "first7days", "review", "referral", "community"].includes(j.stage))
+    .filter((j) => j.readyReferral || ["handover", "first7days", "review", "referral"].includes(j.stage))
     .filter((j) => !referredKeys.has(refKey(j.phone, j.name)))
     .map((j) => ({ id: j.id, name: j.name, phone: j.phone, ownerId: j.ownerId, customerId: j.customerId }))
     .slice(0, 24);
@@ -36,7 +36,7 @@ export default async function ReferralPage() {
         referrals={referrals}
         owners={owners}
         candidates={candidates}
-        journeyReadyCount={journeys.filter((j) => j.readyReferral || ["handover", "first7days", "review", "referral", "community"].includes(j.stage)).length}
+        journeyReadyCount={journeys.filter((j) => j.readyReferral || ["handover", "first7days", "review", "referral"].includes(j.stage)).length}
       />
     </div>
   );

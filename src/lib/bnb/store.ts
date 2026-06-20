@@ -862,6 +862,13 @@ export async function advanceJourney(
   }
 }
 
+/** Bật cờ "sẵn sàng giới thiệu" cho hành trình của một khách (vd khi NPS ≥ 9 = promoter). */
+export async function markJourneyReadyReferral(match: JourneyMatch): Promise<void> {
+  const dbo = await getDb("cxJourneys");
+  const cur = findJourneyIn(dbo.cxJourneys, match);
+  if (cur && !cur.readyReferral) await updateCxJourney(cur.id, { readyReferral: true });
+}
+
 /** Đơn `confirmed` → tự tạo lịch Giao-lắp (nếu chưa có). */
 async function ensureDeliveryForOrder(order: Order): Promise<void> {
   if (order.id.startsWith("hrv-")) return;

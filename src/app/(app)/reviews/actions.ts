@@ -14,8 +14,10 @@ export async function createReviewAction(fd: FormData) {
   const sess = await requirePermission("review.manage");
   const customerName = s(fd, "customerName");
   if (!customerName) return;
+  const customerId = s(fd, "customerId") || undefined;
   await createReview({
     customerName,
+    customerId,
     channel: (s(fd, "channel") || "google") as ReviewChannel,
     rating: clampRating(Number(s(fd, "rating") || "5")),
     content: s(fd, "content") || undefined,

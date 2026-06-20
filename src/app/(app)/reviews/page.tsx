@@ -1,17 +1,18 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { CountUp, HBars } from "@/components/charts";
 import { DonutChart } from "@/components/charts/rich";
 import { TableFilter } from "@/components/table-filter";
-import { listReviews } from "@/lib/bnb/store";
+import { listReviews, listCustomers } from "@/lib/bnb/store";
 import { fmtDate, initials, avatarBg } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   REVIEW_CHANNEL_LABEL, REVIEW_CHANNELS, REVIEW_STATUS_LABEL, REVIEW_STATUS_BADGE,
-  type ReviewChannel,
 } from "@/lib/bnb/types";
-import { createReviewAction, respondReviewAction } from "./actions";
+import { respondReviewAction } from "./actions";
+import { ReviewForm } from "./review-form";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ function Stars({ rating }: { rating: number }) {
 export default async function ReviewsPage() {
   const session = await requirePermission("review.read");
   const canManage = session.permissions.has("review.manage");
-  const [reviews, empMap] = await Promise.all([listReviews(), employeeNameMap()]);
+  const [reviews, empMap, customers] = await Promise.all([listReviews(), employeeNameMap(), listCustomers()]);
 
   const total = reviews.length;
   const avg = total ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / total : 0;
@@ -114,33 +115,7 @@ export default async function ReviewsPage() {
           <summary style={{ cursor: "pointer", fontWeight: 700 }}>
             <Icon name="plus" /> Thêm đánh giá thủ công
           </summary>
-          <form action={createReviewAction} style={{ display: "grid", gap: 12, marginTop: 14 }}>
-            <div className="grid-k g-2">
-              <div className="field" style={{ margin: 0 }}>
-                <label>Khách hàng *</label>
-                <input name="customerName" required placeholder="Tên khách hàng" />
-              </div>
-              <div className="field" style={{ margin: 0 }}>
-                <label>Kênh</label>
-                <select name="channel" defaultValue="google">
-                  {REVIEW_CHANNELS.map((ch: ReviewChannel) => (
-                    <option key={ch} value={ch}>{REVIEW_CHANNEL_LABEL[ch]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label>Số sao</label>
-              <select name="rating" defaultValue="5">
-                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} sao</option>)}
-              </select>
-            </div>
-            <div className="field" style={{ margin: 0 }}>
-              <label>Nội dung</label>
-              <textarea name="content" placeholder="Nội dung đánh giá của khách..." />
-            </div>
-            <button type="submit" className="btn primary"><Icon name="plus" /> Thêm đánh giá</button>
-          </form>
+          <ReviewForm customers={customers.map((c) => ({ id: c.id, name: c.name }))} />
         </details>
       )}
 
@@ -177,7 +152,11 @@ export default async function ReviewsPage() {
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span className="av" style={{ background: avatarBg(r.customerName) }}>{initials(r.customerName)}</span>
-                      <span className="uname">{r.customerName}</span>
+                      {r.customerId ? (
+                        <Link href={`/customers/${r.customerId}`} style={{ color: "var(--accent)" }} className="uname">{r.customerName}</Link>
+                      ) : (
+                        <span className="uname">{r.customerName}</span>
+                      )}
                     </div>
                   </td>
                   <td className="small muted">{REVIEW_CHANNEL_LABEL[r.channel]}</td>
