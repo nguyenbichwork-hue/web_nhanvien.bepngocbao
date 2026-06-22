@@ -32,6 +32,13 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Tìm nguồn (RMS)",
+    items: [
+      { href: "/sourcing", label: "Tìm nguồn & So giá", icon: "search", perm: "quote.read" },
+      { href: "/sourcing/suppliers", label: "Nhà cung cấp", icon: "truck", perm: "quote.read" },
+    ],
+  },
+  {
     label: "Kho & Mua hàng",
     items: [
       { href: "/inventory", label: "Tồn kho", icon: "box", perm: "order.read" },
