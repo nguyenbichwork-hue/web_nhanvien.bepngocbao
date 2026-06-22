@@ -14,7 +14,8 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 // "Cheapest capable" cho OCR/bóc bảng số lượng lớn = Haiku 4.5 ($1/$5 per 1M). Đổi sang
 // claude-opus-4-8 (chính xác nhất) hoặc claude-sonnet-4-6 qua env nếu cần.
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_EXTRACT_MODEL || "claude-haiku-4-5";
-const GEMINI_MODEL = process.env.GEMINI_EXTRACT_MODEL || "gemini-2.0-flash";
+// gemini-2.0-flash đã bị Google đưa free-tier về 0; 2.5-flash vẫn có quota free.
+const GEMINI_MODEL = process.env.GEMINI_EXTRACT_MODEL || "gemini-2.5-flash";
 
 export const AI_EXTRACT_CONFIGURED = Boolean(ANTHROPIC_KEY || GEMINI_KEY);
 
