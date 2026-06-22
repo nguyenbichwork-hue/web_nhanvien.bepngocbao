@@ -581,7 +581,7 @@ export default async function GuidePage() {
             <li><b>Tìm nguồn:</b> vào là thấy <b>toàn bộ bảng giá</b> (xếp NCC → ngành → model); gõ model/tên/mã hãng (khớp mềm, bỏ dấu) → xếp <b>rẻ nhất trước</b>, nhãn “Rẻ nhất”; nút <b>“Báo giá”</b> tạo nhanh báo giá nháp.</li>
             <li><b>Quản lý SP &amp; giá</b> (<code>/sourcing/catalog</code>): <b>sửa trực tiếp</b> giá vốn / giá bán / niêm yết từng SP, thêm/xoá SP, và <b>cấu hình markup mặc định</b> (không cần nhập lại qua file).</li>
             <li><b>Giá bán</b> = giá vốn × (1 + markup); markup <b>chỉnh được</b> ở Quản lý SP &amp; giá. Giá bán sửa tay được giữ nguyên (override).</li>
-            <li><b>Cập nhật giá tuần</b> (<code>/sourcing/update</code>): dán bảng giá mới của 1 NCC (model + giá vốn) → khớp theo mã hãng → cập nhật giá vốn &amp; tính lại giá bán (cần <code>quote.manage</code>).</li>
+            <li><b>Cập nhật giá tuần</b> (<code>/sourcing/update</code>): <b>bóc AI</b> từ PDF/ảnh bảng giá (Claude Haiku / Gemini qua <code>ANTHROPIC_API_KEY</code>/<code>GEMINI_API_KEY</code>, fetch thuần — <code>lib/bnb/ai-extract.ts</code> + <code>/api/sourcing/extract</code>) HOẶC dán tay từ Excel → khớp theo mã hãng → cập nhật giá vốn &amp; tính lại giá bán (cần <code>quote.manage</code>). Chưa có key thì vẫn dán tay được.</li>
             <li><b>Nhà cung cấp:</b> danh sách hãng/NCC, độ phủ giá vốn, nhóm hàng mạnh, file báo giá nguồn (liên hệ NCC chờ bổ sung).</li>
             <li>Cần <code>quote.read</code> (xem) / <code>quote.manage</code> (cập nhật giá). Phân quyền xem giá vốn/lợi nhuận sẽ siết lại sau theo yêu cầu.</li>
           </ul>

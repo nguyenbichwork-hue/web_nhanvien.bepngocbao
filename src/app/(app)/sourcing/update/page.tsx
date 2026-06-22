@@ -4,7 +4,8 @@ import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { listCostItems } from "@/lib/bnb/cost-store";
 import { distinctBrands } from "@/lib/bnb/sourcing";
-import { applyWeeklyQuoteAction } from "../actions";
+import { AI_EXTRACT_CONFIGURED } from "@/lib/bnb/ai-extract";
+import { QuoteImporter } from "../quote-importer";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function UpdateCostPage({
       <PageHero
         icon="download"
         title="Cập nhật giá vốn theo tuần"
-        subtitle="Dán bảng báo giá mới của 1 NCC (model + giá vốn) — hệ thống tự khớp và cập nhật giá bán."
+        subtitle="Bóc bảng giá NCC bằng AI (PDF/ảnh) hoặc dán tay từ Excel → hệ thống tự khớp mã hãng & cập nhật giá bán."
         crumb={[["Trang chủ", "/dashboard"], ["Tìm nguồn (RMS)"], ["Cập nhật giá tuần"]]}
         actions={<Link href="/sourcing" className="btn"><Icon name="search" /> Về Tìm nguồn</Link>}
       />
@@ -41,52 +42,33 @@ export default async function UpdateCostPage({
               {miss ? <span className="muted small"> · {miss} dòng không khớp.</span> : null}
             </div>
           </div>
-          {miss ? (
-            <p className="small muted" style={{ marginTop: 8 }}>Không khớp: {missList}{miss > 30 ? " …" : ""}</p>
-          ) : null}
+          {miss ? <p className="small muted" style={{ marginTop: 8 }}>Không khớp: {missList}{miss > 30 ? " …" : ""}</p> : null}
         </div>
       )}
       {sp.err && (
         <div className="card" style={{ borderLeft: "4px solid var(--b-rose, #e23b54)" }}>
-          <div className="flex aic" style={{ gap: 10 }}><Icon name="alert" /> <b>Chưa nhập đủ.</b> Hãy chọn NCC và dán ít nhất 1 dòng (model + giá vốn).</div>
+          <div className="flex aic" style={{ gap: 10 }}><Icon name="alert" /> <b>Chưa nhập đủ.</b> Chọn NCC và có ít nhất 1 dòng (model + giá vốn).</div>
         </div>
       )}
 
-      <div className="grid-k g-2 mt" style={{ alignItems: "start" }}>
-        <div className="card">
-          <form action={applyWeeklyQuoteAction}>
-            <div className="field">
-              <label>Nhà cung cấp *</label>
-              <select name="brand" defaultValue={selBrand} required>
-                <option value="">— Chọn NCC —</option>
-                {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Dán bảng giá (mỗi dòng: <code>model [TAB] giá vốn</code>)</label>
-              <textarea
-                name="rows"
-                rows={14}
-                placeholder={"PID675DC1E\t12500000\nPID775DC1E\t13800000\n…"}
-                style={{ width: "100%", fontFamily: "monospace", fontSize: 13 }}
-              />
-            </div>
-            <button type="submit" className="btn primary"><Icon name="check" /> Khớp & cập nhật giá</button>
-          </form>
+      {!AI_EXTRACT_CONFIGURED && (
+        <div className="card" style={{ borderLeft: "4px solid var(--b-amber, #d98309)" }}>
+          <div className="flex aic" style={{ gap: 10 }}><Icon name="alert" />
+            <div className="small">Bóc AI <b>chưa bật</b> — cần thêm <code>ANTHROPIC_API_KEY</code> (khuyến nghị Claude Haiku, rẻ nhất) hoặc <code>GEMINI_API_KEY</code> vào biến môi trường. Trong lúc đó vẫn <b>dán tay từ Excel</b> được.</div>
+          </div>
         </div>
+      )}
 
-        <div className="card">
-          <div className="card-h"><h3 className="sec-title">Hướng dẫn nhanh</h3></div>
-          <ol className="small" style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li>Mở file báo giá NCC (Excel), <b>bôi 2 cột Model + Giá vốn</b> rồi Ctrl+C.</li>
-            <li>Chọn đúng <b>NCC</b> bên trái, dán (Ctrl+V) vào ô lớn, bấm <b>Khớp & cập nhật</b>.</li>
-            <li>Hệ thống khớp theo <b>mã hãng</b> (bỏ dấu/khoảng trắng), cập nhật <b>giá vốn</b> và tính lại <b>giá bán = vốn × 1.2</b>.</li>
-            <li>Dòng không khớp sẽ được liệt kê để kiểm tra lại tên model.</li>
-          </ol>
-          <p className="small muted" style={{ marginTop: 12 }}>
-            Mẹo: copy từ Excel sẽ tự có dấu TAB giữa 2 cột. Cũng nhận “model &nbsp;&nbsp; giá” cách nhau bằng khoảng trắng.
-          </p>
-        </div>
+      <QuoteImporter brands={brands} defaultBrand={selBrand} />
+
+      <div className="card mt">
+        <div className="card-h"><h3 className="sec-title">Hướng dẫn nhanh</h3></div>
+        <ol className="small" style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+          <li><b>Bóc AI:</b> chọn NCC → tải PDF/ảnh bảng giá → bấm <b>“Bóc bằng AI”</b>. AI điền sẵn Model + Giá vốn sang ô duyệt.</li>
+          <li><b>Hoặc dán tay:</b> mở Excel, bôi 2 cột Model + Giá vốn, Ctrl+C rồi dán vào ô duyệt.</li>
+          <li>Kiểm tra/sửa rồi bấm <b>“Khớp &amp; cập nhật”</b> → hệ thống khớp theo mã hãng (bỏ dấu/khoảng trắng), cập nhật giá vốn &amp; tính lại giá bán.</li>
+          <li>Dòng không khớp sẽ được liệt kê để rà lại tên model.</li>
+        </ol>
       </div>
     </div>
   );
