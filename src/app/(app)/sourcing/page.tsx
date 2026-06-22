@@ -3,10 +3,12 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { fmtVnd } from "@/lib/bnb/util";
+import { listCostItems } from "@/lib/bnb/cost-store";
 import {
-  searchCatalog, catalogStats, BRANDS, CATS, MARKUP, marginPct, sellFromCost,
+  searchCatalog, catalogStats, distinctBrands, distinctCats, MARKUP, marginPct, sellFromCost,
   type CostItem,
 } from "@/lib/bnb/sourcing";
+import { quoteFromItemAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,8 +27,11 @@ export default async function SourcingPage({
   const onlyCost = sp.onlyCost === "1";
   const active = Boolean(q || brand || cat);
 
-  const stats = catalogStats();
-  const all = active ? searchCatalog({ q, brand, cat, onlyCost }) : [];
+  const items = await listCostItems();
+  const stats = catalogStats(items);
+  const brands = distinctBrands(items);
+  const cats = distinctCats(items);
+  const all = active ? searchCatalog(items, { q, brand, cat, onlyCost }) : [];
   const results = all.slice(0, LIMIT);
   const cheapest = results.find((r) => r.von != null)?.von ?? null;
 
@@ -45,7 +50,12 @@ export default async function SourcingPage({
           { label: "Nhà cung cấp", value: stats.brands },
           { label: "Markup mặc định", value: `${MARKUP * 100}%`, tone: "up" },
         ]}
-        actions={<Link href="/sourcing/suppliers" className="btn"><Icon name="truck" /> Nhà cung cấp</Link>}
+        actions={
+          <>
+            <Link href="/sourcing/update" className="btn"><Icon name="download" /> Cập nhật giá tuần</Link>
+            <Link href="/sourcing/suppliers" className="btn"><Icon name="truck" /> Nhà cung cấp</Link>
+          </>
+        }
       />
 
       {/* Ô tìm nguồn */}
@@ -59,14 +69,14 @@ export default async function SourcingPage({
             <label>Nhà cung cấp</label>
             <select name="brand" defaultValue={brand}>
               <option value="">Tất cả NCC</option>
-              {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
+              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
           <div className="field" style={{ margin: 0, flex: "0 1 190px" }}>
             <label>Ngành hàng</label>
             <select name="cat" defaultValue={cat}>
               <option value="">Tất cả ngành</option>
-              {CATS.map((c) => <option key={c} value={c}>{c}</option>)}
+              {cats.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <label className="flex aic small" style={{ gap: 6, height: 44 }}>
@@ -104,6 +114,7 @@ export default async function SourcingPage({
                 <th style={{ textAlign: "right" }}>Giá bán (×{1 + MARKUP})</th>
                 <th style={{ textAlign: "right" }}>Biên LN</th>
                 <th style={{ textAlign: "right" }}>Niêm yết</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -126,11 +137,21 @@ export default async function SourcingPage({
                     <td className="small" style={{ textAlign: "right", fontWeight: 700, color: "var(--brand-1)" }}>{s != null ? fmtVnd(s) : "—"}</td>
                     <td className="small muted" style={{ textAlign: "right" }}>{it.von != null && s != null ? `${marginPct(it.von, s)}%` : "—"}</td>
                     <td className="small muted" style={{ textAlign: "right" }}>{it.ny != null ? fmtVnd(it.ny) : "—"}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {it.code && s != null && (
+                        <form action={quoteFromItemAction}>
+                          <input type="hidden" name="code" value={it.code} />
+                          <button type="submit" className="btn ghost" style={{ padding: "6px 10px", whiteSpace: "nowrap" }}>
+                            <Icon name="quote" /> Báo giá
+                          </button>
+                        </form>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {results.length === 0 && (
-                <tr><td colSpan={8} className="muted small" style={{ padding: "18px 0", textAlign: "center" }}>Không tìm thấy sản phẩm phù hợp.</td></tr>
+                <tr><td colSpan={9} className="muted small" style={{ padding: "18px 0", textAlign: "center" }}>Không tìm thấy sản phẩm phù hợp.</td></tr>
               )}
             </tbody>
           </table>

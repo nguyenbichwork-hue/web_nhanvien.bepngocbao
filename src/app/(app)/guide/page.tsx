@@ -573,21 +573,23 @@ export default async function GuidePage() {
       </Section>
 
       {/* ===== Tìm nguồn (RMS) ===== */}
-      <Section id="sourcing" icon="search" title="Tìm nguồn &amp; So giá (RMS)" routes="/sourcing · /sourcing/suppliers"
+      <Section id="sourcing" icon="search" title="Tìm nguồn &amp; So giá (RMS)" routes="/sourcing · /sourcing/update · /sourcing/suppliers"
         purpose="Lõi RMS: khách hỏi 1 sản phẩm → tra giá vốn của mọi nhà cung cấp, gợi ý nguồn RẺ NHẤT và tính sẵn giá bán để báo khách (rút báo giá từ ~3 giờ xuống ~3 phút).">
         <Block title="Chức năng & logic">
           <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li>Kho giá vốn chuẩn hoá ~1.500 SP / 25 NCC (seed từ file ChuanHoaSanPham); mỗi dòng có <b>giá vốn · giá bán · biên LN · niêm yết</b>.</li>
-            <li><b>Tìm nguồn:</b> gõ model/tên/mã hãng (khớp mềm, bỏ dấu) + lọc theo NCC/ngành → kết quả xếp <b>rẻ nhất trước</b>, gắn nhãn “Rẻ nhất”.</li>
+            <li>Kho giá vốn chuẩn hoá ~1.500 SP / 25 NCC lưu ở Supabase (bảng <code>bnb_cost_items</code>, fallback seed JSON); mỗi dòng có <b>giá vốn · giá bán · biên LN · niêm yết</b>.</li>
+            <li><b>Tìm nguồn:</b> gõ model/tên/mã hãng (khớp mềm, bỏ dấu) + lọc theo NCC/ngành → kết quả xếp <b>rẻ nhất trước</b>, gắn nhãn “Rẻ nhất”; nút <b>“Báo giá”</b> tạo nhanh báo giá nháp với giá bán đề xuất.</li>
             <li><b>Giá bán</b> = giá vốn × {1 + 0.2} (markup mặc định 20%, Sếp chốt) làm tròn 1.000đ; vẫn cho sửa từng đơn.</li>
+            <li><b>Cập nhật giá tuần</b> (<code>/sourcing/update</code>): dán bảng giá mới của 1 NCC (model + giá vốn) → khớp theo mã hãng → cập nhật giá vốn &amp; tính lại giá bán (cần <code>quote.manage</code>).</li>
             <li><b>Nhà cung cấp:</b> danh sách hãng/NCC, độ phủ giá vốn, nhóm hàng mạnh, file báo giá nguồn (liên hệ NCC chờ bổ sung).</li>
-            <li>Cần <code>quote.read</code>. (Phân quyền xem giá vốn/lợi nhuận sẽ siết lại sau theo yêu cầu.)</li>
+            <li>Cần <code>quote.read</code> (xem) / <code>quote.manage</code> (cập nhật giá). Phân quyền xem giá vốn/lợi nhuận sẽ siết lại sau theo yêu cầu.</li>
           </ul>
         </Block>
         <Block title="Cách dùng">
           <ol style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
-            <li>Khách hỏi 1 SP → vào <a href="/sourcing">Tìm nguồn</a>, gõ model/tên → xem nơi rẻ nhất + giá bán đề xuất.</li>
-            <li>Dùng giá bán đó để lập <a href="#quote">Báo giá</a>; khi chốt thì tạo <a href="#purchase">PO</a> cho đúng NCC.</li>
+            <li>Đầu tuần: vào <a href="/sourcing/update">Cập nhật giá tuần</a>, chọn NCC, dán 2 cột Model + Giá vốn từ Excel → cập nhật.</li>
+            <li>Khách hỏi 1 SP → vào <a href="/sourcing">Tìm nguồn</a>, gõ model/tên → xem nơi rẻ nhất + giá bán đề xuất → bấm <b>Báo giá</b>.</li>
+            <li>Hoàn thiện <a href="#quote">Báo giá</a> rồi gửi khách; khi chốt thì tạo <a href="#purchase">PO</a> cho đúng NCC.</li>
           </ol>
         </Block>
       </Section>

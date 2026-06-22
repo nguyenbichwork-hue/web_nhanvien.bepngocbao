@@ -2,14 +2,16 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
+import { listCostItems } from "@/lib/bnb/cost-store";
 import { suppliersRoster, catalogStats } from "@/lib/bnb/sourcing";
 
 export const dynamic = "force-dynamic";
 
 export default async function SuppliersPage() {
   await requirePermission("quote.read");
-  const rows = suppliersRoster();
-  const stats = catalogStats();
+  const items = await listCostItems();
+  const rows = suppliersRoster(items);
+  const stats = catalogStats(items);
   const fullCost = rows.filter((r) => r.withCost === r.total).length;
 
   return (
