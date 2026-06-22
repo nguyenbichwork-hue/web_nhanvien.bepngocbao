@@ -13,11 +13,13 @@ export type CostItem = {
   km?: string;           // Khuyến mãi / quà tặng kèm
 };
 
-/** Markup mặc định Sếp chốt (Q26 = 0.2 → giá bán = vốn × 1.2). Vẫn cho sửa từng đơn. */
+/** Markup mặc định (Q26 = 0.2 → giá bán = vốn × 1.2). Cấu hình lại được ở /sourcing/catalog. */
 export const MARKUP = 0.2;
 
-/** Giá bán đề xuất từ giá vốn (làm tròn 1.000đ). */
-export const sellFromCost = (von: number): number => Math.round((von * (1 + MARKUP)) / 1000) * 1000;
+/** Giá bán = giá vốn × (1 + markup), làm tròn 1.000đ. */
+export const sellWith = (von: number, markup: number): number => Math.round((von * (1 + markup)) / 1000) * 1000;
+/** Giá bán đề xuất theo markup mặc định (dùng khi hiển thị, không có cấu hình động). */
+export const sellFromCost = (von: number): number => sellWith(von, MARKUP);
 /** Biên lợi nhuận trên giá bán (%). */
 export const marginPct = (von: number, ban: number): number =>
   ban > 0 ? Math.round(((ban - von) / ban) * 1000) / 10 : 0;
