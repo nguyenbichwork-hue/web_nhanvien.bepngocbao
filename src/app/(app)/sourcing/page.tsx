@@ -108,6 +108,12 @@ export default async function SourcingPage({
             Gõ model/tên ở ô trên hoặc chọn NCC để xem cụ thể &amp; so nguồn rẻ nhất.
           </p>
         )}
+        {/* Forms tạo báo giá đặt NGOÀI bảng (form trong <td> bị HTML table parser đẩy ra → submit nhầm form tìm kiếm). */}
+        {results.filter((it) => it.code && sell(it) != null).map((it) => (
+          <form key={`qf-${it.code}`} id={`qf-${it.code}`} action={quoteFromItemAction}>
+            <input type="hidden" name="code" value={it.code ?? ""} />
+          </form>
+        ))}
           <table>
             <thead>
               <tr>
@@ -144,12 +150,9 @@ export default async function SourcingPage({
                     <td className="small muted" style={{ textAlign: "right" }}>{it.ny != null ? fmtVnd(it.ny) : "—"}</td>
                     <td style={{ textAlign: "right" }}>
                       {it.code && s != null && (
-                        <form action={quoteFromItemAction}>
-                          <input type="hidden" name="code" value={it.code} />
-                          <button type="submit" className="btn ghost" style={{ padding: "6px 10px", whiteSpace: "nowrap" }}>
-                            <Icon name="quote" /> Báo giá
-                          </button>
-                        </form>
+                        <button form={`qf-${it.code}`} type="submit" className="btn ghost" style={{ padding: "6px 10px", whiteSpace: "nowrap" }}>
+                          <Icon name="quote" /> Báo giá
+                        </button>
                       )}
                     </td>
                   </tr>
