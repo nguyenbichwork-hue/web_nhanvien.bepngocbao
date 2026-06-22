@@ -36,10 +36,22 @@ const collTag = (table: string) => `coll:${table}`;
 const cfgTag = (key: string) => `cfg:${key}`;
 
 // --- Hàm đọc THÔ (không cache) — chỉ gọi từ trong lớp cache bên dưới ---
+// Phân trang theo lô 1000 vì PostgREST mặc định trả tối đa 1000 dòng → bảng lớn
+// (vd kho giá vốn ~1.5k SP) sẽ bị cắt cụt nếu không lặp .range().
 async function rawPull<T>(table: string): Promise<T[]> {
-  const { data, error } = await supabaseAdmin().from(table).select("data");
-  if (error) throw new Error(`Supabase pull ${table}: ${error.message}`);
-  return (data ?? []).map((r) => (r as { data: T }).data);
+  const PAGE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin()
+      .from(table)
+      .select("data")
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Supabase pull ${table}: ${error.message}`);
+    const rows = (data ?? []).map((r) => (r as { data: T }).data);
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return out;
 }
 
 async function rawGetConfig<T>(key: string): Promise<T | null> {

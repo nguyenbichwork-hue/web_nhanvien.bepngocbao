@@ -5,14 +5,12 @@ import { PageHero } from "@/components/page-hero";
 import { fmtVnd } from "@/lib/bnb/util";
 import { listCostItems } from "@/lib/bnb/cost-store";
 import {
-  searchCatalog, catalogStats, distinctBrands, distinctCats, MARKUP, marginPct, sellFromCost,
+  searchCatalog, catalogStats, distinctBrands, distinctCats, byNameVi, MARKUP, marginPct, sellFromCost,
   type CostItem,
 } from "@/lib/bnb/sourcing";
 import { quoteFromItemAction } from "./actions";
 
 export const dynamic = "force-dynamic";
-
-const LIMIT = 100;
 
 export default async function SourcingPage({
   searchParams,
@@ -26,14 +24,20 @@ export default async function SourcingPage({
   const cat = sp.cat || "";
   const onlyCost = sp.onlyCost === "1";
   const active = Boolean(q || brand || cat);
+  const searching = Boolean(q);
 
   const items = await listCostItems();
   const stats = catalogStats(items);
   const brands = distinctBrands(items);
   const cats = distinctCats(items);
-  const all = active ? searchCatalog(items, { q, brand, cat, onlyCost }) : [];
-  const results = all.slice(0, LIMIT);
-  const cheapest = results.find((r) => r.von != null)?.von ?? null;
+  const filtered = searchCatalog(items, { q, brand, cat, onlyCost });
+  // Có gõ từ khoá → so giá rẻ-nhất-trước. Không gõ → DUYỆT bảng giá (NCC → ngành → model).
+  const ordered = searching
+    ? filtered
+    : [...filtered].sort((a, b) => byNameVi(a.brand, b.brand) || byNameVi(a.cat ?? "", b.cat ?? "") || byNameVi(a.model, b.model));
+  const LIMIT = searching ? 100 : brand ? 600 : 200;
+  const results = ordered.slice(0, LIMIT);
+  const cheapest = searching ? (results.find((r) => r.von != null)?.von ?? null) : null;
 
   const sell = (it: CostItem): number | null =>
     it.ban != null ? it.ban : it.von != null ? sellFromCost(it.von) : null;
@@ -87,22 +91,23 @@ export default async function SourcingPage({
         </form>
       </div>
 
-      {/* Kết quả */}
-      {!active ? (
-        <div className="card mt" style={{ textAlign: "center", padding: "48px 16px" }}>
-          <div className="ic" style={{ width: 52, height: 52, margin: "0 auto 12px" }}><Icon name="search" /></div>
-          <h3 className="sec-title" style={{ justifyContent: "center" }}>Nhập sản phẩm khách hỏi để tìm nguồn</h3>
-          <p className="muted small" style={{ maxWidth: 460, margin: "6px auto 0" }}>
-            Hệ thống sẽ so giá vốn của {stats.brands} nhà cung cấp, đề xuất nơi <b>rẻ nhất</b> và tính sẵn giá bán
-            (markup {MARKUP * 100}%) để báo khách.
-          </p>
+      {/* Kết quả tìm nguồn / Duyệt bảng giá */}
+      <div className="card mt">
+        <div className="card-h">
+          <h3 className="sec-title">
+            {searching ? "Kết quả tìm nguồn" : brand ? `Bảng giá ${brand}` : "Toàn bộ kho giá vốn"}
+            {" "}({filtered.length}{filtered.length > results.length ? `, hiện ${results.length}` : ""})
+          </h3>
+          {cheapest != null
+            ? <span className="badge b-green">Rẻ nhất: {fmtVnd(cheapest)}</span>
+            : <span className="badge b-gray">{stats.brands} NCC · {stats.withCost}/{stats.total} có giá vốn</span>}
         </div>
-      ) : (
-        <div className="card mt">
-          <div className="card-h">
-            <h3 className="sec-title">Kết quả tìm nguồn ({all.length}{all.length > LIMIT ? `, hiện ${LIMIT}` : ""})</h3>
-            {cheapest != null && <span className="badge b-green">Rẻ nhất: {fmtVnd(cheapest)}</span>}
-          </div>
+        {!searching && (
+          <p className="small muted" style={{ marginTop: -2, marginBottom: 10 }}>
+            Đang xem toàn bộ bảng giá{brand ? ` của ${brand}` : ` (${stats.brands} NCC)`} · markup {MARKUP * 100}%.
+            Gõ model/tên ở ô trên hoặc chọn NCC để xem cụ thể &amp; so nguồn rẻ nhất.
+          </p>
+        )}
           <table>
             <thead>
               <tr>
@@ -155,8 +160,7 @@ export default async function SourcingPage({
               )}
             </tbody>
           </table>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
