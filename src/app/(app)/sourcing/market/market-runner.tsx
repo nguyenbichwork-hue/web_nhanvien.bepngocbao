@@ -1,8 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { saveMarketSettingsAction } from "./actions";
+
+type CrawlSite = { url: string; domain: string; official: boolean; brand: string | null };
 
 type Cfg = {
   appsScriptUrl: string;
@@ -24,8 +27,11 @@ type Res = { status: RStatus; soLink?: number; min?: number | null; deXuat?: num
 const vnd = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString("vi-VN") + "₫");
 const keyOf = (p: Prod) => `${p.sheet}:${p.row}`;
 
-export default function MarketRunner({ cfg }: { cfg: Cfg }) {
+export default function MarketRunner({ cfg, crawlSites, indexInfo }: { cfg: Cfg; crawlSites: CrawlSite[]; indexInfo: { sites: number; priced: number } }) {
+  const router = useRouter();
   const [tab, setTab] = useState<"scan" | "settings">("scan");
+  const [crawling, setCrawling] = useState(false);
+  const [crawlMsg, setCrawlMsg] = useState("");
   const [sheets, setSheets] = useState<SheetInfo[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [prods, setProds] = useState<Prod[]>([]);
@@ -172,6 +178,36 @@ export default function MarketRunner({ cfg }: { cfg: Cfg }) {
 
   function stop() { stopRef.current = true; log("Đang dừng sau khi xong các dòng đang chạy…"); }
 
+  /** Cào trọn catalog các sàn đối thủ → dựng/mở rộng index giá (lưu Supabase). */
+  async function crawlIndex() {
+    setCrawling(true);
+    const queue = [...crawlSites];
+    let done = 0, total = 0;
+    const worker = async () => {
+      while (queue.length) {
+        const s = queue.shift();
+        if (!s) break;
+        setCrawlMsg(`Đang cào ${done + 1}/${crawlSites.length}: ${s.domain}…`);
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 75000);
+          const r = await fetch("/api/sourcing/market/crawl", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ url: s.url, official: s.official, brand: s.brand }), signal: ctrl.signal,
+          }).then((x) => x.json()).finally(() => clearTimeout(t));
+          if (r.ok && r.count) total += r.count;
+          log(`Cào ${s.domain}: ${r.ok ? (r.count || 0) + " SP" : "lỗi " + (r.error || "")}`);
+        } catch (e) { log(`Cào ${s.domain} lỗi: ${String(e)}`); }
+        done++;
+        setCrawlMsg(`Đã cào ${done}/${crawlSites.length} sàn (${total} SP).`);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(5, queue.length) }, worker));
+    setCrawlMsg(`Xong: cào ${crawlSites.length} sàn, ${total} SP. Index đã cập nhật.`);
+    setCrawling(false);
+    router.refresh();
+  }
+
   const KPIS = [
     { label: "Tổng dòng", value: kpi.tong, color: "var(--tx)" },
     { label: "Đã quét", value: kpi.daQuet, color: "var(--c-teal)" },
@@ -209,6 +245,20 @@ export default function MarketRunner({ cfg }: { cfg: Cfg }) {
         {/* Cột trái: chọn sheet HOẶC cài đặt */}
         <div style={{ display: "grid", gap: 16 }}>
           {tab === "scan" ? (
+            <>
+            <div className="card">
+              <div className="card-h">
+                <h3 className="sec-title">Index giá đối thủ (free)</h3>
+                <span className="badge b-green">{indexInfo.priced.toLocaleString("vi-VN")} SP có giá · {indexInfo.sites} sàn</span>
+              </div>
+              <p className="small muted" style={{ marginTop: -2 }}>
+                Bản miễn phí so giá theo <b>catalog đối thủ đã cào</b> (chạy thật từ máy chủ, không cần ScraperAPI). Cào lại để làm mới giá &amp; phủ thêm sàn.
+              </p>
+              <button className="btn" onClick={crawlIndex} disabled={crawling} style={{ width: "100%" }}>
+                <Icon name="download" /> {crawling ? "Đang cào catalog…" : `Cào catalog đối thủ (${crawlSites.length} sàn)`}
+              </button>
+              {crawlMsg && <p className="small" style={{ color: "var(--accent)", marginTop: 8 }}>{crawlMsg}</p>}
+            </div>
             <div className="card">
               <div className="card-h">
                 <h3 className="sec-title">1. Chọn sheet quét giá</h3>
@@ -237,6 +287,7 @@ export default function MarketRunner({ cfg }: { cfg: Cfg }) {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <div className="card">
               <div className="card-h"><h3 className="sec-title">Cài đặt Auto Pricing</h3></div>

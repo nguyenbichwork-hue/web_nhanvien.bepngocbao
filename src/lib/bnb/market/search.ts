@@ -5,7 +5,30 @@
 
 import { smartFetch } from "./fetcher";
 import { extractProductsFromHtml } from "./extractor";
+import { listSites } from "./store";
 import type { MarketPrice } from "./types";
+
+/** Đối chiếu 1 model với CATALOG ĐỐI THỦ ĐÃ CÀO (lưu Supabase) — nguồn free chạy được
+ * từ Vercel (không phụ thuộc search engine). Mạnh dần theo số sàn đã cào. */
+async function matchStoredCatalogs(modelCode: string): Promise<MarketPrice[]> {
+  const mc = (modelCode || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (mc.length < 4) return [];
+  let sites;
+  try { sites = await listSites(); } catch { return []; }
+  const out: MarketPrice[] = [];
+  for (const s of sites) {
+    let best: number | null = null; let bestUrl = "https://" + s.domain;
+    for (const p of s.products || []) {
+      const price = p.salePrice ?? p.originalPrice;
+      if (price == null || price < 10000) continue;
+      const hay = ((p.code || "") + " " + p.name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (!hay.includes(mc)) continue;
+      if (best == null || price < best) { best = price; bestUrl = p.url || bestUrl; }
+    }
+    if (best != null) out.push({ siteName: s.domain, price: best, url: bestUrl, official: s.official });
+  }
+  return out;
+}
 
 /** Lấy HTML thô (chuỗi) qua smartFetch; "" nếu lỗi. */
 async function fetchHtml(url: string, opts: { timeoutMs?: number; retries?: number }): Promise<string> {
@@ -219,7 +242,10 @@ export async function searchProductPrices(
   const mc = norm(modelCode);
   const hasProxy = !!process.env.SCRAPER_API_KEY;
 
-  // NGUỒN 1 (free, đáng tin): hỏi thẳng search-endpoint các sàn bếp VN.
+  // NGUỒN 0 (free, mạnh nhất hiện có): đối chiếu catalog đối thủ ĐÃ CÀO (lưu Supabase).
+  const storedPrices = await matchStoredCatalogs(modelCode);
+
+  // NGUỒN 1 (free): hỏi thẳng search-endpoint các sàn bếp VN (live).
   const retailerPrices = await searchRetailers(modelCode, opts.concurrency ?? 5);
 
   // NGUỒN 2 (search engine → mở trang): CHỈ chạy khi có ScraperAPI — không thì Google/Bing
@@ -269,8 +295,9 @@ export async function searchProductPrices(
     const ex = perDomain.get(m.siteName);
     if (!ex || m.price < ex.price) perDomain.set(m.siteName, m);
   };
-  for (const m of retailerPrices) consider(m); // nguồn sàn VN (free)
-  for (const m of results) consider(m);         // nguồn search engine
+  for (const m of storedPrices) consider(m);    // catalog đã cào (free, mạnh)
+  for (const m of retailerPrices) consider(m);  // sàn VN live (free)
+  for (const m of results) consider(m);         // search engine (cần ScraperAPI)
   const out = [...perDomain.values()].sort((a, b) => a.price - b.price);
   cache.set(cacheKey, { t: Date.now(), v: out });
   return { prices: out, linksOpened: links.length, storesFound: out.length };

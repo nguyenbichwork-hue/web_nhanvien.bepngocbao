@@ -39,16 +39,27 @@ export async function crawlSite(
   }
   const siteName = new URL(origin).hostname.replace(/^www\./, "");
   const products: Product[] = [];
-  const seen = new Set<string>();
+  const idxByKey = new Map<string, number>();
   const add = (ps: Product[]) => {
     for (const p of ps) {
       const k = (p.code || "") + "|" + p.name;
-      if (!seen.has(k)) {
-        seen.add(k);
+      const price = p.salePrice ?? p.originalPrice ?? 0;
+      const ex = idxByKey.get(k);
+      if (ex == null) {
+        idxByKey.set(k, products.length);
         products.push(p);
+      } else {
+        // Cùng mã: nếu bản mới CÓ giá mà bản cũ giá 0 (API ẩn giá) → thay bằng bản có giá.
+        const old = products[ex];
+        const oldPrice = old.salePrice ?? old.originalPrice ?? 0;
+        if (price >= 10000 && oldPrice < 10000) products[ex] = p;
       }
     }
   };
+  // Tỉ lệ SP có giá thật (>=10k). Sàn ẩn giá trong API (price=0) → tỉ lệ thấp → KHÔNG
+  // dừng ở API mà chạy tiếp sitemap+JSON-LD để lấy giá thật từ trang sản phẩm.
+  const pricedRatio = () => (products.length ? products.filter((p) => (p.salePrice ?? p.originalPrice ?? 0) >= 10000).length / products.length : 0);
+  const apiPricesUsable = () => products.length > 0 && pricedRatio() >= 0.2;
 
   // 1) Shopify / Haravan / Sapo
   try {
@@ -63,7 +74,7 @@ export async function crawlSite(
       if (!r.hasMore) break;
       page++;
     }
-    if (got) return { siteName, platform: "shopify", products: products.slice(0, maxProducts) };
+    if (got && apiPricesUsable()) return { siteName, platform: "shopify", products: products.slice(0, maxProducts) };
   } catch {
     /* thử nền tảng kế */
   }
@@ -82,7 +93,7 @@ export async function crawlSite(
       if (!r.hasMore) break;
       page++;
     }
-    if (got) return { siteName, platform: "woocommerce", products: products.slice(0, maxProducts) };
+    if (got && apiPricesUsable()) return { siteName, platform: "woocommerce", products: products.slice(0, maxProducts) };
   } catch {
     /* thử nền tảng kế */
   }

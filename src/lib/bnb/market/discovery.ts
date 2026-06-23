@@ -108,3 +108,20 @@ export function discoverSites(myProducts: { vendor: string }[]): DiscoveredSite[
 export function officialDomainFor(vendor: string): string | null {
   return OFFICIAL_SITES[brandKey(vendor)] || null;
 }
+
+/** Toàn bộ domain để CÀO CATALOG dựng index giá đối thủ (chính hãng + bán lẻ). */
+export function allCrawlDomains(): { url: string; domain: string; official: boolean; brand: string | null }[] {
+  const out: { url: string; domain: string; official: boolean; brand: string | null }[] = [];
+  const seen = new Set<string>();
+  for (const [brand, dom] of Object.entries(OFFICIAL_SITES)) {
+    if (seen.has(dom)) continue;
+    seen.add(dom);
+    out.push({ url: "https://" + dom, domain: dom, official: true, brand });
+  }
+  for (const dom of RETAIL_SEED) {
+    if (seen.has(dom)) continue;
+    seen.add(dom);
+    out.push({ url: "https://" + dom, domain: dom, official: false, brand: null });
+  }
+  return out;
+}
