@@ -176,6 +176,28 @@ async function searchTiki(query: string, modelCode: string): Promise<MarketPrice
   }
 }
 
+/** websosanh.vn — web SO GIÁ lớn nhất VN (gom ~25k web). SSR: giá nằm thẳng trong HTML
+ * (không cần render). Mỗi trang ~37 listing đa merchant → giá thấp nhất rất phủ. */
+async function searchWebsosanh(query: string, modelCode: string): Promise<MarketPrice[]> {
+  const q = query.trim().toLowerCase().replace(/[^a-z0-9\s]+/g, " ").replace(/\s+/g, "+");
+  if (!q) return [];
+  const html = await fetchHtml(`https://websosanh.vn/s/${q}.htm`, { timeoutMs: 15000, retries: 1 });
+  if (!html) return [];
+  const mc = norm(modelCode);
+  // Mỗi card: <a ...>TÊN</a></h2>...<span class="product-single-price">GIÁ đ
+  const re = /<a[^>]*>([^<]{6,160})<\/a>\s*<\/h2>[\s\S]{0,200}?product-single-price">\s*([\d.,]+)\s*đ/gi;
+  let best: number | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const name = m[1];
+    const price = parseInt(m[2].replace(/[.,]/g, ""), 10);
+    if (!price || price < 10000) continue;
+    if (mc.length >= 4 && !norm(name).includes(mc)) continue; // xác minh đúng model
+    if (best == null || price < best) best = price;
+  }
+  return best == null ? [] : [{ siteName: "websosanh.vn", price: best, url: `https://websosanh.vn/s/${q}.htm` }];
+}
+
 interface RawHit { name: string; price: number | null; url: string }
 
 async function shopifySuggest(origin: string, q: string): Promise<RawHit[]> {
@@ -269,7 +291,11 @@ export async function searchProductPrices(
   const storedPrices = await matchStoredCatalogs(modelCode);
 
   // NGUỒN 0b (free, LIVE): Tiki API per-product — carry hầu hết SP, không chặn serverless.
-  const tikiPrices = await searchTiki(query, modelCode);
+  // NGUỒN 0c (free, LIVE): websosanh.vn — web so giá gom ~25k web, giá thấp nhất rất phủ.
+  const [tikiPrices, wssPrices] = await Promise.all([
+    searchTiki(query, modelCode),
+    searchWebsosanh(query, modelCode),
+  ]);
 
   // NGUỒN 1 (live): hỏi thẳng search-endpoint sàn VN — CHỈ khi có ScraperAPI (IP serverless
   // bị WAF chặn/trả rỗng + chậm; free dựa hẳn vào index đã cào ở NGUỒN 0).
@@ -324,6 +350,7 @@ export async function searchProductPrices(
   };
   for (const m of storedPrices) consider(m);    // catalog đã cào (free, mạnh)
   for (const m of tikiPrices) consider(m);       // Tiki API live (free, phủ rộng)
+  for (const m of wssPrices) consider(m);         // websosanh live (free, gom 25k web)
   for (const m of retailerPrices) consider(m);  // sàn VN live (free)
   for (const m of results) consider(m);         // search engine (cần ScraperAPI)
   const out = [...perDomain.values()].sort((a, b) => a.price - b.price);
