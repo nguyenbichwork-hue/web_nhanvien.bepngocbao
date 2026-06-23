@@ -570,6 +570,14 @@ export default async function GuidePage() {
             <li>Gửi khách → theo dõi trạng thái; khi khách đồng ý, chuyển “Đã chốt” để lên đơn.</li>
           </ol>
         </Block>
+        <Block title="Báo giá chuẩn BNB (in/PDF + Zalo)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li>Chứng từ in được theo <b>chuẩn Bếp Ngọc Bảo</b>: header công ty (logo · địa chỉ · hotline), danh xưng Anh/Chị, mã báo giá, ngày lập + <b>hiệu lực 15 ngày</b>.</li>
+            <li>Tổng kết minh bạch: tạm tính · chiết khấu · <b>VAT 8%</b> (giá đã gồm) · thành tiền · <b>số tiền bằng chữ</b>.</li>
+            <li><b>Điều khoản</b> (chính hãng · bảo hành theo hãng · khảo sát-lắp đặt) + <b>4 cam kết BNB</b> + ô chữ ký.</li>
+            <li>Nút <b>“In / Lưu PDF”</b> (trình duyệt) và <b>“Copy tin Zalo gửi khách”</b> — không gửi bảng giá trần trụi, kèm cam kết &amp; điều khoản.</li>
+          </ul>
+        </Block>
       </Section>
 
       {/* ===== Tìm nguồn (RMS) ===== */}
