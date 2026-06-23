@@ -37,12 +37,25 @@ export const OFFICIAL_SITES: Record<string, string> = {
   kluger: 'kluger.vn',
 };
 
-/** Site bán lẻ ĐA HÃNG (đồ bếp / gia dụng VN) — cào SAU site chính hãng. */
+/** Site bán lẻ ĐA HÃNG (đồ bếp / gia dụng VN) — DANH SÁCH ĐẦY ĐỦ (chỉ quét hết khi có ScraperAPI). */
 export const RETAIL_SEED: string[] = [
   'beptot.vn', 'bephoanggia.com.vn', 'eurocook.vn', 'bepnhapkhau.com.vn',
   'ankhang.com', 'dienmaytot.vn', 'bep24h.com', 'thegioibeptu.com',
   'sieuthibeptu.com', 'bepcaocap.vn', 'vuanhabep.com', 'noithatdiemnhan.vn',
 ];
+
+// ===== ĐÃ TỈA DANH SÁCH (2026-06-23) =====
+// Kiểm chứng bằng lần quét THẬT trên prod: chỉ 6/37 web cào được MIỄN PHÍ (có
+// /products.json, Woo Store API, hoặc sitemap+JSON-LD). 31 web còn lại là SPA/chặn
+// bot (bosch, tefal, teka, philips, beptot, sieuthibeptu…) → luôn trả 0 SP, chỉ
+// ScraperAPI (render JS + xoay IP) mới quét sâu được. Ở chế độ MIỄN PHÍ chỉ hiện 6
+// web này cho gọn & nhanh; khi set SCRAPER_API_KEY thì tự mở lại TOÀN BỘ danh sách.
+//
+// Hãng chính hãng cào được free (theo nền tảng web của hãng):
+const FREE_OFFICIAL = new Set(['canzy', 'smeg', 'kluger', 'supor']);
+// Web bán lẻ cào được free:
+const FREE_RETAIL = ['eurocook.vn', 'thegioibeptu.com'];
+const hasProxy = (): boolean => !!process.env.SCRAPER_API_KEY;
 
 /** Chuẩn hoá tên hãng để tra map (bỏ dấu, ký tự đặc biệt: "Chef's" -> "chefs"). */
 export const brandKey = (b: string): string =>
@@ -63,6 +76,7 @@ export interface DiscoveredSite {
  * Không cần người dùng dán URL.
  */
 export function discoverSites(myProducts: { vendor: string }[]): DiscoveredSite[] {
+  const proxy = hasProxy(); // có ScraperAPI → cào được cả web SPA/chặn bot → mở full
   const count = new Map<string, number>();
   for (const p of myProducts) {
     const k = brandKey(p.vendor);
@@ -70,18 +84,18 @@ export function discoverSites(myProducts: { vendor: string }[]): DiscoveredSite[
   }
   const out: DiscoveredSite[] = [];
   const seen = new Set<string>();
-  // 1) Chính hãng — hãng có nhiều SP trước
+  // 1) Chính hãng — hãng có nhiều SP trước (free: chỉ hãng cào được; có proxy: tất cả)
   [...count.entries()]
     .sort((a, b) => b[1] - a[1])
     .forEach(([k, c]) => {
       const dom = OFFICIAL_SITES[k];
-      if (dom && !seen.has(dom)) {
-        seen.add(dom);
-        out.push({ url: 'https://' + dom, label: dom, official: true, brand: k, count: c });
-      }
+      if (!dom || seen.has(dom)) return;
+      if (!proxy && !FREE_OFFICIAL.has(k)) return; // tỉa: bỏ web không cào được free
+      seen.add(dom);
+      out.push({ url: 'https://' + dom, label: dom, official: true, brand: k, count: c });
     });
-  // 2) Bán lẻ đa hãng
-  for (const dom of RETAIL_SEED) {
+  // 2) Bán lẻ đa hãng (free: chỉ web cào được; có proxy: full seed)
+  for (const dom of proxy ? RETAIL_SEED : FREE_RETAIL) {
     if (!seen.has(dom)) {
       seen.add(dom);
       out.push({ url: 'https://' + dom, label: dom, official: false });
