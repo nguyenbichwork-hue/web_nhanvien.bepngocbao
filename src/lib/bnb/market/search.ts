@@ -16,6 +16,15 @@ async function fetchHtml(url: string, opts: { timeoutMs?: number; retries?: numb
     return "";
   }
 }
+/** Lấy nội dung endpoint JSON (accept json — tránh trang HTML challenge của Cloudflare/Woo). */
+async function fetchJsonText(url: string, opts: { timeoutMs?: number; retries?: number }): Promise<string> {
+  try {
+    const r = await smartFetch(url, { accept: "json", proxyFallback: false, ...opts });
+    return r.ok ? r.text : "";
+  } catch {
+    return "";
+  }
+}
 
 const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 
@@ -126,7 +135,7 @@ interface RawHit { name: string; price: number | null; url: string }
 
 async function shopifySuggest(origin: string, q: string): Promise<RawHit[]> {
   const url = `${origin}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=6`;
-  const html = await fetchHtml(url, { timeoutMs: 12000, retries: 1 });
+  const html = await fetchJsonText(url, { timeoutMs: 12000, retries: 1 });
   if (!html) return [];
   try {
     const j = JSON.parse(html) as { resources?: { results?: { products?: { title?: string; price?: string | number; url?: string }[] } } };
@@ -136,7 +145,7 @@ async function shopifySuggest(origin: string, q: string): Promise<RawHit[]> {
 }
 async function wooSearch(origin: string, q: string): Promise<RawHit[]> {
   const url = `${origin}/wp-json/wc/store/v1/products?search=${encodeURIComponent(q)}&per_page=6`;
-  const html = await fetchHtml(url, { timeoutMs: 12000, retries: 1 });
+  const html = await fetchJsonText(url, { timeoutMs: 12000, retries: 1 });
   if (!html) return [];
   try {
     const arr = JSON.parse(html) as { name?: string; prices?: { price?: string; currency_minor_unit?: number }; permalink?: string }[];
