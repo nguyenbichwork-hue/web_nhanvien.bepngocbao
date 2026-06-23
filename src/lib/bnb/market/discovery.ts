@@ -42,8 +42,9 @@ export const RETAIL_SEED: string[] = [
   'beptot.vn', 'bephoanggia.com.vn', 'eurocook.vn', 'bepnhapkhau.com.vn',
   'ankhang.com', 'dienmaytot.vn', 'bep24h.com', 'thegioibeptu.com',
   'sieuthibeptu.com', 'bepcaocap.vn', 'vuanhabep.com', 'noithatdiemnhan.vn',
-  // Sàn CÔNG KHAI giá (woo/shopify) — đáng giá cho index free:
-  'kitchenstore.vn', 'munchen.vn',
+  // Sàn CÔNG KHAI giá (woo/shopify/haravan) — index free mạnh dần, coverage ~33%:
+  'kitchenstore.vn', 'munchen.vn', 'elmich.vn', 'malloca.vn', 'canzyvietnam.vn',
+  'faster.com.vn', 'dienmaytructuyen.vn', 'tefal.com.vn',
 ];
 
 // ===== ĐÃ TỈA DANH SÁCH (2026-06-23) =====
