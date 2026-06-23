@@ -1,288 +1,341 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { Icon } from "@/components/icon";
-import type { CompactRow } from "@/lib/bnb/market/compare";
+import { saveMarketSettingsAction } from "./actions";
 
-type SiteView = {
-  url: string;
-  domain: string;
-  official: boolean;
-  brand: string | null;
-  catCount: number | null;
-  crawled: number | null;
-  platform: string | null;
-  note: string | null;
-  crawledAt: string | null;
+type Cfg = {
+  appsScriptUrl: string;
+  hasSecret: boolean;
+  sheetUrl: string;
+  luongDong: number;
+  luongLink: number;
+  batch: number;
+  maxLinks: number;
+  floorPct: number;
+  minMarginPct: number;
 };
-type Status = "idle" | "running" | "done" | "err";
 
-const vnd = (n: number | null | undefined) =>
-  n == null ? "—" : n.toLocaleString("vi-VN") + "₫";
+type SheetInfo = { name: string; rows: number };
+type Prod = { row: number; sheet: string; ma: string; brand: string; model: string; ten: string; giaVon: number | null; giaHienTai: number | null };
+type RStatus = "idle" | "running" | "done" | "err" | "written";
+type Res = { status: RStatus; soLink?: number; min?: number | null; deXuat?: number | null; canhBao?: string; links?: string };
 
-export default function MarketRunner({
-  mineCount,
-  mineAtLabel,
-  sites,
-  initialRows,
-  cfg,
-}: {
-  mineCount: number;
-  mineAtLabel: string | null;
-  sites: SiteView[];
-  initialRows: CompactRow[];
-  cfg: { floorPct: number; minMarginPct: number };
-}) {
-  const router = useRouter();
-  const [rows, setRows] = useState<CompactRow[]>(initialRows);
-  const [st, setSt] = useState<Record<string, { status: Status; crawled?: number; note?: string }>>(
-    Object.fromEntries(
-      sites.map((s) => [s.domain, { status: s.crawled != null ? ("done" as Status) : ("idle" as Status), crawled: s.crawled ?? undefined, note: s.note ?? undefined }]),
-    ),
-  );
+const vnd = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString("vi-VN") + "₫");
+const keyOf = (p: Prod) => `${p.sheet}:${p.row}`;
+
+export default function MarketRunner({ cfg }: { cfg: Cfg }) {
+  const [tab, setTab] = useState<"scan" | "settings">("scan");
+  const [sheets, setSheets] = useState<SheetInfo[]>([]);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [prods, setProds] = useState<Prod[]>([]);
+  const [res, setRes] = useState<Record<string, Res>>({});
+  const [logs, setLogs] = useState<string[]>(["Hệ thống sẵn sàng. Cấu hình ở tab Cài đặt rồi bấm “Bắt đầu quét”."]);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [kpi, setKpi] = useState({ tong: 0, daQuet: 0, ok: 0, loi: 0, ghi: 0 });
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
+  const stopRef = useRef(false);
 
-  async function syncMine() {
+  const sheetReady = !!cfg.appsScriptUrl && cfg.hasSecret;
+  const log = (m: string) => setLogs((p) => [...p.slice(-400), `${new Date().toLocaleTimeString("vi-VN")}  ${m}`]);
+
+  async function api<T>(path: string, body: unknown): Promise<T> {
+    const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    return r.json();
+  }
+
+  async function loadSheets() {
     setBusy(true);
-    setMsg("Đang đồng bộ sản phẩm của mình từ Haravan…");
     try {
-      const r = await fetch("/api/sourcing/market/sync", { method: "POST" }).then((x) => x.json());
-      setMsg(r.ok ? `Đã đồng bộ ${r.count} SP của mình.` : "Lỗi đồng bộ: " + (r.error || ""));
-      if (r.ok) router.refresh();
-    } catch (e) {
-      setMsg("Lỗi đồng bộ: " + String(e));
-    } finally {
-      setBusy(false);
-    }
+      const r = await api<{ ok: boolean; sheets?: SheetInfo[]; error?: string }>("/api/sourcing/pricing/sheets", { action: "listSheets" });
+      if (r.ok && r.sheets) {
+        setSheets(r.sheets);
+        setPicked(new Set(r.sheets.map((s) => s.name)));
+        log(`Tải ${r.sheets.length} sheet con từ Google Sheet.`);
+      } else log("Lỗi tải sheet: " + (r.error || ""));
+    } catch (e) { log("Lỗi tải sheet: " + String(e)); } finally { setBusy(false); }
   }
 
-  async function crawlOne(s: SiteView) {
-    setSt((p) => ({ ...p, [s.domain]: { ...p[s.domain], status: "running" } }));
-    // Timeout cứng phía client: nếu hàm serverless treo/quá 60s → không để kẹt UI mãi.
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 75000);
-    try {
-      const r = await fetch("/api/sourcing/market/crawl", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: s.url, official: s.official, brand: s.brand }),
-        signal: ctrl.signal,
-      }).then((x) => x.json());
-      setSt((p) => ({
-        ...p,
-        [s.domain]: r.ok
-          ? { status: "done", crawled: r.count, note: r.note }
-          : { status: "err", note: r.error },
-      }));
-      return r.ok ? r.count : 0;
-    } catch (e) {
-      const note = ctrl.signal.aborted ? "quá thời gian (web chậm/chặn bot)" : String(e);
-      setSt((p) => ({ ...p, [s.domain]: { status: "err", note } }));
-      return 0;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  async function compare() {
-    setMsg("Đang dựng bảng so giá…");
-    const r = await fetch("/api/sourcing/market/compare", { method: "POST" }).then((x) => x.json());
-    if (r.ok) {
-      setRows(r.rows);
-      setMsg(`So giá xong: ${r.rows.length} SP khớp giá thị trường (từ ${r.sitesCrawled} web).`);
-    } else setMsg("Lỗi so giá: " + (r.error || ""));
-  }
-
-  async function crawlAll() {
-    if (!mineCount) {
-      setMsg("Hãy bấm 'Đồng bộ SP của tôi' trước.");
-      return;
-    }
+  async function pingSheet() {
     setBusy(true);
-    // Quét SONG SONG (nhiều luồng) thay vì tuần tự: 1 web treo không còn chặn cả lượt,
-    // tổng thời gian giảm ~số-luồng lần. Mỗi web vẫn có timeout cứng trong crawlOne.
-    const CONCURRENCY = 5;
-    const queue = [...sites];
-    let total = 0;
-    let done = 0;
-    async function worker() {
-      while (queue.length) {
-        const s = queue.shift();
-        if (!s) break;
-        total += await crawlOne(s);
-        done++;
-        setMsg(`Đang quét ${done}/${sites.length} web… (${total} SP)`);
+    try {
+      const r = await api<{ ok: boolean; sheet?: string; error?: string }>("/api/sourcing/pricing/sheets", { action: "ping" });
+      log(r.ok ? `Kết nối OK: “${r.sheet}”` : "Lỗi kết nối: " + (r.error || ""));
+    } catch (e) { log("Lỗi: " + String(e)); } finally { setBusy(false); }
+  }
+  async function setupSheet() {
+    setBusy(true);
+    try {
+      const r = await api<{ ok: boolean; created?: string[]; error?: string }>("/api/sourcing/pricing/sheets", { action: "setup" });
+      log(r.ok ? `Đã tạo cột mẫu: ${(r.created || []).join(", ")}` : "Lỗi: " + (r.error || ""));
+    } catch (e) { log("Lỗi: " + String(e)); } finally { setBusy(false); }
+  }
+
+  function suggest(p: Prod, min: number): number {
+    const floors = [p.giaHienTai ? Math.round(p.giaHienTai * cfg.floorPct) : 0];
+    if (p.giaVon && p.giaVon > 0) floors.push(Math.round(p.giaVon * (1 + cfg.minMarginPct)));
+    return Math.max(min, ...floors);
+  }
+  function warnOf(p: Prod, min: number): string {
+    if (!p.giaHienTai) return "";
+    if (p.giaVon && p.giaVon > 0 && min < p.giaVon * (1 + cfg.minMarginPct)) return "Rủi ro lỗ";
+    if (p.giaHienTai > min * 1.1) return "Giá CAO hơn TT";
+    if (p.giaHienTai < min * 0.95) return "Giá THẤP hơn TT";
+    return "OK";
+  }
+
+  async function flush(pending: { sheet: string; row: number; soLink: number | null; min: number | null; deXuat: number | null; canhBao: string; trangThai: string; links: string }[]) {
+    if (!pending.length || !sheetReady) return 0;
+    try {
+      const r = await api<{ ok: boolean; written?: number; error?: string }>("/api/sourcing/pricing/write", { items: pending });
+      if (r.ok) {
+        for (const it of pending) setRes((p) => ({ ...p, [`${it.sheet}:${it.row}`]: { ...p[`${it.sheet}:${it.row}`], status: "written" } }));
+        log(`Đã ghi ${r.written} dòng lên Google Sheet.`);
+        return 1;
       }
-    }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, sites.length) }, worker));
-    setMsg(`Quét xong ${sites.length} web, ${total} SP. Đang so giá…`);
-    await compare();
-    setBusy(false);
+      log("Lỗi ghi Sheet: " + (r.error || ""));
+    } catch (e) { log("Lỗi ghi Sheet: " + String(e)); }
+    return 0;
   }
 
-  function exportCsv() {
-    const head = [
-      "Mã", "Hãng", "Tên", "Giá bán của tôi", "Giá vốn", "Số web",
-      "Giá rẻ nhất TT", "Web rẻ nhất", "Giá chính hãng", "Giá đề xuất", "% so TT", "Cảnh báo",
-    ];
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = rows.map((r) =>
-      [
-        r.code, r.vendor, r.name, r.myPrice, r.cost ?? "", r.siteCount,
-        r.marketMin ?? "", r.cheapestSite ?? "", r.officialMin ?? "", r.suggested ?? "",
-        r.pctVsMin == null ? "" : r.pctVsMin.toFixed(1) + "%",
-        r.lossRisk ? "RỦI RO LỖ" : r.warning === "cao" ? "Giá mình CAO hơn TT" : r.warning === "thap" ? "Giá mình THẤP hơn TT" : "OK",
-      ]
-        .map(esc)
-        .join(","),
-    );
-    const csv = "﻿" + [head.map(esc).join(","), ...lines].join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    a.download = `so-gia-thi-truong.csv`;
-    a.click();
+  async function start() {
+    if (!sheetReady) { log("Chưa cấu hình Apps Script (tab Cài đặt)."); setTab("settings"); return; }
+    setRunning(true); stopRef.current = false; setProgress(0); setRes({});
+    setKpi({ tong: 0, daQuet: 0, ok: 0, loi: 0, ghi: 0 });
+    // 1) Đọc sản phẩm từ sheet đã chọn
+    log("Đang tải sản phẩm từ Google Sheet…");
+    let items: Prod[] = [];
+    try {
+      const r = await api<{ ok: boolean; products?: Prod[]; error?: string }>("/api/sourcing/pricing/sheets", { action: "getProducts", sheets: [...picked] });
+      if (!r.ok || !r.products) { log("Lỗi tải sản phẩm: " + (r.error || "")); setRunning(false); return; }
+      items = r.products;
+    } catch (e) { log("Lỗi tải sản phẩm: " + String(e)); setRunning(false); return; }
+    setProds(items);
+    setKpi((k) => ({ ...k, tong: items.length }));
+    log(`Nạp ${items.length} sản phẩm. Bắt đầu quét (luồng dòng ${cfg.luongDong}, luồng link ${cfg.luongLink})…`);
+
+    const queue = items.map((p, i) => ({ p, i }));
+    let done = 0, ok = 0, loi = 0, ghi = 0;
+    let pending: Parameters<typeof flush>[0] = [];
+
+    const worker = async () => {
+      while (queue.length && !stopRef.current) {
+        const job = queue.shift();
+        if (!job) break;
+        const { p } = job;
+        const k = keyOf(p);
+        setRes((s) => ({ ...s, [k]: { status: "running" } }));
+        log(`Đang xử lý dòng ${p.row} [${p.sheet}]: ${p.brand} ${p.model}…`);
+        try {
+          const query = `${p.brand} ${p.model} ${p.ten}`.trim() || p.model;
+          const r = await api<{ ok: boolean; min?: number | null; siteCount?: number; storesFound?: number; prices?: { siteName: string; url: string }[]; error?: string }>(
+            "/api/sourcing/pricing/search",
+            { query, model: p.model, brand: p.brand, maxLinks: cfg.maxLinks, concurrency: cfg.luongLink },
+          );
+          if (r.ok && r.min != null) {
+            const dx = suggest(p, r.min);
+            const cb = warnOf(p, r.min);
+            const links = (r.prices || []).slice(0, 5).map((m) => m.url).join(" | ");
+            setRes((s) => ({ ...s, [k]: { status: "done", soLink: r.siteCount ?? 0, min: r.min, deXuat: dx, canhBao: cb, links } }));
+            ok++;
+            pending.push({ sheet: p.sheet, row: p.row, soLink: r.siteCount ?? 0, min: r.min, deXuat: dx, canhBao: cb, trangThai: "Thành công", links });
+            log(`Dòng ${p.row} thành công: tìm thấy ${r.storesFound ?? 0} cửa hàng, ${r.siteCount ?? 0} giá. Min=${vnd(r.min)}, Đề xuất=${vnd(dx)}`);
+          } else {
+            setRes((s) => ({ ...s, [k]: { status: "err" } }));
+            loi++;
+            pending.push({ sheet: p.sheet, row: p.row, soLink: 0, min: null, deXuat: null, canhBao: "Không có giá", trangThai: "Không tìm thấy", links: "" });
+            log(`Dòng ${p.row}: không tìm thấy giá thị trường.`);
+          }
+        } catch (e) {
+          setRes((s) => ({ ...s, [k]: { status: "err" } }));
+          loi++;
+          log(`Dòng ${p.row} lỗi: ${String(e)}`);
+        }
+        done++;
+        setProgress(Math.round((done / items.length) * 100));
+        setKpi({ tong: items.length, daQuet: done, ok, loi, ghi });
+        // Ghi Sheet theo batch
+        if (pending.length >= cfg.batch) {
+          const batch = pending; pending = [];
+          ghi += await flush(batch);
+          setKpi({ tong: items.length, daQuet: done, ok, loi, ghi });
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(cfg.luongDong, queue.length) }, worker));
+    if (pending.length) { ghi += await flush(pending); setKpi((kk) => ({ ...kk, ghi })); }
+    log(stopRef.current ? `Đã dừng. Hoàn tất ${done}/${items.length}.` : `Quét xong ${done}/${items.length} sản phẩm.`);
+    setRunning(false);
   }
+
+  function stop() { stopRef.current = true; log("Đang dừng sau khi xong các dòng đang chạy…"); }
+
+  const KPIS = [
+    { label: "Tổng dòng", value: kpi.tong, color: "var(--tx)" },
+    { label: "Đã quét", value: kpi.daQuet, color: "var(--c-teal)" },
+    { label: "Thành công", value: kpi.ok, color: "var(--c-teal)" },
+    { label: "Lỗi / Bỏ qua", value: kpi.loi, color: "var(--c-rose)" },
+    { label: "Lần ghi Sheet", value: kpi.ghi, color: "var(--brand-1)" },
+  ];
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
-      {/* Thanh công cụ */}
-      <div className="card">
-        <div className="flex aic" style={{ flexWrap: "wrap", gap: 12 }}>
-          <button onClick={syncMine} disabled={busy} className="btn">
-            <Icon name="download" /> Đồng bộ SP của tôi
-          </button>
-          <span className="small muted">
-            {mineCount} SP {mineAtLabel ? `· đồng bộ ${mineAtLabel}` : "· chưa đồng bộ"}
-          </span>
-          <button onClick={crawlAll} disabled={busy} className="btn primary">
-            <Icon name="search" /> {busy ? "Đang chạy…" : "Quét tất cả & so giá"}
-          </button>
-          <button onClick={compare} disabled={busy} className="btn ghost">
-            <Icon name="check" /> So giá lại
-          </button>
-          <button onClick={exportCsv} disabled={!rows.length} className="btn ghost">
-            <Icon name="download" /> Tải CSV
-          </button>
-          {msg && <span className="small" style={{ color: "var(--accent)", fontWeight: 600 }}>{msg}</span>}
+    <div style={{ display: "grid", gap: 18 }}>
+      {/* Trạng thái + KPI */}
+      <div className="flex between aic" style={{ flexWrap: "wrap", gap: 10 }}>
+        <div className="flex aic" style={{ gap: 8 }}>
+          <span className="badge b-gray">PRICING ENGINE</span>
+          <span className="small muted">Trạng thái: <b style={{ color: running ? "var(--c-teal)" : "var(--tx)" }}>{running ? "Đang chạy" : "Chờ chạy"}</b></span>
         </div>
+        {cfg.sheetUrl && <a href={cfg.sheetUrl} target="_blank" rel="noreferrer" className="btn ghost btn sm"><Icon name="download" /> Mở Google Sheet</a>}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+        {KPIS.map((s) => (
+          <div key={s.label} className="card" style={{ padding: 14 }}>
+            <div className="urole">{s.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: s.color }}>{s.value.toLocaleString("vi-VN")}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Danh sách web (chính hãng trước) */}
-      <div className="card">
-        <div className="card-h">
-          <h3 className="sec-title">Web so giá — chính hãng trước</h3>
-          <span className="badge b-gray">{sites.length}</span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
-          {sites.map((s) => {
-            const stt = st[s.domain] || { status: "idle" as Status };
-            return (
-              <div
-                key={s.domain}
-                className="flex between aic"
-                style={{
-                  gap: 8,
-                  border: `1px solid ${s.official ? "var(--c-teal)" : "var(--line)"}`,
-                  background: s.official ? "var(--c-teal-soft)" : "var(--surface-2)",
-                  borderRadius: 12,
-                  padding: "10px 12px",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div className="flex aic" style={{ gap: 6 }}>
-                    {s.official && <span className="badge b-green" style={{ fontSize: 10 }}>CHÍNH HÃNG</span>}
-                    <span className="small" style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.domain}</span>
-                  </div>
-                  <div className="urole" style={{ marginTop: 2 }}>
-                    {s.brand ? `Hãng ${s.brand} · ` : ""}
-                    {stt.status === "running"
-                      ? "đang quét…"
-                      : stt.status === "err"
-                        ? "lỗi: " + (stt.note || "")
-                        : stt.crawled != null
-                          ? `${stt.crawled} SP${stt.note ? " · " + stt.note : ""}`
-                          : "chưa quét"}
-                  </div>
-                </div>
-                <button onClick={() => crawlOne(s).then(() => compare())} disabled={busy} className="btn sm ghost">
-                  Quét
-                </button>
+      {/* Tabs */}
+      <div className="chips">
+        <button className={`chip${tab === "scan" ? " on" : ""}`} onClick={() => setTab("scan")}>Quét giá</button>
+        <button className={`chip${tab === "settings" ? " on" : ""}`} onClick={() => setTab("settings")}>Cài đặt</button>
+      </div>
+
+      <div className="grid-k g-2" style={{ alignItems: "start" }}>
+        {/* Cột trái: chọn sheet HOẶC cài đặt */}
+        <div style={{ display: "grid", gap: 16 }}>
+          {tab === "scan" ? (
+            <div className="card">
+              <div className="card-h">
+                <h3 className="sec-title">1. Chọn sheet quét giá</h3>
+                <button className="btn sm ghost" onClick={loadSheets} disabled={busy}>Tải lại danh sách</button>
               </div>
-            );
-          })}
+              {!sheetReady && <p className="small" style={{ color: "var(--c-rose)" }}>Chưa cấu hình Apps Script — sang tab <b>Cài đặt</b>.</p>}
+              {sheets.length === 0 ? (
+                <p className="muted small">Bấm <b>Tải lại danh sách</b> để lấy các sheet con từ Google Sheet.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label className="flex aic" style={{ gap: 8, fontWeight: 700 }}>
+                    <input type="checkbox" checked={picked.size === sheets.length}
+                      onChange={(e) => setPicked(e.target.checked ? new Set(sheets.map((s) => s.name)) : new Set())} />
+                    Tất cả các sheet
+                  </label>
+                  {sheets.map((s) => (
+                    <label key={s.name} className="flex between aic" style={{ gap: 8, padding: "6px 8px", border: "1px solid var(--line)", borderRadius: 8 }}>
+                      <span className="flex aic" style={{ gap: 8 }}>
+                        <input type="checkbox" checked={picked.has(s.name)}
+                          onChange={(e) => setPicked((p) => { const n = new Set(p); e.target.checked ? n.add(s.name) : n.delete(s.name); return n; })} />
+                        <span className="small" style={{ fontWeight: 600 }}>{s.name}</span>
+                      </span>
+                      <span className="urole">{s.rows} SP</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card">
+              <div className="card-h"><h3 className="sec-title">Cài đặt Auto Pricing</h3></div>
+              <form action={saveMarketSettingsAction} style={{ display: "grid", gap: 12 }}>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Apps Script URL</label>
+                  <input name="appsScriptUrl" defaultValue={cfg.appsScriptUrl} placeholder="https://script.google.com/macros/s/…/exec" />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Sheet Secret {cfg.hasSecret && <span className="badge b-green" style={{ fontSize: 10 }}>đã đặt</span>}</label>
+                  <input name="sheetSecret" type="password" placeholder={cfg.hasSecret ? "•••••• (giữ nguyên nếu để trống)" : "mật khẩu đặt trong Code.gs"} />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label>Google Sheet URL (để mở nhanh)</label>
+                  <input name="sheetUrl" defaultValue={cfg.sheetUrl} placeholder="https://docs.google.com/spreadsheets/d/…" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div className="field" style={{ margin: 0 }}><label>Luồng dòng (SP cùng lúc)</label><input name="luongDong" inputMode="numeric" defaultValue={cfg.luongDong} /></div>
+                  <div className="field" style={{ margin: 0 }}><label>Luồng link (link/SP)</label><input name="luongLink" inputMode="numeric" defaultValue={cfg.luongLink} /></div>
+                  <div className="field" style={{ margin: 0 }}><label>Batch ghi Sheet</label><input name="batch" inputMode="numeric" defaultValue={cfg.batch} /></div>
+                  <div className="field" style={{ margin: 0 }}><label>Số link tối đa/SP</label><input name="maxLinks" inputMode="numeric" defaultValue={cfg.maxLinks} /></div>
+                </div>
+                <div className="flex" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <button type="submit" className="btn primary"><Icon name="check" /> Lưu cài đặt</button>
+                  <button type="button" className="btn ghost" onClick={pingSheet} disabled={busy}>Kiểm tra kết nối</button>
+                  <button type="button" className="btn ghost" onClick={setupSheet} disabled={busy}>Tạo cột mẫu</button>
+                </div>
+                <p className="small muted">Cần deploy Apps Script (file <code>apps-script/Code.gs</code>) lên Google Sheet để lấy URL + Secret.</p>
+              </form>
+            </div>
+          )}
+        </div>
+
+        {/* Cột phải: điều phối + log */}
+        <div className="card">
+          <div className="card-h"><h3 className="sec-title">Điều phối quét giá & Log trực tiếp</h3></div>
+          <div className="flex" style={{ gap: 10, flexWrap: "wrap" }}>
+            <button className="btn primary" onClick={start} disabled={running || busy}><Icon name="search" /> {running ? "Đang quét…" : "Bắt đầu quét dữ liệu"}</button>
+            <button className="btn ghost" onClick={stop} disabled={!running}><Icon name="x" /> Dừng</button>
+          </div>
+          <div className="flex between small" style={{ marginTop: 12 }}>
+            <span className="muted">Tiến trình</span><span style={{ fontWeight: 700 }}>{progress}%</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 6, background: "var(--surface-2)", overflow: "hidden", marginTop: 4 }}>
+            <div style={{ height: "100%", width: `${progress}%`, background: "var(--brand-grad)", transition: "width .3s" }} />
+          </div>
+          <div style={{ marginTop: 12, background: "#0f1720", color: "#cfe8dd", borderRadius: 12, padding: 12, height: 280, overflowY: "auto", fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12, lineHeight: 1.6 }}>
+            {logs.map((l, i) => <div key={i}>{l}</div>)}
+          </div>
         </div>
       </div>
 
-      {/* Bảng so giá */}
+      {/* Bảng kết quả */}
       <div className="card">
         <div className="card-h">
-          <h3 className="sec-title">Bảng so giá — SP mình đang bán đắt hơn thị trường xếp đầu</h3>
-          <span className="badge b-gray">{rows.length} SP khớp</span>
+          <h3 className="sec-title">Danh sách sản phẩm & Kết quả quét</h3>
+          <span className="badge b-gray">{kpi.daQuet}/{kpi.tong}</span>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
               <tr>
-                <th>Mã / Tên</th>
-                <th style={{ textAlign: "right" }}>Giá bán của tôi</th>
-                <th style={{ textAlign: "right" }}>Số web</th>
-                <th style={{ textAlign: "right" }}>Rẻ nhất TT</th>
-                <th style={{ textAlign: "right" }}>Chính hãng</th>
-                <th style={{ textAlign: "right" }}>Đề xuất</th>
-                <th style={{ textAlign: "right" }}>% so TT</th>
-                <th>Cảnh báo</th>
+                <th>Dòng</th><th>Mã SP</th><th>Brand</th><th>Model</th>
+                <th style={{ textAlign: "right" }}>Giá vốn</th>
+                <th style={{ textAlign: "right" }}>Số link</th>
+                <th style={{ textAlign: "right" }}>Giá đề xuất</th>
+                <th>Trạng thái</th><th>Cập nhật</th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="muted small" style={{ textAlign: "center", padding: 24 }}>
-                    Chưa có dữ liệu. Bấm <b>Đồng bộ SP của tôi</b> → <b>Quét tất cả &amp; so giá</b>.
-                  </td>
-                </tr>
+              {prods.length === 0 && (
+                <tr><td colSpan={9} className="muted small" style={{ textAlign: "center", padding: 24 }}>
+                  Chưa có dữ liệu. Cấu hình Sheet → chọn sheet → <b>Bắt đầu quét</b>.
+                </td></tr>
               )}
-              {rows.map((r) => (
-                <tr key={r.code}>
-                  <td>
-                    <div className="small" style={{ fontWeight: 700 }}>{r.code}</div>
-                    <div className="urole" style={{ maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
-                  </td>
-                  <td className="small" style={{ textAlign: "right" }}>{vnd(r.myPrice)}</td>
-                  <td className="small" style={{ textAlign: "right" }}>{r.siteCount}</td>
-                  <td className="small" style={{ textAlign: "right" }}>
-                    {r.cheapestUrl ? (
-                      <a href={r.cheapestUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>{vnd(r.marketMin)}</a>
-                    ) : (
-                      vnd(r.marketMin)
-                    )}
-                    {r.cheapestSite && <div className="urole">{r.cheapestSite}</div>}
-                  </td>
-                  <td className="small" style={{ textAlign: "right" }}>
-                    {vnd(r.officialMin)}
-                    {r.officialSite && <div className="urole" style={{ color: "var(--c-teal)" }}>{r.officialSite}</div>}
-                  </td>
-                  <td className="small" style={{ textAlign: "right", fontWeight: 700, color: "var(--accent)" }}>{vnd(r.suggested)}</td>
-                  <td
-                    className="small"
-                    style={{ textAlign: "right", fontWeight: 600, color: r.pctVsMin != null && r.pctVsMin > 5 ? "var(--c-rose)" : r.pctVsMin != null && r.pctVsMin < -5 ? "var(--c-amber)" : "var(--tx)" }}
-                  >
-                    {r.pctVsMin == null ? "—" : (r.pctVsMin > 0 ? "+" : "") + r.pctVsMin.toFixed(1) + "%"}
-                  </td>
-                  <td>
-                    {r.lossRisk ? (
-                      <span className="badge b-rose">Rủi ro lỗ</span>
-                    ) : r.warning === "cao" ? (
-                      <span className="badge b-amber">Cao hơn TT</span>
-                    ) : r.warning === "thap" ? (
-                      <span className="badge b-sky">Thấp hơn TT</span>
-                    ) : (
-                      <span className="badge b-green">OK</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {prods.map((p) => {
+                const r = res[keyOf(p)] || { status: "idle" as RStatus };
+                return (
+                  <tr key={keyOf(p)}>
+                    <td className="small muted">{p.row}</td>
+                    <td className="small"><span className="badge b-gray" style={{ fontSize: 10 }}>{p.ma || "—"}</span></td>
+                    <td className="small" style={{ fontWeight: 600 }}>{p.brand}</td>
+                    <td className="small">{p.model}</td>
+                    <td className="small" style={{ textAlign: "right" }}>{vnd(p.giaVon)}</td>
+                    <td className="small" style={{ textAlign: "right" }}>{r.soLink ?? (r.status === "running" ? "…" : "0")}</td>
+                    <td className="small" style={{ textAlign: "right", fontWeight: 700, color: "var(--brand-1)" }}>{vnd(r.deXuat)}</td>
+                    <td>
+                      {r.status === "running" ? <span className="badge b-sky">Đang xử lý</span>
+                        : r.status === "done" || r.status === "written" ? <span className="badge b-green">Thành công</span>
+                        : r.status === "err" ? <span className="badge b-rose">Không có giá</span>
+                        : <span className="badge b-gray">Chờ</span>}
+                    </td>
+                    <td>
+                      {r.status === "written" ? <span style={{ color: "var(--c-teal)" }}><Icon name="check" /></span>
+                        : r.status === "done" ? <span className="urole">chưa ghi</span> : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

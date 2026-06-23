@@ -33,10 +33,19 @@ export async function clearSite(domain: string): Promise<void> {
 export interface MarketConfig {
   floorPct: number;        // sàn giá đề xuất = floorPct × giá hiện tại
   minMarginPct: number;    // % lãi tối thiểu so với giá vốn (chống định giá lỗ)
-  appsScriptUrl?: string;  // có thể cấu hình runtime thay cho env
+  appsScriptUrl?: string;  // Apps Script Web App URL (đặt ở tab Cài đặt)
+  sheetSecret?: string;    // SHEET_SECRET tương ứng
+  sheetUrl?: string;       // link Google Sheet (chỉ để hiển thị/ mở nhanh)
+  luongDong?: number;      // số SP tìm giá cùng lúc
+  luongLink?: number;      // số link/SP đọc cùng lúc
+  batch?: number;          // ghi Sheet sau mỗi N SP hoàn tất
+  maxLinks?: number;       // số trang mở tối đa mỗi SP
   lastRunAt?: string;
 }
-const DEFAULT_CFG: MarketConfig = { floorPct: 0.9, minMarginPct: 0 };
+const DEFAULT_CFG: MarketConfig = {
+  floorPct: 0.9, minMarginPct: 0,
+  luongDong: 5, luongLink: 5, batch: 20, maxLinks: 12,
+};
 
 export async function getMarketConfig(): Promise<MarketConfig> {
   return { ...DEFAULT_CFG, ...((await getConfig<MarketConfig>(CFG_KEY)) || {}) };
