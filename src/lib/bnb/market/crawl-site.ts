@@ -68,11 +68,11 @@ export async function crawlSite(
     /* thử nền tảng kế */
   }
 
-  // 2) WooCommerce
+  // 2) WooCommerce — bỏ qua nếu đã gần hết thời gian (tránh vượt maxDuration 60s)
   try {
     let page = 1;
     let got = false;
-    while (Date.now() < deadline && products.length < maxProducts) {
+    while (Date.now() < deadline - 12000 && products.length < maxProducts) {
       const r = await wooPage(origin, page);
       if (!r) break;
       if (r.products.length) {
@@ -87,8 +87,16 @@ export async function crawlSite(
     /* thử nền tảng kế */
   }
 
-  // 3) Sitemap -> trang chi tiết + 4) SPA / trang đơn
+  // 3) Sitemap -> trang chi tiết + 4) SPA / trang đơn — chỉ chạy nếu còn đủ thời gian
   try {
+    if (Date.now() >= deadline - 10000) {
+      return {
+        siteName,
+        platform: products.length ? "auto" : "unknown",
+        products,
+        note: products.length ? undefined : "Hết thời gian dò (web chậm/chặn bot — cần ScraperAPI để quét sâu).",
+      };
+    }
     const homeRes = await smartFetch(origin, { accept: "html", timeoutMs: 15000, retries: 1 });
     const navSet = new Set<string>(
       (homeRes.ok ? getMenuLinks(homeRes.text, origin) : []).map((u) => normUrlLocal(u)),

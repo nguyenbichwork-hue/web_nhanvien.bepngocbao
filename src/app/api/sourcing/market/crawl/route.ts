@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     /* keep */
   }
   try {
-    const r = await crawlSite(url, { maxProducts, budgetMs: 45000 });
+    const r = await crawlSite(url, { maxProducts, budgetMs: 38000 });
     await saveSite({
       domain,
       siteName: r.siteName,

@@ -59,11 +59,15 @@ export default function MarketRunner({
 
   async function crawlOne(s: SiteView) {
     setSt((p) => ({ ...p, [s.domain]: { ...p[s.domain], status: "running" } }));
+    // Timeout cứng phía client: nếu hàm serverless treo/quá 60s → không để kẹt UI mãi.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 75000);
     try {
       const r = await fetch("/api/sourcing/market/crawl", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url: s.url, official: s.official, brand: s.brand }),
+        signal: ctrl.signal,
       }).then((x) => x.json());
       setSt((p) => ({
         ...p,
@@ -73,8 +77,11 @@ export default function MarketRunner({
       }));
       return r.ok ? r.count : 0;
     } catch (e) {
-      setSt((p) => ({ ...p, [s.domain]: { status: "err", note: String(e) } }));
+      const note = ctrl.signal.aborted ? "quá thời gian (web chậm/chặn bot)" : String(e);
+      setSt((p) => ({ ...p, [s.domain]: { status: "err", note } }));
       return 0;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -93,11 +100,22 @@ export default function MarketRunner({
       return;
     }
     setBusy(true);
+    // Quét SONG SONG (nhiều luồng) thay vì tuần tự: 1 web treo không còn chặn cả lượt,
+    // tổng thời gian giảm ~số-luồng lần. Mỗi web vẫn có timeout cứng trong crawlOne.
+    const CONCURRENCY = 5;
+    const queue = [...sites];
     let total = 0;
-    for (let i = 0; i < sites.length; i++) {
-      setMsg(`Đang quét ${i + 1}/${sites.length}: ${sites[i].domain}${sites[i].official ? " (chính hãng)" : ""}…`);
-      total += await crawlOne(sites[i]);
+    let done = 0;
+    async function worker() {
+      while (queue.length) {
+        const s = queue.shift();
+        if (!s) break;
+        total += await crawlOne(s);
+        done++;
+        setMsg(`Đang quét ${done}/${sites.length} web… (${total} SP)`);
+      }
     }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, sites.length) }, worker));
     setMsg(`Quét xong ${sites.length} web, ${total} SP. Đang so giá…`);
     await compare();
     setBusy(false);

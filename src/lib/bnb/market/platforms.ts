@@ -76,8 +76,8 @@ export async function wooPage(
   for (const base of bases) {
     const res = await smartFetch(`${base}?per_page=100&page=${page}`, {
       accept: 'json',
-      timeoutMs: 15000,
-      retries: 2,
+      timeoutMs: 12000,
+      retries: 1,
       proxyFallback: false,
     });
     if (!res.ok || !res.text) continue;
