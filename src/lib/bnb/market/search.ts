@@ -149,19 +149,32 @@ async function wooSearch(origin: string, q: string): Promise<RawHit[]> {
   } catch { return []; }
 }
 
-/** Tìm 1 SP trên các sàn bếp VN qua search-endpoint của họ (free, không bị chặn). */
+/** Tìm 1 SP trên các sàn bếp VN: search-endpoint tìm URL đúng model → mở trang lấy
+ * giá thật (nhiều sàn ẩn giá trong API nhưng giá vẫn nằm trong HTML/JSON-LD trang SP). */
 async function searchRetailers(modelCode: string, concurrency: number): Promise<MarketPrice[]> {
   const mc = norm(modelCode);
   if (mc.length < 3) return [];
   const hits = await mapLimit(RETAILERS, concurrency, async (dom) => {
     const origin = "https://" + dom;
-    let raw = await shopifySuggest(origin, modelCode);
-    if (!raw.length) raw = await wooSearch(origin, modelCode);
+    // 1) Tìm URL sản phẩm khớp model
+    let cands = await shopifySuggest(origin, modelCode);
+    if (!cands.length) cands = await wooSearch(origin, modelCode);
+    const matched = cands.filter((c) => c.url && norm(c.name).includes(mc)).slice(0, 2);
+    if (!matched.length) return null;
+    // 2) Lấy giá: từ API nếu >0, không thì mở trang SP bóc JSON-LD/meta
     let best: number | null = null; let bestUrl = origin;
-    for (const h of raw) {
-      if (h.price == null || h.price < 10000) continue;
-      if (!norm(h.name).includes(mc)) continue; // xác minh đúng model
-      if (best == null || h.price < best) { best = h.price; bestUrl = h.url; }
+    for (const c of matched) {
+      let price = c.price != null && c.price >= 10000 ? c.price : null;
+      if (price == null) {
+        const html = await fetchHtml(c.url, { timeoutMs: 15000, retries: 1 });
+        if (html) {
+          for (const p of extractProductsFromHtml(html, c.url, true)) {
+            const pr = p.salePrice ?? p.originalPrice;
+            if (pr != null && pr >= 10000 && norm(p.name).includes(mc)) { if (price == null || pr < price) price = pr; }
+          }
+        }
+      }
+      if (price != null && (best == null || price < best)) { best = price; bestUrl = c.url; }
     }
     return best == null ? null : ({ siteName: dom, price: best, url: bestUrl } as MarketPrice);
   });
