@@ -112,6 +112,62 @@ async function searchLinks(query: string, num: number): Promise<string[]> {
   return [];
 }
 
+/* ===== Nguồn FREE đáng tin: hỏi thẳng search-endpoint các sàn bếp VN =====
+ * Google/Bing chặn IP serverless → bản free dựa vào search API của chính các sàn
+ * (Haravan/Shopify suggest.json + WooCommerce Store API search). Nhanh, không bị chặn. */
+const RETAILERS: string[] = [
+  "thegioibeptu.com", "eurocook.vn", "canzy.com.vn", "kluger.vn", "supor.com.vn",
+  "beptot.vn", "bephoanggia.com.vn", "bepnhapkhau.com.vn", "bep24h.com",
+  "sieuthibeptu.com", "vuanhabep.com", "noithatdiemnhan.vn", "bepcaocap.vn",
+  "hafele.com.vn", "malloca.com.vn", "chefs.vn",
+];
+
+interface RawHit { name: string; price: number | null; url: string }
+
+async function shopifySuggest(origin: string, q: string): Promise<RawHit[]> {
+  const url = `${origin}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=6`;
+  const html = await fetchHtml(url, { timeoutMs: 12000, retries: 1 });
+  if (!html) return [];
+  try {
+    const j = JSON.parse(html) as { resources?: { results?: { products?: { title?: string; price?: string | number; url?: string }[] } } };
+    const ps = j.resources?.results?.products || [];
+    return ps.map((p) => ({ name: p.title || "", price: p.price != null ? Number(String(p.price).replace(/[^\d.]/g, "")) : null, url: p.url ? origin + p.url : origin }));
+  } catch { return []; }
+}
+async function wooSearch(origin: string, q: string): Promise<RawHit[]> {
+  const url = `${origin}/wp-json/wc/store/v1/products?search=${encodeURIComponent(q)}&per_page=6`;
+  const html = await fetchHtml(url, { timeoutMs: 12000, retries: 1 });
+  if (!html) return [];
+  try {
+    const arr = JSON.parse(html) as { name?: string; prices?: { price?: string; currency_minor_unit?: number }; permalink?: string }[];
+    if (!Array.isArray(arr)) return [];
+    return arr.map((p) => {
+      const minor = Number(p.prices?.currency_minor_unit ?? 0);
+      const div = Math.pow(10, minor) || 1;
+      return { name: p.name || "", price: p.prices?.price ? Number(p.prices.price) / div : null, url: p.permalink || origin };
+    });
+  } catch { return []; }
+}
+
+/** Tìm 1 SP trên các sàn bếp VN qua search-endpoint của họ (free, không bị chặn). */
+async function searchRetailers(modelCode: string, concurrency: number): Promise<MarketPrice[]> {
+  const mc = norm(modelCode);
+  if (mc.length < 3) return [];
+  const hits = await mapLimit(RETAILERS, concurrency, async (dom) => {
+    const origin = "https://" + dom;
+    let raw = await shopifySuggest(origin, modelCode);
+    if (!raw.length) raw = await wooSearch(origin, modelCode);
+    let best: number | null = null; let bestUrl = origin;
+    for (const h of raw) {
+      if (h.price == null || h.price < 10000) continue;
+      if (!norm(h.name).includes(mc)) continue; // xác minh đúng model
+      if (best == null || h.price < best) { best = h.price; bestUrl = h.url; }
+    }
+    return best == null ? null : ({ siteName: dom, price: best, url: bestUrl } as MarketPrice);
+  });
+  return hits.filter((h): h is MarketPrice => !!h);
+}
+
 export interface SearchOptions {
   maxLinks?: number;     // số trang mở tối đa mỗi sản phẩm
   concurrency?: number;  // luồng link
@@ -139,6 +195,11 @@ export async function searchProductPrices(
   if (hit && Date.now() - hit.t < TTL_MS) return { prices: hit.v, linksOpened: 0, storesFound: hit.v.length };
 
   const mc = norm(modelCode);
+
+  // NGUỒN 1 (free, đáng tin): hỏi thẳng search-endpoint các sàn bếp VN.
+  const retailerPrices = await searchRetailers(modelCode, opts.concurrency ?? 5);
+
+  // NGUỒN 2 (mạnh nhưng cần ScraperAPI/không bị chặn): search engine → mở trang.
   const rawLinks: string[] = [];
   if (opts.officialDomain) {
     try { rawLinks.push(...(await searchLinks(`site:${opts.officialDomain} ${modelCode || query}`, 5))); } catch { /* */ }
@@ -177,11 +238,13 @@ export async function searchProductPrices(
   });
 
   const perDomain = new Map<string, MarketPrice>();
-  for (const m of results) {
-    if (!m) continue;
+  const consider = (m: MarketPrice | null) => {
+    if (!m) return;
     const ex = perDomain.get(m.siteName);
     if (!ex || m.price < ex.price) perDomain.set(m.siteName, m);
-  }
+  };
+  for (const m of retailerPrices) consider(m); // nguồn sàn VN (free)
+  for (const m of results) consider(m);         // nguồn search engine
   const out = [...perDomain.values()].sort((a, b) => a.price - b.price);
   cache.set(cacheKey, { t: Date.now(), v: out });
   return { prices: out, linksOpened: links.length, storesFound: out.length };
