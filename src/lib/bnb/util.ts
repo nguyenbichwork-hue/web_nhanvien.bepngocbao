@@ -2,7 +2,7 @@
 // QUAN TRỌNG: file này phải CLIENT-SAFE (nhiều Client Component import). Helper
 // cần đọc store (server-only) nằm ở `./names.ts`, KHÔNG để ở đây.
 import { formatVND } from "@/lib/payroll/calc";
-import type { Order, Quote, QuoteLine } from "./types";
+import type { Order, PurchaseOrder, Quote, QuoteLine } from "./types";
 
 export const fmtVnd = (n: number) => formatVND(n || 0);
 
@@ -29,6 +29,27 @@ export const quoteTotal = (q: Pick<Quote, "lines" | "discount">): number =>
 
 export const orderRemaining = (o: Pick<Order, "total" | "paid">): number =>
   Math.max(0, (o.total || 0) - (o.paid || 0));
+
+/** Nội dung đơn đặt hàng (PO) để COPY DÁN gửi NCC qua Zalo (thủ công, không nối OA). */
+export const poZaloText = (po: Pick<PurchaseOrder, "code" | "supplierName" | "items" | "total" | "expectedAt">): string => {
+  const rows = po.items.map(
+    (it, i) =>
+      `${i + 1}. ${it.name}${it.sku ? ` [${it.sku}]` : ""} — SL ${it.qty} × ${fmtVnd(it.unitCost)} = ${fmtVnd(it.unitCost * it.qty)}`,
+  );
+  return [
+    `🧾 ĐƠN ĐẶT HÀNG ${po.code}`,
+    `Kính gửi NCC: ${po.supplierName}`,
+    `Bếp Ngọc Bảo xin đặt các mặt hàng sau:`,
+    ``,
+    ...rows,
+    ``,
+    `TỔNG GIÁ NHẬP: ${fmtVnd(po.total)}`,
+    po.expectedAt ? `Mong giao trước: ${fmtDate(po.expectedAt)}` : "",
+    `Vui lòng xác nhận tồn kho & thời gian giao. Cảm ơn NCC!`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
 
 /* ---- Ngày tháng (vi-VN) ---- */
 export const fmtDate = (iso?: string): string =>

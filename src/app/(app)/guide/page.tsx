@@ -635,6 +635,14 @@ export default async function GuidePage() {
         <Block title="Hình thức thanh toán">
           <Chips items={(Object.keys(PAYMENT_LABEL) as PaymentMethod[]).map((m) => ({ label: PAYMENT_LABEL[m], badge: "b-gray" }))} />
         </Block>
+        <Block title="Tách PO theo nhà cung cấp (RMS · Giai đoạn 2)">
+          <ul style={{ lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <li>Dòng đơn tạo từ <a href="#sourcing">Tìm nguồn</a> mang sẵn <b>NCC (hãng)</b> và <b>giá vốn</b>. Trên trang đơn, nút <b>“Tách PO theo NCC”</b> gom dòng theo từng nhà cung cấp → tạo mỗi NCC một <a href="#purchase">đơn mua (PO)</a> nháp, liên kết ngược về đơn khách.</li>
+            <li><b>1 đơn khách → nhiều PO</b>: mỗi hãng = 1 NCC nên đơn nhiều hãng tự tách thành nhiều PO. Thao tác lặp lại an toàn (chỉ tạo PO cho NCC chưa có).</li>
+            <li>Mỗi PO có nút <b>“Copy gửi Zalo”</b> sinh sẵn nội dung đặt hàng để dán Zalo gửi NCC (thủ công, không nối OA).</li>
+            <li>Cần quyền <b>purchase.manage</b> để tách PO.</li>
+          </ul>
+        </Block>
       </Section>
 
       {/* ===== Giao – Lắp đặt ===== */}

@@ -155,6 +155,8 @@ export type QuoteLine = {
   qty: number;
   unitPrice: number;
   discount?: number;
+  supplierName?: string; // NCC nguồn (RMS: hãng = NCC) — để tách PO theo nhà cung cấp
+  unitCost?: number;     // giá vốn/đơn vị từ Best-Source Finder — để dựng PO & tính lãi
 };
 export type Quote = {
   id: string;
@@ -463,6 +465,7 @@ export type PurchaseOrder = {
   expectedAt?: string;
   note?: string;
   byId?: string;
+  orderId?: string; // đơn khách nguồn (khi tách 1 đơn → nhiều PO theo NCC)
   createdAt: string;
   updatedAt: string;
 };

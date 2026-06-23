@@ -23,6 +23,7 @@ export const ICONS: Record<string, string> = {
   sun: `<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>`,
   plus: `<svg viewBox="0 0 24 24" ${S}><path d="M12 5v14M5 12h14"/></svg>`,
   check: `<svg viewBox="0 0 24 24" ${S}><path d="m5 13 4 4L19 7"/></svg>`,
+  copy: `<svg viewBox="0 0 24 24" ${S}><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/></svg>`,
   x: `<svg viewBox="0 0 24 24" ${S}><path d="M6 6l12 12M18 6 6 18"/></svg>`,
   chev: `<svg viewBox="0 0 24 24" ${S}><path d="m9 6 6 6-6 6"/></svg>`,
   download: `<svg viewBox="0 0 24 24" ${S}><path d="M12 4v11m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>`,

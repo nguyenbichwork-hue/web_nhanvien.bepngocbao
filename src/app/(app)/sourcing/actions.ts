@@ -49,7 +49,8 @@ export async function quoteFromItemAction(fd: FormData) {
   const name = `${item.cat ? item.cat + " " : ""}${item.brand} ${item.model}`.trim();
   const q = await createQuote({
     status: "draft",
-    lines: [{ sku: item.code ?? undefined, name, qty: 1, unitPrice }],
+    // Mang theo NCC (RMS: hãng = NCC) + giá vốn → sau này tách PO theo nhà cung cấp.
+    lines: [{ sku: item.code ?? undefined, name, qty: 1, unitPrice, supplierName: item.brand, unitCost: item.von ?? undefined }],
     byId: sess.employee?.id,
   });
   redirect(`/quote/${q.id}`);

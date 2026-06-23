@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
-import { getPurchaseOrder } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, fmtDateTime } from "@/lib/bnb/util";
+import { getPurchaseOrder, getOrder } from "@/lib/bnb/store";
+import { fmtVnd, fmtDate, fmtDateTime, poZaloText } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
   PO_STATUS_LABEL, PO_STATUS_BADGE, type POStatus,
 } from "@/lib/bnb/types";
+import { CopyButton } from "@/components/copy-button";
 import { setPOStatusAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,10 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
   const canManage = session.permissions.has("purchase.manage");
   const po = await getPurchaseOrder(id);
   if (!po) notFound();
-  const names = await employeeNameMap();
+  const [names, srcOrder] = await Promise.all([
+    employeeNameMap(),
+    po.orderId ? getOrder(po.orderId) : Promise.resolve(undefined),
+  ]);
 
   const cancelled = po.status === "cancelled";
   const curIdx = PO_FLOW.indexOf(po.status);
@@ -86,6 +90,12 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
               <Info label="Người tạo" value={po.byId ? names[po.byId] : undefined} />
               <Info label="Cập nhật" value={fmtDateTime(po.updatedAt)} />
             </div>
+            {srcOrder && (
+              <p className="small mt">
+                Tách từ đơn khách:{" "}
+                <Link href={`/orders/${srcOrder.id}`} style={{ fontWeight: 700, color: "var(--accent)" }}>{srcOrder.code}</Link>
+              </p>
+            )}
             {po.note && <p className="small mt muted">Ghi chú: {po.note}</p>}
           </div>
 
@@ -125,6 +135,15 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
 
         {/* Cột phải: hành động */}
         <div style={{ display: "grid", gap: 20 }}>
+          <div className="card">
+            <div className="card-h"><h3 className="sec-title">Gửi NCC qua Zalo</h3></div>
+            <p className="small muted" style={{ marginTop: 0 }}>Copy nội dung đặt hàng rồi dán vào Zalo gửi nhà cung cấp (thủ công).</p>
+            <pre style={{
+              whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13, lineHeight: 1.6,
+              background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 12, padding: 12, margin: "0 0 12px",
+            }}>{poZaloText(po)}</pre>
+            <CopyButton text={poZaloText(po)} className="btn primary" />
+          </div>
           {canManage ? (
             <div className="card">
               <div className="card-h"><h3 className="sec-title">Chuyển trạng thái</h3></div>

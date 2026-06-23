@@ -3,16 +3,18 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
-import { getOrder, getCustomer } from "@/lib/bnb/store";
-import { fmtVnd, fmtDate, fmtDateTime, orderRemaining } from "@/lib/bnb/util";
+import { getOrder, getCustomer, listPOsByOrder } from "@/lib/bnb/store";
+import { fmtVnd, fmtDate, fmtDateTime, orderRemaining, poZaloText } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import { lineAmount } from "@/lib/bnb/util";
 import {
   ORDER_STATUS_LABEL, ORDER_STATUS_BADGE, ORDER_FLOW, PAYMENT_LABEL,
+  PO_STATUS_LABEL, PO_STATUS_BADGE,
   type PaymentMethod,
 } from "@/lib/bnb/types";
+import { CopyButton } from "@/components/copy-button";
 import { haravanConfigured } from "@/lib/haravan/client";
-import { setOrderStatusAction, addPaymentAction, pushOrderToHaravanAction } from "../actions";
+import { setOrderStatusAction, addPaymentAction, pushOrderToHaravanAction, splitOrderToPOsAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +27,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const session = await requirePermission("order.read");
   const canManage = session.permissions.has("order.manage");
+  const canPO = session.permissions.has("purchase.manage");
   const order = await getOrder(id);
   if (!order) notFound();
-  const [names, customer] = await Promise.all([
+  const [names, customer, pos] = await Promise.all([
     employeeNameMap(),
     order.customerId ? getCustomer(order.customerId) : Promise.resolve(undefined),
+    listPOsByOrder(id),
   ]);
+  // NCC xuất hiện trong dòng đơn nhưng CHƯA có PO → còn tách được.
+  const poSuppliers = new Set(pos.map((p) => p.supplierName));
+  const pendingSuppliers = [
+    ...new Set(order.lines.map((l) => (l.supplierName || "").trim() || "NCC chưa rõ")),
+  ].filter((sup) => !poSuppliers.has(sup));
 
   const remaining = orderRemaining(order);
   const cancelled = order.status === "cancelled";
@@ -123,7 +132,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <tbody>
                 {order.lines.map((l, i) => (
                   <tr key={i}>
-                    <td className="small" style={{ fontWeight: 600 }}>{l.name}</td>
+                    <td className="small" style={{ fontWeight: 600 }}>
+                      {l.name}
+                      {l.supplierName && <div className="urole" style={{ fontWeight: 500 }}>NCC: {l.supplierName}</div>}
+                    </td>
                     <td className="small" style={{ textAlign: "right" }}>{l.qty}</td>
                     <td className="small" style={{ textAlign: "right" }}>{fmtVnd(l.unitPrice)}</td>
                     <td className="small" style={{ textAlign: "right", fontWeight: 600 }}>{fmtVnd(lineAmount(l))}</td>
@@ -136,6 +148,43 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <Row label="Đã thu" value={fmtVnd(order.paid)} />
               <Row label="Còn lại" value={fmtVnd(remaining)} accent={remaining > 0} />
             </div>
+          </div>
+
+          {/* Đơn mua nhà cung cấp (PO) — tách từ đơn khách theo NCC */}
+          <div className="card">
+            <div className="card-h">
+              <h3 className="sec-title">Đơn mua NCC (PO)</h3>
+              <span className="badge b-gray">{pos.length}</span>
+            </div>
+            {pos.length === 0 && (
+              <p className="muted small" style={{ padding: "4px 0 12px" }}>
+                Chưa tách PO. Mỗi nhà cung cấp (hãng) trong đơn sẽ thành 1 đơn đặt hàng riêng để gửi NCC.
+              </p>
+            )}
+            {pos.map((po) => (
+              <div key={po.id} style={{ borderTop: "1px solid var(--line)", padding: "12px 0" }}>
+                <div className="flex between aic" style={{ flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <Link href={`/purchase/${po.id}`} className="small" style={{ fontWeight: 700, color: "var(--accent)" }}>{po.code}</Link>
+                    <span className={`badge ${PO_STATUS_BADGE[po.status]}`} style={{ marginLeft: 8 }}>{PO_STATUS_LABEL[po.status]}</span>
+                    <div className="urole" style={{ marginTop: 2 }}>{po.supplierName} · {po.items.length} mặt hàng · {fmtVnd(po.total)}</div>
+                  </div>
+                  <CopyButton text={poZaloText(po)} />
+                </div>
+              </div>
+            ))}
+            {canPO && !cancelled && pendingSuppliers.length > 0 && (
+              <form action={splitOrderToPOsAction} style={{ marginTop: pos.length ? 12 : 0 }}>
+                <input type="hidden" name="id" value={order.id} />
+                <button type="submit" className="btn primary" style={{ width: "100%" }}>
+                  <Icon name="truck" /> Tách PO theo NCC ({pendingSuppliers.length} nhà cung cấp)
+                </button>
+                <p className="small muted mt">Sẽ tạo PO nháp cho: {pendingSuppliers.join(", ")}.</p>
+              </form>
+            )}
+            {canPO && pendingSuppliers.length === 0 && pos.length > 0 && (
+              <p className="small muted" style={{ marginTop: 4 }}>Đã tách PO cho tất cả NCC trong đơn.</p>
+            )}
           </div>
 
           <div className="card">

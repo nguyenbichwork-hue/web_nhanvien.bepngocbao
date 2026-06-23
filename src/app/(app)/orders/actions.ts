@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
-import { createOrder, getOrder, updateOrder, pushOrderToHaravan, cascadeOrderStatus, advanceJourney } from "@/lib/bnb/store";
+import { createOrder, getOrder, updateOrder, pushOrderToHaravan, cascadeOrderStatus, advanceJourney, splitOrderToPOs } from "@/lib/bnb/store";
 import type { OrderStatus, PaymentMethod, Payment, QuoteLine } from "@/lib/bnb/types";
 
 const s = (fd: FormData, k: string) => (fd.get(k)?.toString() || "").trim();
@@ -52,6 +52,16 @@ export async function addPaymentAction(fd: FormData) {
   revalidatePath("/orders");
   revalidatePath(`/orders/${id}`);
   revalidatePath("/dashboard");
+}
+
+/** Tách 1 đơn khách → nhiều PO theo NCC (mỗi hãng = 1 NCC). Cần quyền tạo PO. */
+export async function splitOrderToPOsAction(fd: FormData) {
+  const sess = await requirePermission("purchase.manage");
+  const id = s(fd, "id");
+  if (!id) return;
+  await splitOrderToPOs(id, sess.employee?.id);
+  revalidatePath(`/orders/${id}`);
+  revalidatePath("/purchase");
 }
 
 /** Đẩy đơn (và khách) từ BNB lên Haravan — ghi ngược. */

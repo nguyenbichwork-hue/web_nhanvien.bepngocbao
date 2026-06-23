@@ -16,7 +16,7 @@ import {
 } from "@/lib/haravan/client";
 import type {
   Activity, AdCampaign, BankTxn, CalendarItem, ContentPillar, Customer, DeliveryJob,
-  InternalTask, Lead, NpsResponse, Order, Product, PurchaseOrder,
+  InternalTask, Lead, NpsResponse, Order, POItem, Product, PurchaseOrder,
   Quote, Review, ShiftReport, Survey, WarrantyTicket,
   ZaloConversation, ZaloMessage, ZaloMsgDirection, ReceptionLog, ShiftCheckin,
   CxJourney, JourneyStageKey, CxReferral, OrderStatus,
@@ -600,6 +600,44 @@ export async function costBySku(): Promise<Record<string, number>> {
     for (const it of po.items) if (it.sku) map[it.sku] = it.unitCost;
   }
   return map;
+}
+
+/** Các PO đã tách từ 1 đơn khách. */
+export async function listPOsByOrder(orderId: string): Promise<PurchaseOrder[]> {
+  return clone((await getDb("purchaseOrders")).purchaseOrders.filter((p) => p.orderId === orderId));
+}
+
+/**
+ * Tách 1 đơn khách → nhiều PO theo NCC (RMS: mỗi hãng = 1 NCC). Gom các dòng hàng
+ * theo `supplierName`, mỗi NCC một PO nháp (status draft) với giá vốn từ dòng đơn
+ * (fallback: giá nhập gần nhất theo sku). Bỏ qua NCC đã có PO cho đơn này (idempotent).
+ */
+export async function splitOrderToPOs(orderId: string, byId?: string): Promise<PurchaseOrder[]> {
+  const order = await getOrder(orderId);
+  if (!order) return [];
+  const existing = (await getDb("purchaseOrders")).purchaseOrders.filter((p) => p.orderId === orderId);
+  const doneSuppliers = new Set(existing.map((p) => p.supplierName));
+  const costMap = await costBySku();
+  // Gom dòng theo NCC
+  const groups = new Map<string, POItem[]>();
+  for (const l of order.lines) {
+    const supplier = (l.supplierName || "").trim() || "NCC chưa rõ";
+    const unitCost = l.unitCost ?? (l.sku ? costMap[l.sku] : undefined) ?? 0;
+    const arr = groups.get(supplier) ?? [];
+    arr.push({ name: l.name, sku: l.sku, qty: l.qty, unitCost });
+    groups.set(supplier, arr);
+  }
+  const created: PurchaseOrder[] = [];
+  for (const [supplier, items] of groups) {
+    if (doneSuppliers.has(supplier)) continue;
+    const total = items.reduce((sum, it) => sum + it.unitCost * it.qty, 0);
+    const po = await createPurchaseOrder({
+      supplierName: supplier, items, total, status: "draft",
+      orderId, byId, note: `Tách tự động từ đơn ${order.code}`,
+    });
+    created.push(po);
+  }
+  return created;
 }
 
 /* ===== Đánh giá (Reviews) ===== */
