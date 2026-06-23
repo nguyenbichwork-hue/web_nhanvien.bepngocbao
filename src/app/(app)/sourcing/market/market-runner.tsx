@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@/components/icon";
 import type { CompactRow } from "@/lib/bnb/market/compare";
 
 type SiteView = {
@@ -22,13 +23,13 @@ const vnd = (n: number | null | undefined) =>
 
 export default function MarketRunner({
   mineCount,
-  mineAt,
+  mineAtLabel,
   sites,
   initialRows,
   cfg,
 }: {
   mineCount: number;
-  mineAt: string | null;
+  mineAtLabel: string | null;
   sites: SiteView[];
   initialRows: CompactRow[];
   cfg: { floorPct: number; minMarginPct: number };
@@ -140,76 +141,61 @@ export default function MarketRunner({
     const csv = "﻿" + [head.map(esc).join(","), ...lines].join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    a.download = `so-gia-thi-truong-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `so-gia-thi-truong.csv`;
     a.click();
   }
 
-  const officialCount = sites.filter((s) => s.official).length;
-
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Giá thị trường — Cào & so giá tự động</h1>
-        <p className="text-sm text-gray-500">
-          Tự dò giá thấp nhất trên các web liên quan theo mã SP của mình. Ưu tiên <b>trang chính hãng</b> trước
-          ({officialCount} web), rồi web bán lẻ đa hãng — không cần dán URL tay.
-        </p>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-white p-4">
-        <button
-          onClick={syncMine}
-          disabled={busy}
-          className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          Đồng bộ SP của tôi
-        </button>
-        <span className="text-sm text-gray-600">
-          {mineCount} SP {mineAt ? `· đồng bộ ${new Date(mineAt).toLocaleString("vi-VN")}` : "· chưa đồng bộ"}
-        </span>
-        <button
-          onClick={crawlAll}
-          disabled={busy}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {busy ? "Đang chạy…" : "Quét tất cả & so giá"}
-        </button>
-        <button
-          onClick={compare}
-          disabled={busy}
-          className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          So giá lại
-        </button>
-        <button
-          onClick={exportCsv}
-          disabled={!rows.length}
-          className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          Tải CSV (mở bằng Google Sheet/Excel)
-        </button>
-        {msg && <span className="text-sm text-blue-700">{msg}</span>}
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Thanh công cụ */}
+      <div className="card">
+        <div className="flex aic" style={{ flexWrap: "wrap", gap: 12 }}>
+          <button onClick={syncMine} disabled={busy} className="btn">
+            <Icon name="download" /> Đồng bộ SP của tôi
+          </button>
+          <span className="small muted">
+            {mineCount} SP {mineAtLabel ? `· đồng bộ ${mineAtLabel}` : "· chưa đồng bộ"}
+          </span>
+          <button onClick={crawlAll} disabled={busy} className="btn primary">
+            <Icon name="search" /> {busy ? "Đang chạy…" : "Quét tất cả & so giá"}
+          </button>
+          <button onClick={compare} disabled={busy} className="btn ghost">
+            <Icon name="check" /> So giá lại
+          </button>
+          <button onClick={exportCsv} disabled={!rows.length} className="btn ghost">
+            <Icon name="download" /> Tải CSV
+          </button>
+          {msg && <span className="small" style={{ color: "var(--accent)", fontWeight: 600 }}>{msg}</span>}
+        </div>
       </div>
 
       {/* Danh sách web (chính hãng trước) */}
-      <section className="rounded-xl border bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">
-          Web so giá ({sites.length}) — chính hãng trước
-        </h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="card">
+        <div className="card-h">
+          <h3 className="sec-title">Web so giá — chính hãng trước</h3>
+          <span className="badge b-gray">{sites.length}</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
           {sites.map((s) => {
             const stt = st[s.domain] || { status: "idle" as Status };
             return (
               <div
                 key={s.domain}
-                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${s.official ? "border-emerald-300 bg-emerald-50" : "bg-gray-50"}`}
+                className="flex between aic"
+                style={{
+                  gap: 8,
+                  border: `1px solid ${s.official ? "var(--c-teal)" : "var(--line)"}`,
+                  background: s.official ? "var(--c-teal-soft)" : "var(--surface-2)",
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                }}
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1 truncate font-medium">
-                    {s.official && <span className="rounded bg-emerald-600 px-1 text-[10px] text-white">CHÍNH HÃNG</span>}
-                    <span className="truncate">{s.domain}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="flex aic" style={{ gap: 6 }}>
+                    {s.official && <span className="badge b-green" style={{ fontSize: 10 }}>CHÍNH HÃNG</span>}
+                    <span className="small" style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.domain}</span>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="urole" style={{ marginTop: 2 }}>
                     {s.brand ? `Hãng ${s.brand} · ` : ""}
                     {stt.status === "running"
                       ? "đang quét…"
@@ -220,81 +206,79 @@ export default function MarketRunner({
                           : "chưa quét"}
                   </div>
                 </div>
-                <button
-                  onClick={() => crawlOne(s).then(() => compare())}
-                  disabled={busy}
-                  className="ml-2 shrink-0 rounded border px-2 py-1 text-xs disabled:opacity-50"
-                >
+                <button onClick={() => crawlOne(s).then(() => compare())} disabled={busy} className="btn sm ghost">
                   Quét
                 </button>
               </div>
             );
           })}
         </div>
-      </section>
+      </div>
 
       {/* Bảng so giá */}
-      <section className="rounded-xl border bg-white">
-        <div className="border-b p-3 text-sm font-semibold text-gray-700">
-          Bảng so giá ({rows.length} SP khớp) — SP mình đang bán đắt hơn thị trường xếp đầu
+      <div className="card">
+        <div className="card-h">
+          <h3 className="sec-title">Bảng so giá — SP mình đang bán đắt hơn thị trường xếp đầu</h3>
+          <span className="badge b-gray">{rows.length} SP khớp</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs text-gray-500">
+        <div style={{ overflowX: "auto" }}>
+          <table>
+            <thead>
               <tr>
-                <th className="p-2">Mã / Tên</th>
-                <th className="p-2 text-right">Giá bán của tôi</th>
-                <th className="p-2 text-right">Số web</th>
-                <th className="p-2 text-right">Rẻ nhất TT</th>
-                <th className="p-2 text-right">Chính hãng</th>
-                <th className="p-2 text-right">Đề xuất</th>
-                <th className="p-2 text-right">% so TT</th>
-                <th className="p-2">Cảnh báo</th>
+                <th>Mã / Tên</th>
+                <th style={{ textAlign: "right" }}>Giá bán của tôi</th>
+                <th style={{ textAlign: "right" }}>Số web</th>
+                <th style={{ textAlign: "right" }}>Rẻ nhất TT</th>
+                <th style={{ textAlign: "right" }}>Chính hãng</th>
+                <th style={{ textAlign: "right" }}>Đề xuất</th>
+                <th style={{ textAlign: "right" }}>% so TT</th>
+                <th>Cảnh báo</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-6 text-center text-gray-400">
+                  <td colSpan={8} className="muted small" style={{ textAlign: "center", padding: 24 }}>
                     Chưa có dữ liệu. Bấm <b>Đồng bộ SP của tôi</b> → <b>Quét tất cả &amp; so giá</b>.
                   </td>
                 </tr>
               )}
               {rows.map((r) => (
-                <tr key={r.code} className="border-t align-top">
-                  <td className="p-2">
-                    <div className="font-medium">{r.code}</div>
-                    <div className="max-w-md truncate text-xs text-gray-500">{r.name}</div>
+                <tr key={r.code}>
+                  <td>
+                    <div className="small" style={{ fontWeight: 700 }}>{r.code}</div>
+                    <div className="urole" style={{ maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
                   </td>
-                  <td className="p-2 text-right">{vnd(r.myPrice)}</td>
-                  <td className="p-2 text-right">{r.siteCount}</td>
-                  <td className="p-2 text-right">
+                  <td className="small" style={{ textAlign: "right" }}>{vnd(r.myPrice)}</td>
+                  <td className="small" style={{ textAlign: "right" }}>{r.siteCount}</td>
+                  <td className="small" style={{ textAlign: "right" }}>
                     {r.cheapestUrl ? (
-                      <a href={r.cheapestUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                        {vnd(r.marketMin)}
-                      </a>
+                      <a href={r.cheapestUrl} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>{vnd(r.marketMin)}</a>
                     ) : (
                       vnd(r.marketMin)
                     )}
-                    {r.cheapestSite && <div className="text-[10px] text-gray-400">{r.cheapestSite}</div>}
+                    {r.cheapestSite && <div className="urole">{r.cheapestSite}</div>}
                   </td>
-                  <td className="p-2 text-right">
+                  <td className="small" style={{ textAlign: "right" }}>
                     {vnd(r.officialMin)}
-                    {r.officialSite && <div className="text-[10px] text-emerald-600">{r.officialSite}</div>}
+                    {r.officialSite && <div className="urole" style={{ color: "var(--c-teal)" }}>{r.officialSite}</div>}
                   </td>
-                  <td className="p-2 text-right font-semibold text-blue-700">{vnd(r.suggested)}</td>
-                  <td className={`p-2 text-right ${r.pctVsMin != null && r.pctVsMin > 5 ? "text-red-600" : r.pctVsMin != null && r.pctVsMin < -5 ? "text-amber-600" : ""}`}>
+                  <td className="small" style={{ textAlign: "right", fontWeight: 700, color: "var(--accent)" }}>{vnd(r.suggested)}</td>
+                  <td
+                    className="small"
+                    style={{ textAlign: "right", fontWeight: 600, color: r.pctVsMin != null && r.pctVsMin > 5 ? "var(--c-rose)" : r.pctVsMin != null && r.pctVsMin < -5 ? "var(--c-amber)" : "var(--tx)" }}
+                  >
                     {r.pctVsMin == null ? "—" : (r.pctVsMin > 0 ? "+" : "") + r.pctVsMin.toFixed(1) + "%"}
                   </td>
-                  <td className="p-2">
+                  <td>
                     {r.lossRisk ? (
-                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-700">Rủi ro lỗ</span>
+                      <span className="badge b-rose">Rủi ro lỗ</span>
                     ) : r.warning === "cao" ? (
-                      <span className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700">Cao hơn TT</span>
+                      <span className="badge b-amber">Cao hơn TT</span>
                     ) : r.warning === "thap" ? (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">Thấp hơn TT</span>
+                      <span className="badge b-sky">Thấp hơn TT</span>
                     ) : (
-                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">OK</span>
+                      <span className="badge b-green">OK</span>
                     )}
                   </td>
                 </tr>
@@ -302,7 +286,7 @@ export default function MarketRunner({
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

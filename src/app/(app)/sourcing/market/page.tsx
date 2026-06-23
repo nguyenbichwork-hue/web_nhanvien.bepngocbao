@@ -1,4 +1,6 @@
 import { requirePermission } from "@/lib/auth/session";
+import { PageHero } from "@/components/page-hero";
+import { fmtDateTime } from "@/lib/bnb/util";
 import { getMine, listSites, getMarketConfig } from "@/lib/bnb/market/store";
 import { discoverSites } from "@/lib/bnb/market/discovery";
 import { compareMarket } from "@/lib/bnb/market/compare";
@@ -38,15 +40,25 @@ export default async function MarketPage() {
       note: s.note ?? null,
       crawledAt: s.crawledAt,
     }));
+  const allSites = [...siteList, ...extra];
   const rows = sites.length && mine.items.length ? compareMarket(mine.items, sites, cfg) : [];
+  const officialCount = allSites.filter((s) => s.official).length;
 
   return (
-    <MarketRunner
-      mineCount={mine.items.length}
-      mineAt={mine.at}
-      sites={[...siteList, ...extra]}
-      initialRows={rows}
-      cfg={cfg}
-    />
+    <div>
+      <PageHero
+        icon="search"
+        title="Giá thị trường — Cào & so giá tự động"
+        subtitle={`Tự dò giá thấp nhất trên các web liên quan theo mã SP của mình. Ưu tiên trang chính hãng trước (${officialCount} web), rồi web bán lẻ — không cần dán URL tay.`}
+        crumb={[["Trang chủ", "/dashboard"], ["Tìm nguồn (RMS)"], ["Giá thị trường"]]}
+      />
+      <MarketRunner
+        mineCount={mine.items.length}
+        mineAtLabel={mine.at ? fmtDateTime(mine.at) : null}
+        sites={allSites}
+        initialRows={rows}
+        cfg={cfg}
+      />
+    </div>
   );
 }
