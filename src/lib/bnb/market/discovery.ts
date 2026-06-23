@@ -47,6 +47,7 @@ export const RETAIL_SEED: string[] = [
   'faster.com.vn', 'dienmaytructuyen.vn', 'tefal.com.vn',
   'hafelehome.com.vn', 'konox.com.vn', 'kangaroostore.vn', 'malloca-vn.com',
   'eurosun.com.vn', 'spelier.net', 'giovani.com.vn', 'kaffvn.com', 'boschhome.vn',
+  'higoldvietnam.com', 'jungervietnam.com',
 ];
 
 // ===== ĐÃ TỈA DANH SÁCH (2026-06-23) =====
