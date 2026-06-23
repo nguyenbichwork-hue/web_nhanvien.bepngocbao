@@ -217,16 +217,20 @@ export async function searchProductPrices(
   if (hit && Date.now() - hit.t < TTL_MS) return { prices: hit.v, linksOpened: 0, storesFound: hit.v.length };
 
   const mc = norm(modelCode);
+  const hasProxy = !!process.env.SCRAPER_API_KEY;
 
   // NGUỒN 1 (free, đáng tin): hỏi thẳng search-endpoint các sàn bếp VN.
   const retailerPrices = await searchRetailers(modelCode, opts.concurrency ?? 5);
 
-  // NGUỒN 2 (mạnh nhưng cần ScraperAPI/không bị chặn): search engine → mở trang.
+  // NGUỒN 2 (search engine → mở trang): CHỈ chạy khi có ScraperAPI — không thì Google/Bing
+  // chặn IP serverless, vừa fail vừa tốn thời gian (đẩy hàm vượt 60s). Free → bỏ qua.
   const rawLinks: string[] = [];
-  if (opts.officialDomain) {
-    try { rawLinks.push(...(await searchLinks(`site:${opts.officialDomain} ${modelCode || query}`, 5))); } catch { /* */ }
+  if (hasProxy) {
+    if (opts.officialDomain) {
+      try { rawLinks.push(...(await searchLinks(`site:${opts.officialDomain} ${modelCode || query}`, 5))); } catch { /* */ }
+    }
+    rawLinks.push(...(await searchLinks(query, Math.max(maxLinks + 6, 15))));
   }
-  rawLinks.push(...(await searchLinks(query, Math.max(maxLinks + 6, 15))));
 
   // 1 link đầu / domain để đa dạng cửa hàng.
   const byDomain = new Map<string, string>();
