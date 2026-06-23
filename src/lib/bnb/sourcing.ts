@@ -61,6 +61,52 @@ export function searchCatalog(items: CostItem[], query: SourcingQuery): CostItem
   });
 }
 
+/* ===== Báo giá 3 phương án (Good/Better/Best) từ catalog ===== */
+import type { QuoteProposal, ProposalTier, ProposalTierKey } from "./types";
+
+const TIER_META: Record<ProposalTierKey, { label: string; role: string }> = {
+  A: { label: "BNB Essential", role: "Tối ưu ngân sách" },
+  B: { label: "BNB Comfort", role: "Cân bằng — khuyến nghị" },
+  C: { label: "BNB Signature", role: "Cao cấp — an tâm dài hạn" },
+};
+
+/**
+ * Dựng 3 phương án Essential/Comfort/Signature cho 1 NGÀNH HÀNG từ kho giá:
+ * lấy SP có giá bán, sắp tăng dần, chọn 3 mốc rẻ → trung bình → cao cấp.
+ * Gói B (Comfort) là khuyến nghị mặc định. Trả null nếu không đủ dữ liệu.
+ */
+export function buildProposalFromCatalog(items: CostItem[], category: string): QuoteProposal | null {
+  const pool = items
+    .filter((c) => c.cat === category && c.ban != null && c.ban > 0)
+    .sort((a, b) => (a.ban as number) - (b.ban as number));
+  if (pool.length === 0) return null;
+  const n = pool.length;
+  // 3 mốc giá: rẻ (15%) · trung bình (50%) · cao cấp (85%), đảm bảo tăng dần & khác nhau.
+  let idx = [Math.floor(n * 0.15), Math.floor(n * 0.5), Math.min(n - 1, Math.floor(n * 0.85))];
+  idx = [...new Set(idx)].sort((a, b) => a - b);
+  while (idx.length < 3 && idx.length < n) {
+    for (let i = 0; i < n && idx.length < 3; i++) if (!idx.includes(i)) { idx.push(i); break; }
+    idx.sort((a, b) => a - b);
+  }
+  const keys: ProposalTierKey[] = ["A", "B", "C"];
+  const tiers: ProposalTier[] = idx.slice(0, 3).map((i, k) => {
+    const c = pool[i];
+    const name = `${c.cat ? c.cat + " " : ""}${c.brand} ${c.model}`.trim();
+    const meta = TIER_META[keys[k]];
+    return {
+      key: keys[k],
+      label: meta.label,
+      role: meta.role,
+      total: c.ban as number,
+      lines: [{ sku: c.code ?? undefined, name, qty: 1, unitPrice: c.ban as number, supplierName: c.brand, unitCost: c.von ?? undefined }],
+    };
+  });
+  if (tiers.length === 0) return null;
+  // Khuyến nghị gói giữa (B) nếu có, không thì gói đầu.
+  const recommended: ProposalTierKey = tiers.find((t) => t.key === "B") ? "B" : tiers[0].key;
+  return { tiers, recommended };
+}
+
 export type CatalogStats = { total: number; withCost: number; brands: number; cats: number };
 export function catalogStats(items: CostItem[]): CatalogStats {
   return {

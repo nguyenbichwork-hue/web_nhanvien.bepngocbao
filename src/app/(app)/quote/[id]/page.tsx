@@ -17,6 +17,7 @@ import {
 } from "@/lib/bnb/quote-standard";
 import { setQuoteStatusAction } from "../actions";
 import { PrintButton } from "../print-button";
+import { QuotePdfButton, type QuotePdfData } from "../quote-pdf";
 
 export const dynamic = "force-dynamic";
 
@@ -40,13 +41,42 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const { vat } = vatInclusiveBreakdown(total);
   const validUntil = validUntilFrom(quote.createdAt, quote.validUntil);
   const advisor = quote.byId ? names[quote.byId] : "";
+  const proposal = quote.proposal;
+  const recTier = proposal?.tiers.find((t) => t.key === proposal.recommended);
+
   const zalo = quoteZaloText({
     code: quote.code,
     customerName: who?.name,
     gender: (who as { gender?: string } | undefined)?.gender,
     lines: quote.lines,
     total,
+    proposal: proposal
+      ? { recommended: proposal.recommended, tiers: proposal.tiers.map((t) => ({ key: t.key, label: t.label, role: t.role, total: t.total })) }
+      : undefined,
   });
+
+  const pdfData: QuotePdfData = {
+    code: quote.code,
+    dateLabel: fmtDate(quote.createdAt),
+    validLabel: fmtDate(validUntil),
+    advisor,
+    shop: { name: SHOP_NAME, tagline: SHOP_TAGLINE, address: SHOP_ADDRESS, phone: SHOP_PHONE, email: SHOP_EMAIL, web: SHOP_WEB },
+    customer: { salutation: sal, name: who?.name ?? "", phone: who?.phone, address: who?.address, email: who?.email },
+    lines: quote.lines.map((l) => ({ name: l.name, sku: l.sku, qty: l.qty, unitPrice: l.unitPrice, amount: lineAmount(l) })),
+    subtotal, discount: quote.discount ?? 0, vat, total,
+    totalWords: numberToVietnameseWords(total),
+    terms: QUOTE_TERMS, commitments: BNB_COMMITMENTS,
+    proposal: proposal
+      ? {
+          recommended: proposal.recommended,
+          tiers: proposal.tiers.map((t) => ({
+            key: t.key, label: t.label, role: t.role, total: t.total,
+            items: t.lines.map((l) => ({ name: l.name, price: l.unitPrice })),
+            recommended: t.key === proposal.recommended,
+          })),
+        }
+      : undefined,
+  };
 
   return (
     <div>
@@ -101,6 +131,32 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             {who?.address && <div className="small muted">{who.address}</div>}
             {advisor && <div className="small muted" style={{ marginTop: 4 }}>Tư vấn viên: {advisor}</div>}
           </div>
+
+          {/* 3 phương án (Good/Better/Best) */}
+          {proposal && (
+            <div style={{ marginBottom: 16 }}>
+              <div className="sec-title" style={{ fontSize: 13, marginBottom: 8 }}>Các phương án đề xuất (Good / Better / Best)</div>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${proposal.tiers.length}, 1fr)`, gap: 10 }}>
+                {proposal.tiers.map((t) => {
+                  const rec = t.key === proposal.recommended;
+                  return (
+                    <div key={t.key} style={{ border: rec ? "2px solid var(--brand-1)" : "1px solid var(--line)", borderRadius: 12, padding: 12, background: rec ? "rgba(var(--brand-rgb),0.05)" : "var(--surface)" }}>
+                      <div className="flex between aic" style={{ gap: 6 }}>
+                        <b style={{ color: "var(--brand-1)" }}>{t.label}</b>
+                        {rec && <span className="badge b-green" style={{ fontSize: 10 }}>KHUYẾN NGHỊ</span>}
+                      </div>
+                      <div className="urole">{t.role}</div>
+                      <div style={{ margin: "8px 0" }}>
+                        {t.lines.map((l, i) => <div key={i} className="small" style={{ marginBottom: 2 }}>• {l.name}</div>)}
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand-1)" }}>{fmtVnd(t.total)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="small muted" style={{ marginTop: 8 }}>Chi tiết gói khuyến nghị <b>{recTier?.label}</b>:</p>
+            </div>
+          )}
 
           {/* Dòng hàng */}
           <table>
@@ -200,6 +256,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         <div className="card no-print">
           <div className="card-h"><h3 className="sec-title">Thao tác</h3></div>
           <div style={{ display: "grid", gap: 12 }}>
+            <QuotePdfButton data={pdfData} />
             <CopyButton text={zalo} label="Copy tin Zalo gửi khách" className="btn primary" />
             {canManage ? (
               <>

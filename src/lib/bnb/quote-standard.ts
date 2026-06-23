@@ -112,9 +112,36 @@ export function quoteZaloText(args: {
   gender?: "nam" | "nu" | string | null;
   lines: QuoteLine[];
   total: number;
+  proposal?: { recommended: string; tiers: { key: string; label: string; role: string; total: number }[] };
 }): string {
   const sal = salutation(args.gender);
   const greet = args.customerName ? `Kính gửi ${sal} ${args.customerName},` : `Kính gửi ${sal},`;
+  const footer = [
+    "",
+    "• Giá gồm VAT 8% & lắp đặt · Hàng chính hãng 100% · Bảo hành theo hãng",
+    `• Báo giá hiệu lực ${QUOTE_VALIDITY_DAYS} ngày · BNB khảo sát & lắp tận nơi, đồng hành sau bán`,
+    "",
+    `Cảm ơn ${sal} 🌿 ${SHOP_NAME} — ${SHOP_PHONE}`,
+  ];
+
+  // Báo giá 3 phương án → gửi 3 gói (không gửi bảng giá trần trụi).
+  if (args.proposal && args.proposal.tiers.length) {
+    const rec = args.proposal.tiers.find((t) => t.key === args.proposal!.recommended);
+    const rows = args.proposal.tiers.map(
+      (t, i) => `${i + 1}. ${t.label} — ${t.role} (${fmtVnd(t.total)})`,
+    );
+    return [
+      greet,
+      `Dựa trên nhu cầu, ${SHOP_NAME} đề xuất 3 phương án (báo giá ${args.code}):`,
+      "",
+      ...rows,
+      "",
+      `👉 Khuyến nghị của BNB: ${rec?.label ?? ""}`,
+      "File báo giá chi tiết (sản phẩm · cam kết · điều khoản) em gửi kèm ạ.",
+      ...footer,
+    ].join("\n");
+  }
+
   const rows = args.lines.map(
     (l, i) => `${i + 1}. ${l.name}${l.sku ? ` [${l.sku}]` : ""} — SL ${l.qty} × ${fmtVnd(l.unitPrice)}`,
   );
@@ -126,10 +153,6 @@ export function quoteZaloText(args: {
     "",
     `💰 TỔNG (đã gồm VAT 8%): ${fmtVnd(args.total)}`,
     `Bằng chữ: ${numberToVietnameseWords(args.total)}`,
-    "",
-    "• Giá gồm VAT 8% & lắp đặt · Hàng chính hãng 100% · Bảo hành theo hãng",
-    `• Báo giá hiệu lực ${QUOTE_VALIDITY_DAYS} ngày · BNB khảo sát & lắp tận nơi, đồng hành sau bán`,
-    "",
-    `Cảm ơn ${sal} 🌿 ${SHOP_NAME} — ${SHOP_PHONE}`,
+    ...footer,
   ].join("\n");
 }

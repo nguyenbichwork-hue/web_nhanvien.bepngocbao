@@ -158,6 +158,17 @@ export type QuoteLine = {
   supplierName?: string; // NCC nguồn (RMS: hãng = NCC) — để tách PO theo nhà cung cấp
   unitCost?: number;     // giá vốn/đơn vị từ Best-Source Finder — để dựng PO & tính lãi
 };
+/** Một gói trong báo giá 3 phương án (Good/Better/Best). */
+export type ProposalTierKey = "A" | "B" | "C";
+export type ProposalTier = {
+  key: ProposalTierKey;
+  label: string;   // BNB Essential / Comfort / Signature
+  role: string;    // Tối ưu ngân sách / Cân bằng - khuyến nghị / Cao cấp - an tâm
+  lines: QuoteLine[];
+  total: number;
+};
+export type QuoteProposal = { tiers: ProposalTier[]; recommended: ProposalTierKey };
+
 export type Quote = {
   id: string;
   code: string;
@@ -173,6 +184,8 @@ export type Quote = {
   updatedAt: string;
   sentAt?: string;
   validUntil?: string;
+  /** Báo giá 3 phương án (Good/Better/Best). `lines` = gói khuyến nghị (để lên đơn). */
+  proposal?: QuoteProposal;
 };
 
 /* ============ Đơn hàng ============ */

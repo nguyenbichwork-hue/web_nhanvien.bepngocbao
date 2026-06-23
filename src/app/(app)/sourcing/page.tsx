@@ -8,14 +8,14 @@ import {
   searchCatalog, catalogStats, distinctBrands, distinctCats, byNameVi, MARKUP, marginPct, sellFromCost,
   type CostItem,
 } from "@/lib/bnb/sourcing";
-import { quoteFromItemAction } from "./actions";
+import { quoteFromItemAction, createProposalQuoteAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function SourcingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; brand?: string; cat?: string; onlyCost?: string }>;
+  searchParams: Promise<{ q?: string; brand?: string; cat?: string; onlyCost?: string; perr?: string }>;
 }) {
   await requirePermission("quote.read");
   const sp = await searchParams;
@@ -88,6 +88,27 @@ export default async function SourcingPage({
           </label>
           <button type="submit" className="btn primary"><Icon name="search" /> Tìm nguồn</button>
           {active && <Link href="/sourcing" className="btn ghost">Xoá lọc</Link>}
+        </form>
+      </div>
+
+      {/* Báo giá 3 phương án (Good/Better/Best) theo ngành hàng */}
+      <div className="card mt">
+        <div className="card-h">
+          <h3 className="sec-title">Báo giá 3 phương án (Good / Better / Best)</h3>
+          <span className="badge b-gray">Essential · Comfort · Signature</span>
+        </div>
+        <p className="small muted" style={{ marginTop: -2, marginBottom: 10 }}>
+          Chọn ngành hàng → hệ thống dựng sẵn 3 gói (rẻ → cân bằng → cao cấp) từ kho giá để khách so gói-với-gói, thoát “bẫy giá”.
+        </p>
+        {sp.perr && <p className="small" style={{ color: "var(--c-rose)" }}>Ngành hàng chưa đủ sản phẩm có giá để dựng 3 phương án.</p>}
+        <form action={createProposalQuoteAction} className="flex gap" style={{ flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div className="field" style={{ margin: 0, flex: "0 1 260px" }}>
+            <label>Ngành hàng</label>
+            <select name="category" defaultValue={cat || cats[0] || ""}>
+              {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <button type="submit" className="btn primary"><Icon name="quote" /> Tạo báo giá 3 phương án</button>
         </form>
       </div>
 

@@ -7,8 +7,9 @@ import {
   applyWeeklyQuote, parseQuotePaste, setCostItemVon, listCostItems,
   saveCostItem, createCostItem, deleteCostItem, setMarkup,
 } from "@/lib/bnb/cost-store";
-import { sellFromCost } from "@/lib/bnb/sourcing";
+import { sellFromCost, buildProposalFromCatalog } from "@/lib/bnb/sourcing";
 import { createQuote } from "@/lib/bnb/store";
+import type { QuoteTier } from "@/lib/bnb/types";
 
 const s = (fd: FormData, k: string) => (fd.get(k)?.toString() || "").trim();
 const num = (fd: FormData, k: string): number | null => {
@@ -51,6 +52,25 @@ export async function quoteFromItemAction(fd: FormData) {
     status: "draft",
     // Mang theo NCC (RMS: hãng = NCC) + giá vốn → sau này tách PO theo nhà cung cấp.
     lines: [{ sku: item.code ?? undefined, name, qty: 1, unitPrice, supplierName: item.brand, unitCost: item.von ?? undefined }],
+    byId: sess.employee?.id,
+  });
+  redirect(`/quote/${q.id}`);
+}
+
+/** Tạo BÁO GIÁ 3 PHƯƠNG ÁN (Good/Better/Best) theo ngành hàng từ kho giá. */
+export async function createProposalQuoteAction(fd: FormData) {
+  const sess = await requirePermission("quote.manage");
+  const category = s(fd, "category");
+  if (!category) redirect("/sourcing?perr=1");
+  const proposal = buildProposalFromCatalog(await listCostItems(), category);
+  if (!proposal) redirect("/sourcing?perr=1");
+  const rec = proposal.tiers.find((t) => t.key === proposal.recommended) ?? proposal.tiers[0];
+  const tierMap: Record<string, QuoteTier> = { A: "basic", B: "balanced", C: "premium" };
+  const q = await createQuote({
+    status: "draft",
+    lines: rec.lines,        // gói khuyến nghị = dòng để lên đơn khi chốt
+    tier: tierMap[rec.key],
+    proposal,
     byId: sess.employee?.id,
   });
   redirect(`/quote/${q.id}`);
