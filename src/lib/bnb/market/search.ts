@@ -202,6 +202,91 @@ async function searchWebsosanh(query: string, modelCode: string): Promise<Market
   return best == null ? [] : [{ siteName: "websosanh.vn", price: best, url: `https://websosanh.vn/s/${q}.htm` }];
 }
 
+/* ===== ENRICHMENT: bóc THÔNG SỐ/XUẤT XỨ/BẢO HÀNH từ trang SP (chạy LOCAL — search
+ * engine + trang sàn không bị chặn). Dùng cho việc làm giàu file gốc catalog. ===== */
+function decodeEnt(s: string): string {
+  return (s || "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)));
+}
+function stripTags(s: string): string {
+  return decodeEnt((s || "").replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+/** Bóc cặp khoá:giá-trị từ JSON-LD additionalProperty + bảng + dl. */
+export function extractSpecs(html: string): { specs: Record<string, string>; description: string } {
+  const specs: Record<string, string> = {};
+  let description = "";
+  const put = (k: string, v: string) => {
+    k = stripTags(k); v = stripTags(v);
+    if (k && v && k.length < 44 && v.length < 160 && !(k in specs)) specs[k] = v;
+  };
+  // JSON-LD
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let data: unknown;
+    try { data = JSON.parse(m[1].trim()); } catch { continue; }
+    for (const obj of (Array.isArray(data) ? data : [data]) as Record<string, unknown>[]) {
+      if (!obj || typeof obj !== "object") continue;
+      if (String((obj as { "@type"?: unknown })["@type"] || "").includes("Product")) {
+        const d = obj["description"];
+        if (typeof d === "string" && !description) description = stripTags(d);
+        for (const ap of (obj["additionalProperty"] as { name?: string; value?: unknown }[]) || []) {
+          if (ap?.name) put(ap.name, String(ap.value ?? ""));
+        }
+      }
+    }
+  }
+  // bảng <tr><td/th>K</td><td>V</td></tr>
+  for (const m of html.matchAll(/<tr[^>]*>\s*<t[hd][^>]*>([\s\S]*?)<\/t[hd]>\s*<td[^>]*>([\s\S]*?)<\/td>/gi)) put(m[1], m[2]);
+  // dl
+  for (const m of html.matchAll(/<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi)) put(m[1], m[2]);
+  return { specs, description };
+}
+
+const COUNTRY_RE = /(đức|pháp|ý|tây ban nha|ba lan|thổ nhĩ kỳ|trung quốc|hàn quốc|nhật|malaysia|thái lan|việt nam|indonesia|đài loan|anh|mỹ|czech|germany|china|korea|spain|italy|prc)/i;
+const pickSpec = (specs: Record<string, string>, keys: string[]): string => {
+  for (const [k, v] of Object.entries(specs)) {
+    const nk = norm(k);
+    if (keys.some((t) => nk.includes(t))) return v;
+  }
+  return "";
+};
+
+export interface EnrichResult {
+  url: string; madeIn: string; originBrand: string; warranty: string;
+  description: string; specs: Record<string, string>;
+}
+/** Tìm trang SP đúng model (qua search engine, chạy local) → bóc specs/xuất xứ/bảo hành. */
+export async function enrichProduct(query: string, modelCode: string): Promise<EnrichResult | null> {
+  const mc = norm(modelCode);
+  if (mc.length < 4) return null;
+  const links = await searchLinks(`${query} thông số`, 8);
+  const byDom = new Map<string, string>();
+  for (const l of links) { if (SKIP_DOMAINS.test(l)) continue; const d = domainOf(l); if (!byDom.has(d)) byDom.set(d, l); if (byDom.size >= 5) break; }
+  const deadline = Date.now() + 25000;
+  for (const url of byDom.values()) {
+    if (Date.now() > deadline) break;
+    let html = "";
+    try { const r = await smartFetch(url, { accept: "html", timeoutMs: 9000, retries: 0 }); html = r.ok ? r.text : ""; } catch { /* */ }
+    if (!html) continue;
+    const title = stripTags((/<title[^>]*>([\s\S]*?)<\/title>/i.exec(html) || ["", ""])[1]);
+    if (!norm(title).includes(mc) && !norm(html.slice(0, 9000)).includes(mc)) continue; // đúng model
+    const { specs, description } = extractSpecs(html);
+    if (!Object.keys(specs).length && !description) continue;
+    const xx = pickSpec(specs, ["xuatxuthuonghieu"]);
+    return {
+      url,
+      madeIn: pickSpec(specs, ["xuatxumadein", "madein", "noisanxuat", "xuatxulapr", "xuatxu"]),
+      originBrand: COUNTRY_RE.test(xx) ? xx : "",
+      warranty: pickSpec(specs, ["thoigianbaohanh", "baohanh"]),
+      description: description.slice(0, 1500),
+      specs,
+    };
+  }
+  return null;
+}
+
 export interface SearchOptions {
   maxLinks?: number;     // số trang mở tối đa mỗi sản phẩm
   concurrency?: number;  // luồng link
