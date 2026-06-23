@@ -154,6 +154,17 @@ const RETAILERS: string[] = [
   "hafele.com.vn", "malloca.com.vn", "chefs.vn",
 ];
 
+/** Giá thấp nhất ĐÁNG TIN từ nhiều listing cùng model: bỏ giá < 45% trung vị (phụ kiện/
+ * khớp nhầm) rồi lấy nhỏ nhất. <3 mẫu → tin luôn (không đủ để lọc). */
+function lowestReliable(prices: number[]): number | null {
+  if (!prices.length) return null;
+  const s = [...prices].sort((a, b) => a - b);
+  if (s.length < 3) return s[0];
+  const med = s[Math.floor(s.length / 2)];
+  const kept = s.filter((p) => p >= med * 0.45);
+  return kept.length ? kept[0] : s[0];
+}
+
 /** Tiki API nội bộ (JSON, không cần render, không chặn IP serverless) — carry hầu hết
  * hãng mainstream + nhiều hãng niche. Nguồn free MẠNH NHẤT cho per-product search. */
 async function searchTiki(query: string, modelCode: string): Promise<MarketPrice[]> {
@@ -163,13 +174,15 @@ async function searchTiki(query: string, modelCode: string): Promise<MarketPrice
   try {
     const j = JSON.parse(txt) as { data?: { name?: string; price?: number; url_path?: string }[] };
     const mc = norm(modelCode);
-    let best: number | null = null; let bestUrl = "https://tiki.vn";
+    const prices: number[] = []; let bestUrl = "https://tiki.vn";
     for (const p of j.data || []) {
       const price = Number(p.price);
       if (!price || price < 10000) continue;
       if (mc.length >= 4 && !norm(p.name || "").includes(mc)) continue; // xác minh đúng model
-      if (best == null || price < best) { best = price; bestUrl = p.url_path ? "https://tiki.vn/" + p.url_path : bestUrl; }
+      prices.push(price);
+      if (p.url_path && bestUrl === "https://tiki.vn") bestUrl = "https://tiki.vn/" + p.url_path;
     }
+    const best = lowestReliable(prices);
     return best == null ? [] : [{ siteName: "tiki.vn", price: best, url: bestUrl }];
   } catch {
     return [];
@@ -186,15 +199,16 @@ async function searchWebsosanh(query: string, modelCode: string): Promise<Market
   const mc = norm(modelCode);
   // Mỗi card: <a ...>TÊN</a></h2>...<span class="product-single-price">GIÁ đ
   const re = /<a[^>]*>([^<]{6,160})<\/a>\s*<\/h2>[\s\S]{0,200}?product-single-price">\s*([\d.,]+)\s*đ/gi;
-  let best: number | null = null;
+  const prices: number[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     const name = m[1];
     const price = parseInt(m[2].replace(/[.,]/g, ""), 10);
     if (!price || price < 10000) continue;
     if (mc.length >= 4 && !norm(name).includes(mc)) continue; // xác minh đúng model
-    if (best == null || price < best) best = price;
+    prices.push(price);
   }
+  const best = lowestReliable(prices);
   return best == null ? [] : [{ siteName: "websosanh.vn", price: best, url: `https://websosanh.vn/s/${q}.htm` }];
 }
 
