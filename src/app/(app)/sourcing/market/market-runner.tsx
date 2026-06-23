@@ -63,6 +63,16 @@ export default function MarketRunner({ cfg, crawlSites, indexInfo }: { cfg: Cfg;
     } catch (e) { log("Lỗi tải sheet: " + String(e)); } finally { setBusy(false); }
   }
 
+  async function importMine() {
+    setBusy(true);
+    log("Đang đưa toàn bộ SP của mình vào Google Sheet (sheet SanPham)…");
+    try {
+      const r = await api<{ ok: boolean; written?: number; error?: string }>("/api/sourcing/pricing/import", {});
+      if (r.ok) { log(`Đã ghi ${r.written} SP vào sheet SanPham.`); await loadSheets(); }
+      else log("Lỗi đưa SP: " + (r.error || ""));
+    } catch (e) { log("Lỗi đưa SP: " + String(e)); } finally { setBusy(false); }
+  }
+
   async function pingSheet() {
     setBusy(true);
     try {
@@ -264,6 +274,9 @@ export default function MarketRunner({ cfg, crawlSites, indexInfo }: { cfg: Cfg;
                 <h3 className="sec-title">1. Chọn sheet quét giá</h3>
                 <button className="btn sm ghost" onClick={loadSheets} disabled={busy}>Tải lại danh sách</button>
               </div>
+              <button className="btn" onClick={importMine} disabled={busy} style={{ width: "100%", marginBottom: 10 }}>
+                <Icon name="download" /> Đưa SP của tôi vào Sheet
+              </button>
               {!sheetReady && <p className="small" style={{ color: "var(--c-rose)" }}>Chưa cấu hình Apps Script — sang tab <b>Cài đặt</b>.</p>}
               {sheets.length === 0 ? (
                 <p className="muted small">Bấm <b>Tải lại danh sách</b> để lấy các sheet con từ Google Sheet.</p>

@@ -66,6 +66,13 @@ export async function sheetGetProducts(cfg: SheetConfig, sheets?: string[]): Pro
   const d = await call(cfg, "getProducts", sheets && sheets.length ? { sheets } : {});
   return (d.products || []) as SheetProduct[];
 }
+export interface SheetImportItem { ma: string; brand: string; model: string; ten: string; giaVon: number | null; giaHienTai: number | null }
+/** Đưa danh sách SP vào cột A..F của 1 sheet (thay toàn bộ dữ liệu cũ). 1 lần ghi. */
+export async function sheetImportProducts(cfg: SheetConfig, sheet: string, items: SheetImportItem[]): Promise<{ written: number }> {
+  const d = await call(cfg, "importProducts", { sheet, items, clearOld: true });
+  return { written: (d.written as number) || 0 };
+}
+
 /** Ghi kết quả (G..O, Lợi nhuận/%LN là công thức). Chia lô tránh timeout. */
 export async function sheetWriteResults(cfg: SheetConfig, items: SheetResultItem[]): Promise<{ written: number }> {
   let written = 0;

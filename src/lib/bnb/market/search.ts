@@ -243,10 +243,12 @@ export async function searchProductPrices(
   const hasProxy = !!process.env.SCRAPER_API_KEY;
 
   // NGUỒN 0 (free, mạnh nhất hiện có): đối chiếu catalog đối thủ ĐÃ CÀO (lưu Supabase).
+  // In-memory sau lần load đầu → quét hàng nghìn SP rất nhanh.
   const storedPrices = await matchStoredCatalogs(modelCode);
 
-  // NGUỒN 1 (free): hỏi thẳng search-endpoint các sàn bếp VN (live).
-  const retailerPrices = await searchRetailers(modelCode, opts.concurrency ?? 5);
+  // NGUỒN 1 (live): hỏi thẳng search-endpoint sàn VN — CHỈ khi có ScraperAPI (IP serverless
+  // bị WAF chặn/trả rỗng + chậm; free dựa hẳn vào index đã cào ở NGUỒN 0).
+  const retailerPrices = hasProxy ? await searchRetailers(modelCode, opts.concurrency ?? 5) : [];
 
   // NGUỒN 2 (search engine → mở trang): CHỈ chạy khi có ScraperAPI — không thì Google/Bing
   // chặn IP serverless, vừa fail vừa tốn thời gian (đẩy hàm vượt 60s). Free → bỏ qua.

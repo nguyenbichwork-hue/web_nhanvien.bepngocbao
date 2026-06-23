@@ -31,6 +31,7 @@ function doPost(e) {
       case 'setup': return json(setup());
       case 'listSheets': return json({ sheets: listSheets() });
       case 'getProducts': return json({ products: getProducts(body.sheets) });
+      case 'importProducts': return json(importProducts(body.sheet, body.items || [], body.clearOld));
       case 'writeResults': return json(writeResults(body.items || []));
       case 'appendLog': return json(appendLog(body.rows || []));
       default: return json({ error: 'Action không hợp lệ: ' + body.action });
@@ -136,6 +137,25 @@ function writeResults(items) {
     written++;
   }
   return { ok: true, written: written };
+}
+
+/** Ghi danh sách sản phẩm vào cột A..F (Mã·Hãng·Model·Tên·Giá vốn·Giá hiện tại).
+ * items: [{ma,brand,model,ten,giaVon,giaHienTai}]. clearOld=true → xoá dữ liệu cũ trước. */
+function importProducts(sheetName, items, clearOld) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+  sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold');
+  sh.setFrozenRows(1);
+  if (clearOld && sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, Math.max(sh.getLastColumn(), 15)).clearContent();
+  }
+  if (!items.length) return { ok: true, written: 0 };
+  var rows = items.map(function (it) {
+    return [it.ma || '', it.brand || '', it.model || '', it.ten || '',
+      it.giaVon == null ? '' : it.giaVon, it.giaHienTai == null ? '' : it.giaHienTai];
+  });
+  sh.getRange(2, 1, rows.length, 6).setValues(rows);
+  return { ok: true, written: rows.length };
 }
 
 function appendLog(rows) {
