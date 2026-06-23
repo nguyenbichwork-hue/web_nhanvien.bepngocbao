@@ -154,6 +154,28 @@ const RETAILERS: string[] = [
   "hafele.com.vn", "malloca.com.vn", "chefs.vn",
 ];
 
+/** Tiki API nội bộ (JSON, không cần render, không chặn IP serverless) — carry hầu hết
+ * hãng mainstream + nhiều hãng niche. Nguồn free MẠNH NHẤT cho per-product search. */
+async function searchTiki(query: string, modelCode: string): Promise<MarketPrice[]> {
+  const url = `https://tiki.vn/api/v2/products?limit=12&q=${encodeURIComponent(query)}`;
+  const txt = await fetchJsonText(url, { timeoutMs: 12000, retries: 1 });
+  if (!txt) return [];
+  try {
+    const j = JSON.parse(txt) as { data?: { name?: string; price?: number; url_path?: string }[] };
+    const mc = norm(modelCode);
+    let best: number | null = null; let bestUrl = "https://tiki.vn";
+    for (const p of j.data || []) {
+      const price = Number(p.price);
+      if (!price || price < 10000) continue;
+      if (mc.length >= 4 && !norm(p.name || "").includes(mc)) continue; // xác minh đúng model
+      if (best == null || price < best) { best = price; bestUrl = p.url_path ? "https://tiki.vn/" + p.url_path : bestUrl; }
+    }
+    return best == null ? [] : [{ siteName: "tiki.vn", price: best, url: bestUrl }];
+  } catch {
+    return [];
+  }
+}
+
 interface RawHit { name: string; price: number | null; url: string }
 
 async function shopifySuggest(origin: string, q: string): Promise<RawHit[]> {
@@ -246,6 +268,9 @@ export async function searchProductPrices(
   // In-memory sau lần load đầu → quét hàng nghìn SP rất nhanh.
   const storedPrices = await matchStoredCatalogs(modelCode);
 
+  // NGUỒN 0b (free, LIVE): Tiki API per-product — carry hầu hết SP, không chặn serverless.
+  const tikiPrices = await searchTiki(query, modelCode);
+
   // NGUỒN 1 (live): hỏi thẳng search-endpoint sàn VN — CHỈ khi có ScraperAPI (IP serverless
   // bị WAF chặn/trả rỗng + chậm; free dựa hẳn vào index đã cào ở NGUỒN 0).
   const retailerPrices = hasProxy ? await searchRetailers(modelCode, opts.concurrency ?? 5) : [];
@@ -298,6 +323,7 @@ export async function searchProductPrices(
     if (!ex || m.price < ex.price) perDomain.set(m.siteName, m);
   };
   for (const m of storedPrices) consider(m);    // catalog đã cào (free, mạnh)
+  for (const m of tikiPrices) consider(m);       // Tiki API live (free, phủ rộng)
   for (const m of retailerPrices) consider(m);  // sàn VN live (free)
   for (const m of results) consider(m);         // search engine (cần ScraperAPI)
   const out = [...perDomain.values()].sort((a, b) => a.price - b.price);
