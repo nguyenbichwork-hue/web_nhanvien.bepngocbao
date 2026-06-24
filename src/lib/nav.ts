@@ -1,12 +1,14 @@
 // Cấu hình điều hướng sidebar BNB — phân hệ nhóm theo lớp kiến trúc.
 // `perm`: quyền cần để thấy mục (bỏ trống = luôn hiện khi đã đăng nhập).
 //
-// ĐÃ TINH GỌN MENU (theo yêu cầu "không quản lý nổi"): các phân hệ ít dùng được
-// ẨN KHỎI MENU nhưng GIỮ NGUYÊN code + route (vẫn vào được bằng URL, bật lại dễ).
-// Đã ẩn: marketing, inbox, cx, reviews, survey, shift-report, tasks, schedule,
-//        leave, overtime, performance, reports, recruit, contracts, benefits,
-//        assets, training, rewards.
-// Muốn bật lại mục nào → thêm dòng tương ứng vào nhóm bên dưới.
+// CẬP NHẬT (yêu cầu sếp):
+//  - HIỆN đầy đủ các phân hệ vận hành/bán hàng để các sếp test: Thiết kế bếp AI,
+//    Khảo sát nhà khách, Hộp thoại Zalo OA, CX · NPS, Việc nội bộ & Sự cố,
+//    Marketing, Đánh giá.
+//  - BỎ toàn bộ nhóm NHÂN SỰ (Nhân viên, Tính lương, lịch, nghỉ phép, OT, KPI,
+//    tuyển dụng, hợp đồng, phúc lợi, tài sản, đào tạo, khen thưởng, báo cáo HR…)
+//    khỏi menu — nhân sự đã được quản lý bằng hệ thống HRM khác. Code/route vẫn
+//    còn (vào được qua URL nếu cần), chỉ ẩn khỏi menu.
 export type NavItem = { href: string; label: string; icon: string; perm?: string; external?: boolean };
 export type NavGroup = { label: string; items: NavItem[] };
 
@@ -22,10 +24,14 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/crm", label: "Khách hàng & Lead", icon: "customer", perm: "lead.read" },
       { href: "/journey", label: "Hành trình CX", icon: "award", perm: "lead.read" },
+      { href: "/cx", label: "CX · NPS", icon: "award", perm: "cx.read" },
       { href: "/referral", label: "Giới thiệu (Referral)", icon: "users", perm: "lead.read" },
       { href: "/reception", label: "Nhật ký tiếp khách", icon: "doc", perm: "lead.read" },
       { href: "/customers", label: "Khách hàng 360", icon: "users", perm: "customer.read" },
       { href: "/fit", label: "Fit Diagnostic", icon: "fit", perm: "fit.read" },
+      { href: "/design", label: "Thiết kế bếp AI", icon: "sparkle", perm: "design.read" },
+      { href: "/survey", label: "Khảo sát nhà khách", icon: "survey", perm: "survey.read" },
+      { href: "/inbox", label: "Hộp thoại Zalo OA", icon: "chat", perm: "inbox.read" },
       { href: "https://thietkebep.bepngocbao.vn/", label: "Tư vấn & Báo giá", icon: "quote", perm: "quote.read", external: true },
       { href: "/pos", label: "POS quầy", icon: "wallet", perm: "order.manage" },
       { href: "/orders", label: "Đơn hàng", icon: "cart", perm: "order.read" },
@@ -55,13 +61,14 @@ export const NAV: NavGroup[] = [
       { href: "/delivery", label: "Giao – Lắp đặt", icon: "truck", perm: "delivery.read" },
       { href: "/warranty", label: "Bảo hành & Hậu mãi", icon: "warranty", perm: "warranty.read" },
       { href: "/checkin", label: "Báo cáo ca", icon: "handover", perm: "shiftreport.read" },
+      { href: "/tasks", label: "Việc nội bộ & Sự cố", icon: "alert", perm: "task.read" },
     ],
   },
   {
-    label: "Nhân sự",
+    label: "Marketing & Đánh giá",
     items: [
-      { href: "/employees", label: "Nhân viên", icon: "users", perm: "employee.read" },
-      { href: "/payroll", label: "Tính lương", icon: "wallet", perm: "payroll.read" },
+      { href: "/marketing", label: "Marketing", icon: "sparkle", perm: "marketing.read" },
+      { href: "/reviews", label: "Đánh giá", icon: "chat", perm: "review.read" },
     ],
   },
   {
