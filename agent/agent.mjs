@@ -26,6 +26,11 @@ const LOG_PATH = path.join(BASE_DIR, "agent.log");
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+// Cấu hình NHÚNG SẴN lúc build (build.mjs thay __BAKED_*__ bằng URL/token thật) → nhân
+// viên chỉ nhấn đúp file, không phải nhập gì. Khi chạy bằng `node` (dev) thì rỗng.
+const BAKED_URL = (typeof __BAKED_URL__ !== "undefined") ? __BAKED_URL__ : "";
+const BAKED_TOKEN = (typeof __BAKED_TOKEN__ !== "undefined") ? __BAKED_TOKEN__ : "";
+
 // --------------------------- tiện ích ---------------------------
 function log(msg) {
   const line = `[${new Date().toLocaleString("vi-VN")}] ${msg}`;
@@ -33,7 +38,14 @@ function log(msg) {
   try { fs.appendFileSync(LOG_PATH, line + "\n"); } catch { /* */ }
 }
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")); } catch { return null; }
+  // 1) config.json cạnh exe (nếu nhân viên/sếp tự đặt) — ưu tiên cao nhất
+  try {
+    const f = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    if (f?.webUrl && f?.token) return f;
+  } catch { /* */ }
+  // 2) cấu hình nhúng sẵn lúc build → nhấn đúp là chạy
+  if (BAKED_URL && BAKED_TOKEN) return { webUrl: BAKED_URL.replace(/\/+$/, ""), token: BAKED_TOKEN };
+  return null;
 }
 function saveConfig(cfg) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
@@ -275,7 +287,26 @@ async function postReport(base, token, body) {
   } catch { return false; }
 }
 
-// ===================== cài đặt + lịch 8h sáng =====================
+// ===================== lịch 8h sáng (Windows Task Scheduler) =====================
+function scheduleExists() {
+  const r = spawnSync("schtasks", ["/Query", "/TN", "BNB Cap Nhat Gia"], { encoding: "utf8" });
+  return r.status === 0;
+}
+/** Đăng ký lịch chạy 08:00 mỗi sáng. Idempotent (/F ghi đè). silent=true: không in. */
+function ensureSchedule({ silent = false } = {}) {
+  const taskCmd = IS_EXE ? `"${process.execPath}"` : `"${process.execPath}" "${path.join(BASE_DIR, "agent.mjs")}"`;
+  const r = spawnSync("schtasks", [
+    "/Create", "/F", "/SC", "DAILY", "/ST", "08:00",
+    "/TN", "BNB Cap Nhat Gia", "/TR", taskCmd,
+  ], { encoding: "utf8" });
+  if (!silent) {
+    if (r.status === 0) console.log("✓ Đã đăng ký lịch chạy 08:00 mỗi sáng (Task: 'BNB Cap Nhat Gia').");
+    else console.log("⚠ Không đăng ký được lịch:", (r.stderr || r.stdout || "").trim(), "\n  (Chạy lại bằng quyền Admin nếu cần.)");
+  }
+  return r.status === 0;
+}
+
+// ===================== cài đặt thủ công (tuỳ chọn) =====================
 async function doSetup() {
   console.log("\n=== CÀI ĐẶT BNB · CẬP NHẬT GIÁ ===\n");
   const cur = loadConfig() || {};
@@ -307,16 +338,41 @@ async function doSetup() {
 }
 
 // ===================== entry =====================
+async function pauseIfInteractive() {
+  // Nhấn đúp từ Explorer → có cửa sổ console; giữ lại để nhân viên đọc kết quả.
+  if (!process.stdout.isTTY) return; // chạy bởi Task Scheduler (nền) → không giữ
+  try { await ask("\nXong. Nhấn Enter để đóng cửa sổ…"); } catch { /* */ }
+}
+
 (async () => {
   const args = process.argv.slice(2);
   try {
     if (args.includes("--setup")) { await doSetup(); return; }
+
     const onceIdx = args.indexOf("--once");
     const limit = onceIdx >= 0 ? parseInt(args[onceIdx + 1] || "30", 10) : 0;
     const useBrowser = !args.includes("--no-browser");
+
+    const cfg = loadConfig();
+    if (!cfg) {
+      // Chưa có cấu hình nhúng & chưa setup → hỏi thủ công 1 lần.
+      console.log("Chưa có cấu hình. Vào chế độ cài đặt:");
+      await doSetup();
+      return;
+    }
+
+    // NHẤN ĐÚP (không tham số): lần đầu tự đăng ký lịch 8h, rồi cào toàn bộ.
+    const plainDoubleClick = args.length === 0;
+    if (plainDoubleClick && !scheduleExists()) {
+      console.log("• Lần đầu chạy — đăng ký lịch tự động 8h sáng mỗi ngày…");
+      ensureSchedule({ silent: false });
+    }
+
     await runScrape({ limit, useBrowser });
+    if (plainDoubleClick) await pauseIfInteractive();
   } catch (e) {
     log("✗ Lỗi: " + (e?.stack || String(e)));
+    await pauseIfInteractive();
     process.exitCode = 1;
   }
 })();

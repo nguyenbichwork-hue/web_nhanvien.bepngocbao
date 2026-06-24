@@ -3,3 +3,4 @@ dist/
 *.exe
 config.json
 agent.log
+build-config.json

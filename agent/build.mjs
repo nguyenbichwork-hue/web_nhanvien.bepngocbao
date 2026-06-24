@@ -18,6 +18,13 @@ function run(cmd, args, opts = {}) {
   if (r.status !== 0) throw new Error(`${cmd} ${args.join(" ")} → exit ${r.status}`);
 }
 
+// Cấu hình NHÚNG SẴN (URL web + token) → nhân viên nhấn đúp là chạy, không nhập gì.
+let baked = { webUrl: "", token: "" };
+const bcPath = path.join(DIR, "build-config.json");
+try { baked = { ...baked, ...JSON.parse(fs.readFileSync(bcPath, "utf8")) }; } catch { /* */ }
+if (baked.webUrl && baked.token) console.log(`★ Nhúng sẵn: ${baked.webUrl}  (token ***${baked.token.slice(-4)})`);
+else console.log("⚠ Chưa có build-config.json (webUrl/token) → EXE sẽ hỏi --setup khi chạy. Tạo agent/build-config.json để nhúng sẵn.");
+
 console.log("① Bundle (esbuild)…");
 await build({
   entryPoints: [path.join(DIR, "agent.mjs")],
@@ -26,8 +33,11 @@ await build({
   format: "cjs",
   target: "node22",
   outfile: path.join(DIST, "agent.cjs"),
-  // puppeteer-core nạp Chrome ngoài; vài require động → giữ bundle, bỏ qua module quang học không cần
   external: [],
+  define: {
+    __BAKED_URL__: JSON.stringify(baked.webUrl || ""),
+    __BAKED_TOKEN__: JSON.stringify(baked.token || ""),
+  },
   banner: { js: "// BNB price agent (bundled)\nglobalThis.__SEA = true;" },
   legalComments: "none",
   minify: false,
@@ -58,4 +68,6 @@ run("npx", ["--yes", "postject", OUT_EXE, "NODE_SEA_BLOB", path.join(DIST, "sea-
   "--sentinel-fuse", "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2"], { shell: true });
 
 console.log(`\n✓ Xong: ${OUT_EXE}`);
-console.log("  Gửi cho nhân viên file này + thư mục rỗng để chứa config. Lần đầu chạy:  BNB-CapNhatGia.exe --setup");
+console.log(baked.webUrl && baked.token
+  ? "  Đã nhúng URL+token → gửi nhân viên file này, NHẤN ĐÚP là chạy (không cần nhập gì)."
+  : "  CHƯA nhúng config → nhân viên phải chạy:  BNB-CapNhatGia.exe --setup");
