@@ -1,0 +1,18 @@
+{
+  "name": "bnb-price-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "BNB · Cập nhật giá thị trường - chạy local trên máy nhân viên (Chrome thật)",
+  "bin": "agent.mjs",
+  "scripts": {
+    "start": "node agent.mjs",
+    "bundle": "node build.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  }
+}

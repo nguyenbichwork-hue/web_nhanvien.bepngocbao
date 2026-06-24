@@ -38,6 +38,7 @@ export const NAV: NavGroup[] = [
       { href: "/sourcing/catalog", label: "Quản lý SP & giá", icon: "edit", perm: "quote.manage" },
       { href: "/sourcing/update", label: "Cập nhật giá tuần", icon: "download", perm: "quote.manage" },
       { href: "/sourcing/market", label: "Giá thị trường (cào web)", icon: "search", perm: "quote.read" },
+      { href: "/sourcing/gia-agent", label: "Giá thị trường (Agent local)", icon: "download", perm: "quote.read" },
       { href: "/sourcing/suppliers", label: "Nhà cung cấp", icon: "truck", perm: "quote.read" },
     ],
   },
