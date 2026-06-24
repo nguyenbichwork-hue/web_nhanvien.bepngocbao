@@ -245,10 +245,17 @@ export function extractSpecs(html: string): { specs: Record<string, string>; des
 }
 
 const COUNTRY_RE = /(đức|pháp|ý|tây ban nha|ba lan|thổ nhĩ kỳ|trung quốc|hàn quốc|nhật|malaysia|thái lan|việt nam|indonesia|đài loan|anh|mỹ|czech|germany|china|korea|spain|italy|prc)/i;
+/** Bỏ dấu tiếng Việt (à→a, ư→u, đ→d…) rồi gom còn a-z0-9 — để khớp nhãn cột tiếng Việt
+ * ("Xuất xứ thương hiệu" → "xuatxuthuonghieu"). norm() thường XÓA hẳn ký tự có dấu nên trượt. */
+const foldKey = (s: string): string =>
+  (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "");
+// keys theo THỨ TỰ ƯU TIÊN: thử key cụ thể (vd "thoigianbaohanh") trên TẤT CẢ cột trước,
+// rồi mới tới key chung ("baohanh") — tránh khớp nhầm "Sản phẩm có bảo hành không?"=Có.
 const pickSpec = (specs: Record<string, string>, keys: string[]): string => {
-  for (const [k, v] of Object.entries(specs)) {
-    const nk = norm(k);
-    if (keys.some((t) => nk.includes(t))) return v;
+  const entries = Object.entries(specs).map(([k, v]) => [foldKey(k), v] as const);
+  for (const t of keys) {
+    for (const [nk, v] of entries) if (nk.includes(t)) return v;
   }
   return "";
 };
@@ -257,10 +264,54 @@ export interface EnrichResult {
   url: string; madeIn: string; originBrand: string; warranty: string;
   description: string; specs: Record<string, string>;
 }
-/** Tìm trang SP đúng model (qua search engine, chạy local) → bóc specs/xuất xứ/bảo hành. */
-export async function enrichProduct(query: string, modelCode: string): Promise<EnrichResult | null> {
+
+/** Enrich qua Tiki API (JSON nội bộ, KHÔNG bị chặn IP — nguồn ổn định nhất, không phụ thuộc
+ * search engine/CAPTCHA). Tìm SP đúng model → mở chi tiết → bóc specifications/xuất xứ/bảo hành. */
+async function enrichFromTiki(query: string, modelCode: string): Promise<EnrichResult | null> {
   const mc = norm(modelCode);
   if (mc.length < 4) return null;
+  const listTxt = await fetchJsonText(`https://tiki.vn/api/v2/products?limit=8&q=${encodeURIComponent(query)}`, { timeoutMs: 12000, retries: 1 });
+  if (!listTxt) return null;
+  let data: { id?: number; name?: string; url_path?: string; origin?: string }[] = [];
+  try { data = (JSON.parse(listTxt) as { data?: typeof data }).data || []; } catch { return null; }
+  // chọn SP có model trong tên (xác minh đúng model, tránh khớp nhầm)
+  const cand = data.find((p) => norm(p.name || "").includes(mc));
+  if (!cand?.id) return null;
+  const detTxt = await fetchJsonText(`https://tiki.vn/api/v2/products/${cand.id}`, { timeoutMs: 12000, retries: 1 });
+  if (!detTxt) return null;
+  let det: {
+    name?: string; description?: string; url_path?: string;
+    specifications?: { name?: string; attributes?: { name?: string; value?: unknown }[] }[];
+  };
+  try { det = JSON.parse(detTxt); } catch { return null; }
+  const specs: Record<string, string> = {};
+  for (const g of det.specifications || []) {
+    for (const a of g.attributes || []) {
+      const k = stripTags(a?.name || ""); const v = stripTags(String(a?.value ?? ""));
+      if (k && v && k.length < 44 && v.length < 160 && !(k in specs)) specs[k] = v;
+    }
+  }
+  if (!Object.keys(specs).length && !det.description && !cand.origin) return null;
+  const xx = pickSpec(specs, ["xuatxuthuonghieu"]);
+  const madeIn = pickSpec(specs, ["xuatxumadein", "madein", "noisanxuat", "xuatxulapr", "xuatxu"]) || (cand.origin || "");
+  return {
+    url: `https://tiki.vn/${det.url_path || cand.url_path || ""}`,
+    madeIn,
+    originBrand: COUNTRY_RE.test(xx) ? xx : "",
+    warranty: pickSpec(specs, ["thoigianbaohanh", "baohanh"]),
+    description: stripTags(det.description || "").slice(0, 1500),
+    specs,
+  };
+}
+
+/** Tìm trang SP đúng model → bóc specs/xuất xứ/bảo hành. Ưu tiên Tiki API (ổn định, không
+ * bị chặn); nếu Tiki không có → fallback search engine (chạy local). */
+export async function enrichProduct(query: string, modelCode: string, tikiOnly = false): Promise<EnrichResult | null> {
+  const mc = norm(modelCode);
+  if (mc.length < 4) return null;
+  const fromTiki = await enrichFromTiki(query, modelCode).catch(() => null);
+  if (fromTiki) return fromTiki;
+  if (tikiOnly) return null; // bulk run: bỏ qua search engine (chậm/đang bị chặn từ máy này)
   const links = await searchLinks(`${query} thông số`, 8);
   const byDom = new Map<string, string>();
   for (const l of links) { if (SKIP_DOMAINS.test(l)) continue; const d = domainOf(l); if (!byDom.has(d)) byDom.set(d, l); if (byDom.size >= 5) break; }
