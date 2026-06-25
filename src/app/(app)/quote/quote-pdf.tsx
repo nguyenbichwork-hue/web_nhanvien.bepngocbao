@@ -6,6 +6,7 @@ import {
   Document, Page, Text, View, StyleSheet, Font, pdf, Image,
 } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
+import { COST_ANALYSIS_ROWS, bnbCommitments6 } from "@/lib/bnb/quote-standard";
 
 // Font Việt (Roboto) — /fonts/* resolve theo origin trình duyệt khi sinh PDF client-side.
 Font.register({
@@ -266,15 +267,7 @@ function QuoteDoc({ d }: { d: QuotePdfData }) {
           <Text style={[s.t3HeadCell, { flex: 1 }]}>Ghi chú minh bạch</Text>
         </View>
         <View style={s.t3Wrap}>
-          {[
-            ["Giá thiết bị (chi tiết bên dưới)", "Khi mua", "Đã gồm Thuế GTGT (VAT) — không có phí ẩn"],
-            ["Khảo sát & lắp đặt", "Khi mua", "BNB hỗ trợ trong khu vực"],
-            ["Chỉnh sửa tủ bếp / khoét đá", "Nếu cần", "Báo riêng — chỉ phát sinh khi kích thước chưa khớp"],
-            ["Phụ kiện đi kèm (ống xả, dây cấp...)", "Khi mua", "Báo riêng nếu cần"],
-            ["Vận hành (điện, nước, chất tẩy...)", "Hằng tháng", "Tham khảo tùy thiết bị"],
-            ["Bảo trì định kỳ", "Mỗi 6–12 tháng", "BNB nhắc & bảo trì ưu đãi cho khách BNB"],
-            ["Bảo hành lỗi NSX", "Khi cần", "Theo chính sách hãng (Bosch 3 năm, hãng khác 1–2 năm)"],
-          ].map((r, i, arr) => (
+          {COST_ANALYSIS_ROWS.map((r, i, arr) => (
             <View key={i} style={i === arr.length - 1 ? [s.t3Row, { borderBottomWidth: 0 }] : s.t3Row}>
               <Text style={s.t3c1}>{r[0]}</Text>
               <Text style={s.t3c2}>{r[1]}</Text>
@@ -378,18 +371,11 @@ function QuoteDoc({ d }: { d: QuotePdfData }) {
         <View style={s.commitBar}>
           <Text style={s.commitBarText}>6 cam kết của {d.shop.name}</Text>
         </View>
-        {[
-          ["01", "Nếu BNB tư vấn sai, BNB chịu trách nhiệm", "Sản phẩm BNB tư vấn không vừa kích thước hoặc không phù hợp nhu cầu đã ghi nhận → BNB đổi miễn phí và chịu chi phí lắp đặt lại."],
-          ["02", "Khảo sát tại nhà & lắp đặt", "BNB cử kỹ thuật đến đo thực tế trước khi lắp, đảm bảo không lỗi kích thước."],
-          ["03", "Phản hồi trong 24 giờ", `Có vấn đề sử dụng, ${sal} gọi hotline BNB — bên em phản hồi trong 24 giờ.`],
-          ["04", "Đồng hành sau bán hàng", "Bảo hành theo chính sách hãng (Bosch 3 năm, các hãng khác 1–2 năm). BNB hỗ trợ liên hệ hãng + giám sát xử lý."],
-          ["05", "Hỗ trợ sử dụng 30 ngày đầu", "Tháng đầu, thao tác chưa quen, BNB hỗ trợ qua Zalo/video call hoặc đến tận nhà nếu cần."],
-          ["06", "Báo giá minh bạch, hiệu lực 15 ngày", "Giá đã gồm VAT, không phí ẩn. Báo giá có giá trị 15 ngày."],
-        ].map((c, i, arr) => (
+        {bnbCommitments6(sal).map((c, i, arr) => (
           <View key={i} style={i === arr.length - 1 ? [s.commitItem, { borderBottomWidth: 0 }] : s.commitItem} wrap={false}>
-            <Text style={s.commitNo}>{c[0]}</Text>
-            <Text style={s.commitTitle}>{c[1]}</Text>
-            <Text style={s.commitText}>{c[2]}</Text>
+            <Text style={s.commitNo}>{c.no}</Text>
+            <Text style={s.commitTitle}>{c.title}</Text>
+            <Text style={s.commitText}>{c.desc}</Text>
           </View>
         ))}
 

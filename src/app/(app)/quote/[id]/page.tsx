@@ -14,6 +14,7 @@ import {
   SHOP_NAME, SHOP_TAGLINE, SHOP_ADDRESS, SHOP_PHONE, SHOP_EMAIL, SHOP_WEB,
   BNB_COMMITMENTS, QUOTE_TERMS, salutation, numberToVietnameseWords,
   vatInclusiveBreakdown, validUntilFrom, quoteZaloText,
+  COST_ANALYSIS_ROWS, bnbCommitments6,
 } from "@/lib/bnb/quote-standard";
 import { setQuoteStatusAction } from "../actions";
 import { PrintButton } from "../print-button";
@@ -87,6 +88,23 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       : undefined,
   };
 
+  // Bảng màu maroon/cream/gold khớp mẫu PDF (đồng bộ bản in HTML).
+  const M = "#7a1b29";        // maroon
+  const MD = "#5c121d";       // maroon dark
+  const CREAM = "#f7efe0";
+  const GOLD = "#b8923a";
+  const GRAY = "#6e655c";
+  const LINE = "#e6ddcf";
+  const xungName = who?.name ? `${sal} ${who.name}` : sal;
+
+  // Thanh tiêu đề phần (maroon) + ô tag "Phần 0X" — khớp sectionBar của PDF.
+  const sectionBar = (tag: string, title: string) => (
+    <div style={{ display: "flex", alignItems: "center", background: M, padding: "8px 12px", borderRadius: 4, margin: "18px 0 10px", breakInside: "avoid" }}>
+      <span style={{ background: MD, color: "#e7c4ca", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 3, marginRight: 10 }}>{tag}</span>
+      <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{title}</span>
+    </div>
+  );
+
   return (
     <div>
       <div className="no-print">
@@ -105,160 +123,227 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="grid-k g-2" style={{ alignItems: "start" }}>
-        {/* ===== Chứng từ báo giá chuẩn BNB (in được) ===== */}
+        {/* ===== Chứng từ báo giá chuẩn BNB (in được) — đồng bộ mẫu PDF ===== */}
         <div className="card">
-          {/* Header thương hiệu */}
+          {/* Header thương hiệu + title box cream */}
           <div className="flex between" style={{ alignItems: "flex-start", gap: 16 }}>
             <div className="flex aic" style={{ gap: 12 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt={SHOP_NAME} style={{ height: 46, width: "auto" }} />
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.3px", color: "var(--brand-1)" }}>{SHOP_NAME}</div>
-                <div className="urole" style={{ fontStyle: "italic" }}>{SHOP_TAGLINE}</div>
-                <div className="small muted" style={{ marginTop: 4, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.3px", color: M }}>{SHOP_NAME}</div>
+                <div className="urole" style={{ fontStyle: "italic", color: GRAY }}>{SHOP_TAGLINE}</div>
+                <div className="small" style={{ marginTop: 4, lineHeight: 1.5, color: GRAY }}>
                   {SHOP_ADDRESS}<br />
                   {SHOP_PHONE} · {SHOP_EMAIL} · {SHOP_WEB}
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--brand-1)", letterSpacing: "0.5px" }}>PHIẾU BÁO GIÁ</div>
-              <div className="small" style={{ fontWeight: 700, marginTop: 2 }}>{quote.code}</div>
-              <div className="small muted" style={{ marginTop: 4, lineHeight: 1.6 }}>
-                Ngày lập: {fmtDate(quote.createdAt)}<br />
-                Hiệu lực đến: <b>{fmtDate(validUntil)}</b>
-                {quote.tier && <><br />Phương án: {TIER_LABEL[quote.tier]}</>}
-              </div>
+            <div style={{ background: CREAM, borderRadius: 6, padding: "10px 16px", textAlign: "center", minWidth: 190 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: M, letterSpacing: "0.5px", textTransform: "uppercase" }}>Phiếu báo giá</div>
+              <div className="small" style={{ marginTop: 4 }}>Số: <b>{quote.code}</b></div>
+              <div className="small" style={{ marginTop: 2 }}>Ngày lập: {fmtDate(quote.createdAt)}</div>
+              <div className="small" style={{ marginTop: 2 }}>Hiệu lực đến: <b>{fmtDate(validUntil)}</b></div>
+              {quote.tier && <div className="small" style={{ marginTop: 2 }}>Phương án: {TIER_LABEL[quote.tier]}</div>}
             </div>
           </div>
 
-          {/* Khách hàng */}
-          <div style={{ borderTop: "2px solid var(--brand-1)", borderBottom: "1px solid var(--line)", padding: "12px 0", margin: "16px 0" }}>
-            <div className="urole" style={{ marginBottom: 2 }}>Kính gửi {sal}</div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>{who?.name || "Quý khách"}</div>
-            {who?.phone && <div className="small muted">{who.phone}{who.email ? ` · ${who.email}` : ""}</div>}
-            {who?.address && <div className="small muted">{who.address}</div>}
-            {advisor && <div className="small muted" style={{ marginTop: 4 }}>Tư vấn viên: {advisor}</div>}
+          {/* Greeting callout (cream) */}
+          <div style={{ background: CREAM, borderRadius: 6, padding: "12px 14px", margin: "16px 0" }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>Kính gửi {xungName},</div>
+            <div className="small" style={{ lineHeight: 1.6 }}>
+              {SHOP_NAME} xin gửi báo giá chi tiết cho gia đình. Báo giá minh bạch theo tổng chi phí
+              (không chỉ giá tem), đã gồm VAT và không có phí ẩn — {sal} có thể yên tâm đối chiếu trước khi quyết định.
+            </div>
+            {(who?.phone || who?.address || advisor) && (
+              <div className="small muted" style={{ marginTop: 6, lineHeight: 1.6 }}>
+                {who?.phone && <>{who.phone}{who.email ? ` · ${who.email}` : ""}<br /></>}
+                {who?.address && <>{who.address}<br /></>}
+                {advisor && <>Tư vấn viên: {advisor}</>}
+              </div>
+            )}
           </div>
 
-          {/* 3 phương án (Good/Better/Best) */}
-          {proposal && (
-            <div style={{ marginBottom: 16 }}>
-              <div className="sec-title" style={{ fontSize: 13, marginBottom: 8 }}>Các phương án đề xuất (Good / Better / Best)</div>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${proposal.tiers.length}, 1fr)`, gap: 10 }}>
-                {proposal.tiers.map((t) => {
-                  const rec = t.key === proposal.recommended;
-                  return (
-                    <div key={t.key} style={{ border: rec ? "2px solid var(--brand-1)" : "1px solid var(--line)", borderRadius: 12, padding: 12, background: rec ? "rgba(var(--brand-rgb),0.05)" : "var(--surface)" }}>
-                      <div className="flex between aic" style={{ gap: 6 }}>
-                        <b style={{ color: "var(--brand-1)" }}>{t.label}</b>
-                        {rec && <span className="badge b-green" style={{ fontSize: 10 }}>KHUYẾN NGHỊ</span>}
-                      </div>
-                      <div className="urole">{t.role}</div>
-                      <div style={{ margin: "8px 0" }}>
-                        {t.lines.map((l, i) => <div key={i} className="small" style={{ marginBottom: 2 }}>• {l.name}</div>)}
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--brand-1)" }}>{fmtVnd(t.total)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="small muted" style={{ marginTop: 8 }}>Chi tiết gói khuyến nghị <b>{recTier?.label}</b>:</p>
-            </div>
-          )}
-
-          {/* Dòng hàng */}
-          <table>
+          {/* ===== PHẦN 01 — Phân tích chi phí ===== */}
+          {sectionBar("Phần 01", "Phân tích chi phí (không chỉ giá tem)")}
+          <p className="small muted" style={{ marginBottom: 8 }}>
+            Mua thiết bị bếp không chỉ là giá niêm yết. Để {xungName} so sánh chính xác giữa các nơi, {SHOP_NAME} minh bạch theo công thức:
+          </p>
+          <div style={{ textAlign: "center", fontSize: 16, fontWeight: 800, color: M, margin: "10px 0 12px", letterSpacing: "0.5px" }}>
+            MUA + LẮP + DÙNG + BẢO TRÌ
+          </div>
+          <table style={{ breakInside: "avoid" }}>
             <thead>
-              <tr>
-                <th style={{ width: 32 }}>#</th>
-                <th>Hạng mục</th>
-                <th style={{ width: 46, textAlign: "right" }}>SL</th>
-                <th style={{ width: 116, textAlign: "right" }}>Đơn giá</th>
-                <th style={{ width: 90, textAlign: "right" }}>CK</th>
-                <th style={{ width: 116, textAlign: "right" }}>Thành tiền</th>
+              <tr style={{ background: M }}>
+                <th style={{ color: "#fff", width: "34%" }}>Hạng mục chi phí</th>
+                <th style={{ color: "#fff", width: "16%" }}>Khi nào</th>
+                <th style={{ color: "#fff" }}>Ghi chú minh bạch</th>
               </tr>
             </thead>
             <tbody>
-              {quote.lines.map((l, i) => (
+              {COST_ANALYSIS_ROWS.map((r, i) => (
                 <tr key={i}>
-                  <td className="small muted">{i + 1}</td>
-                  <td>
-                    <div className="small" style={{ fontWeight: 600 }}>{l.name}</div>
-                    {l.sku && <div className="urole">SKU {l.sku}</div>}
-                  </td>
-                  <td className="small" style={{ textAlign: "right" }}>{l.qty}</td>
-                  <td className="small" style={{ textAlign: "right" }}>{fmtVnd(l.unitPrice)}</td>
-                  <td className="small" style={{ textAlign: "right" }}>{l.discount ? fmtVnd(l.discount) : "—"}</td>
-                  <td className="small" style={{ textAlign: "right", fontWeight: 700 }}>{fmtVnd(lineAmount(l))}</td>
+                  <td className="small" style={{ fontWeight: 700, color: M, background: "#fbf7ef" }}>{r[0]}</td>
+                  <td className="small" style={{ fontWeight: 700, color: M, textAlign: "center" }}>{r[1]}</td>
+                  <td className="small muted">{r[2]}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          {/* Tổng kết */}
-          <div style={{ marginTop: 16, marginLeft: "auto", maxWidth: 340 }}>
-            <div className="flex between small" style={{ padding: "5px 0" }}>
-              <span className="muted">Tạm tính</span><span style={{ fontWeight: 600 }}>{fmtVnd(subtotal)}</span>
-            </div>
-            {quote.discount ? (
-              <div className="flex between small" style={{ padding: "5px 0" }}>
-                <span className="muted">Chiết khấu tổng</span><span style={{ fontWeight: 600 }}>− {fmtVnd(quote.discount)}</span>
+          {/* ===== PHẦN 02 — Chi tiết báo giá ===== */}
+          {sectionBar("Phần 02", "Chi tiết báo giá")}
+          {proposal ? (
+            <>
+              <p className="small muted" style={{ marginBottom: 8 }}>
+                {SHOP_NAME} đề xuất {proposal.tiers.length} phương án để {xungName} so sánh đúng giá trị tổng thể.
+                Phương án {SHOP_NAME} khuyến nghị được đánh dấu nổi bật:
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${proposal.tiers.length}, 1fr)`, gap: 10, breakInside: "avoid" }}>
+                {proposal.tiers.map((t) => {
+                  const rec = t.key === proposal.recommended;
+                  return (
+                    <div key={t.key} style={{ border: `1px solid ${LINE}`, borderRadius: 10, overflow: "hidden", background: rec ? CREAM : "var(--surface)" }}>
+                      <div style={{ background: rec ? MD : M, color: "#fff", padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontWeight: 800 }}>{t.label}</div>
+                        <div style={{ fontSize: 11, color: "#f0d9b0", marginTop: 1 }}>{rec ? "★ BNB khuyến nghị" : t.role}</div>
+                      </div>
+                      <div style={{ padding: 10 }}>
+                        {rec && <span className="badge" style={{ background: M, color: "#fff", fontSize: 10, marginBottom: 6, display: "inline-block" }}>KHUYẾN NGHỊ</span>}
+                        {t.lines.map((l, i) => {
+                          const img = imgForSku(l.sku);
+                          return (
+                            <div key={i} className="small" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              {img && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={img} alt="" style={{ width: 26, height: 26, objectFit: "contain", borderRadius: 3, border: `1px solid ${LINE}`, flexShrink: 0 }} />
+                              )}
+                              <span>{l.name} — <b>{fmtVnd(l.unitPrice)}</b></span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ background: rec ? MD : M, color: "#fff", padding: "7px 10px", textAlign: "center", fontWeight: 800, fontSize: 15 }}>
+                        {fmtVnd(t.total)}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ) : null}
-            <div className="flex between small" style={{ padding: "5px 0" }}>
-              <span className="muted">Trong đó VAT 8%</span><span style={{ fontWeight: 600 }}>{fmtVnd(vat)}</span>
-            </div>
-            <div className="flex between" style={{ padding: "10px 0 0", marginTop: 6, borderTop: "2px solid var(--brand-1)" }}>
-              <b>Thành tiền (đã gồm VAT)</b>
-              <b style={{ fontSize: 20, color: "var(--brand-1)" }}>{fmtVnd(total)}</b>
-            </div>
-            <div className="small" style={{ textAlign: "right", marginTop: 4, fontStyle: "italic" }}>
-              Bằng chữ: {numberToVietnameseWords(total)}
-            </div>
-          </div>
+              {recTier && <p className="small muted" style={{ marginTop: 8 }}>Gói khuyến nghị của BNB: <b>{recTier.label}</b>.</p>}
+            </>
+          ) : (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: 32 }}>#</th>
+                    <th>Hạng mục</th>
+                    <th style={{ width: 46, textAlign: "right" }}>SL</th>
+                    <th style={{ width: 116, textAlign: "right" }}>Đơn giá</th>
+                    <th style={{ width: 90, textAlign: "right" }}>CK</th>
+                    <th style={{ width: 116, textAlign: "right" }}>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quote.lines.map((l, i) => {
+                    const img = imgForSku(l.sku);
+                    return (
+                      <tr key={i}>
+                        <td className="small muted">{i + 1}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {img && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={img} alt="" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 3, border: `1px solid ${LINE}`, flexShrink: 0 }} />
+                            )}
+                            <div>
+                              <div className="small" style={{ fontWeight: 600 }}>{l.name}</div>
+                              {l.sku && <div className="urole">SKU {l.sku}</div>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="small" style={{ textAlign: "right" }}>{l.qty}</td>
+                        <td className="small" style={{ textAlign: "right" }}>{fmtVnd(l.unitPrice)}</td>
+                        <td className="small" style={{ textAlign: "right" }}>{l.discount ? fmtVnd(l.discount) : "—"}</td>
+                        <td className="small" style={{ textAlign: "right", fontWeight: 700 }}>{fmtVnd(lineAmount(l))}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Tổng kết */}
+              <div style={{ marginTop: 16, marginLeft: "auto", maxWidth: 340, breakInside: "avoid" }}>
+                <div className="flex between small" style={{ padding: "5px 0" }}>
+                  <span className="muted">Tạm tính</span><span style={{ fontWeight: 600 }}>{fmtVnd(subtotal)}</span>
+                </div>
+                {quote.discount ? (
+                  <div className="flex between small" style={{ padding: "5px 0" }}>
+                    <span className="muted">Chiết khấu tổng</span><span style={{ fontWeight: 600 }}>− {fmtVnd(quote.discount)}</span>
+                  </div>
+                ) : null}
+                <div className="flex between small" style={{ padding: "5px 0" }}>
+                  <span className="muted">Trong đó VAT 8%</span><span style={{ fontWeight: 600 }}>{fmtVnd(vat)}</span>
+                </div>
+                <div className="flex between" style={{ padding: "10px 0 0", marginTop: 6, borderTop: `2px solid ${M}` }}>
+                  <b>Thành tiền (đã gồm VAT)</b>
+                  <b style={{ fontSize: 20, color: M }}>{fmtVnd(total)}</b>
+                </div>
+                <div className="small" style={{ textAlign: "right", marginTop: 4, fontStyle: "italic" }}>
+                  Bằng chữ: {numberToVietnameseWords(total)}
+                </div>
+              </div>
+            </>
+          )}
 
           {quote.note && (
-            <div style={{ marginTop: 16, borderTop: "1px dashed var(--line)", paddingTop: 12 }}>
+            <div style={{ marginTop: 16, borderTop: `1px dashed ${LINE}`, paddingTop: 12 }}>
               <div className="urole" style={{ marginBottom: 2 }}>Ghi chú</div>
               <p className="small muted">{quote.note}</p>
             </div>
           )}
 
-          {/* Điều khoản */}
-          <div style={{ marginTop: 18, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-            <div className="sec-title" style={{ fontSize: 13, marginBottom: 6 }}>Điều khoản & chính sách</div>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.8 }} className="small muted">
-              {QUOTE_TERMS.map((t, i) => <li key={i}>{t}</li>)}
-            </ul>
-          </div>
+          {/* ===== PHẦN 03 — Điều khoản & Cam kết ===== */}
+          {sectionBar("Phần 03", "Điều khoản & Cam kết")}
+          <p className="small muted" style={{ marginBottom: 8 }}>
+            {SHOP_NAME} cam kết minh bạch điều khoản và đồng hành với {xungName} trước, trong và sau khi mua:
+          </p>
+          <ul style={{ margin: "0 0 14px", paddingLeft: 18, lineHeight: 1.8 }} className="small muted">
+            {QUOTE_TERMS.map((t, i) => <li key={i}>{t}</li>)}
+          </ul>
 
-          {/* 4 cam kết BNB */}
-          <div style={{ marginTop: 16 }}>
-            <div className="sec-title" style={{ fontSize: 13, marginBottom: 8 }}>Cam kết của {SHOP_NAME}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {BNB_COMMITMENTS.map((c, i) => (
-                <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px" }}>
-                  <div className="small" style={{ fontWeight: 700, color: "var(--brand-1)" }}>
-                    <Icon name="check" /> {c.title}
-                  </div>
-                  <div className="urole" style={{ marginTop: 3, lineHeight: 1.5 }}>{c.desc}</div>
-                </div>
-              ))}
-            </div>
+          <div style={{ background: M, color: "#fff", textAlign: "center", fontWeight: 700, padding: "8px 0", borderRadius: 4, marginBottom: 10 }}>
+            6 cam kết của {SHOP_NAME}
+          </div>
+          <div>
+            {bnbCommitments6(sal).map((c, i, arr) => (
+              <div key={i} style={{ paddingBottom: 8, marginBottom: 8, borderBottom: i === arr.length - 1 ? "none" : `1px solid ${LINE}`, breakInside: "avoid" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GOLD }}>{c.no}</div>
+                <div className="small" style={{ fontWeight: 700, color: M }}>{c.title}</div>
+                <div className="small muted">{c.desc}</div>
+              </div>
+            ))}
           </div>
 
           {/* Chữ ký */}
-          <div className="flex between" style={{ marginTop: 26, textAlign: "center", gap: 20 }}>
+          <div className="flex between" style={{ marginTop: 26, textAlign: "center", gap: 20, breakInside: "avoid" }}>
             <div style={{ flex: 1 }}>
-              <div className="small" style={{ fontWeight: 700 }}>KHÁCH HÀNG</div>
+              <div className="small" style={{ fontWeight: 700, color: M }}>KHÁCH HÀNG</div>
               <div className="urole">(Ký, ghi rõ họ tên)</div>
+              <div style={{ borderTop: "1px solid #2b2724", width: "80%", margin: "46px auto 0" }} />
+              <div className="small" style={{ marginTop: 4 }}>{who?.name || ""}</div>
             </div>
             <div style={{ flex: 1 }}>
-              <div className="small" style={{ fontWeight: 700 }}>NGƯỜI LẬP BÁO GIÁ</div>
-              <div className="urole">{advisor || SHOP_NAME}</div>
+              <div className="small" style={{ fontWeight: 700, color: M }}>NGƯỜI LẬP BÁO GIÁ</div>
+              <div className="urole">(Ký, ghi rõ họ tên)</div>
+              <div style={{ borderTop: "1px solid #2b2724", width: "80%", margin: "46px auto 0" }} />
+              <div className="small" style={{ marginTop: 4 }}>{advisor || SHOP_NAME}</div>
             </div>
           </div>
+          <p className="small muted" style={{ textAlign: "center", marginTop: 20 }}>
+            Cảm ơn {xungName} đã tin tưởng {SHOP_NAME}. Bên em mong được đồng hành cùng căn bếp của gia đình {sal} trong nhiều năm tới.
+          </p>
         </div>
 
         {/* ===== Thao tác (không in) ===== */}

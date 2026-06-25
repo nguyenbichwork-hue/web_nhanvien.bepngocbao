@@ -44,6 +44,34 @@ export const BNB_COMMITMENTS: { title: string; desc: string }[] = [
   { title: "Báo giá minh bạch, hiệu lực 15 ngày", desc: "Giá đã gồm VAT 8%, không phí ẩn. Có giá trị 15 ngày để Anh/Chị thoải mái cân nhắc." },
 ];
 
+/* ---------- 6 cam kết BNB (dùng CHUNG cho PDF + bản in HTML) ----------
+   {salutation} là placeholder xưng hô — component thay bằng "Anh"/"Chị"/"Anh/Chị". */
+export const BNB_COMMITMENTS_6: { no: string; title: string; desc: string }[] = [
+  { no: "01", title: "Nếu BNB tư vấn sai, BNB chịu trách nhiệm", desc: "Sản phẩm BNB tư vấn không vừa kích thước hoặc không phù hợp nhu cầu đã ghi nhận → BNB đổi miễn phí và chịu chi phí lắp đặt lại." },
+  { no: "02", title: "Khảo sát tại nhà & lắp đặt", desc: "BNB cử kỹ thuật đến đo thực tế trước khi lắp, đảm bảo không lỗi kích thước." },
+  { no: "03", title: "Phản hồi trong 24 giờ", desc: "Có vấn đề sử dụng, {salutation} gọi hotline BNB — bên em phản hồi trong 24 giờ." },
+  { no: "04", title: "Đồng hành sau bán hàng", desc: "Bảo hành theo chính sách hãng (Bosch 3 năm, các hãng khác 1–2 năm). BNB hỗ trợ liên hệ hãng + giám sát xử lý." },
+  { no: "05", title: "Hỗ trợ sử dụng 30 ngày đầu", desc: "Tháng đầu, thao tác chưa quen, BNB hỗ trợ qua Zalo/video call hoặc đến tận nhà nếu cần." },
+  { no: "06", title: "Báo giá minh bạch, hiệu lực 15 ngày", desc: "Giá đã gồm VAT, không phí ẩn. Báo giá có giá trị 15 ngày." },
+];
+
+/** Thay placeholder {salutation} trong 6 cam kết bằng xưng hô thực tế (Anh/Chị/Anh-Chị). */
+export function bnbCommitments6(sal: string): { no: string; title: string; desc: string }[] {
+  return BNB_COMMITMENTS_6.map((c) => ({ ...c, desc: c.desc.replace(/\{salutation\}/g, sal) }));
+}
+
+/* ---------- 7 dòng phân tích chi phí "MUA + LẮP + DÙNG + BẢO TRÌ" (CHUNG PDF + HTML) ----------
+   [Hạng mục chi phí, Khi nào, Ghi chú minh bạch] */
+export const COST_ANALYSIS_ROWS: [string, string, string][] = [
+  ["Giá thiết bị (chi tiết bên dưới)", "Khi mua", "Đã gồm Thuế GTGT (VAT) — không có phí ẩn"],
+  ["Khảo sát & lắp đặt", "Khi mua", "BNB hỗ trợ trong khu vực"],
+  ["Chỉnh sửa tủ bếp / khoét đá", "Nếu cần", "Báo riêng — chỉ phát sinh khi kích thước chưa khớp"],
+  ["Phụ kiện đi kèm (ống xả, dây cấp...)", "Khi mua", "Báo riêng nếu cần"],
+  ["Vận hành (điện, nước, chất tẩy...)", "Hằng tháng", "Tham khảo tùy thiết bị"],
+  ["Bảo trì định kỳ", "Mỗi 6–12 tháng", "BNB nhắc & bảo trì ưu đãi cho khách BNB"],
+  ["Bảo hành lỗi NSX", "Khi cần", "Theo chính sách hãng (Bosch 3 năm, hãng khác 1–2 năm)"],
+];
+
 /* ---------- Vì sao cùng loại sản phẩm lại chênh giá (rút gọn) ---------- */
 export const PRICE_FACTORS: { factor: string; why: string }[] = [
   { factor: "Linh kiện cốt lõi", why: "Mặt kính, mâm từ, bo mạch, IGBT — quyết định độ ổn định & độ bền, không nhìn thấy bằng mắt." },
