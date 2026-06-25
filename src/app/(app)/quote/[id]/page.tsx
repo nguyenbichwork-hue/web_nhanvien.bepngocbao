@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/session";
 import { Icon } from "@/components/icon";
 import { PageHero } from "@/components/page-hero";
 import { CopyButton } from "@/components/copy-button";
-import { getQuote, getCustomer, getLead } from "@/lib/bnb/store";
+import { getQuote, getCustomer, getLead, listAllProducts } from "@/lib/bnb/store";
 import { fmtVnd, fmtDate, lineAmount, quoteSubtotal, quoteTotal } from "@/lib/bnb/util";
 import { employeeNameMap } from "@/lib/bnb/names";
 import {
@@ -28,13 +28,21 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const quote = await getQuote(id);
   if (!quote) notFound();
 
-  const [customer, lead, names] = await Promise.all([
+  const [customer, lead, names, products] = await Promise.all([
     quote.customerId ? getCustomer(quote.customerId) : Promise.resolve(undefined),
     quote.leadId ? getLead(quote.leadId) : Promise.resolve(undefined),
     employeeNameMap(),
+    listAllProducts().catch(() => []),
   ]);
   const who = customer || lead;
   const sal = salutation((who as { gender?: string } | undefined)?.gender);
+
+  // Map SKU (lowercase) → ảnh sản phẩm để gắn thumbnail vào PDF.
+  const skuImage = new Map<string, string>();
+  for (const p of products) {
+    if (p.sku && p.image) skuImage.set(p.sku.toLowerCase(), p.image);
+  }
+  const imgForSku = (sku?: string) => (sku ? skuImage.get(sku.trim().toLowerCase()) : undefined);
 
   const subtotal = quoteSubtotal(quote);
   const total = quoteTotal(quote);
@@ -60,9 +68,10 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     dateLabel: fmtDate(quote.createdAt),
     validLabel: fmtDate(validUntil),
     advisor,
+    salutation: sal,
     shop: { name: SHOP_NAME, tagline: SHOP_TAGLINE, address: SHOP_ADDRESS, phone: SHOP_PHONE, email: SHOP_EMAIL, web: SHOP_WEB },
     customer: { salutation: sal, name: who?.name ?? "", phone: who?.phone, address: who?.address, email: who?.email },
-    lines: quote.lines.map((l) => ({ name: l.name, sku: l.sku, qty: l.qty, unitPrice: l.unitPrice, amount: lineAmount(l) })),
+    lines: quote.lines.map((l) => ({ name: l.name, sku: l.sku, qty: l.qty, unitPrice: l.unitPrice, amount: lineAmount(l), image: imgForSku(l.sku) })),
     subtotal, discount: quote.discount ?? 0, vat, total,
     totalWords: numberToVietnameseWords(total),
     terms: QUOTE_TERMS, commitments: BNB_COMMITMENTS,
@@ -71,7 +80,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           recommended: proposal.recommended,
           tiers: proposal.tiers.map((t) => ({
             key: t.key, label: t.label, role: t.role, total: t.total,
-            items: t.lines.map((l) => ({ name: l.name, price: l.unitPrice })),
+            items: t.lines.map((l) => ({ name: l.name, price: l.unitPrice, image: imgForSku(l.sku) })),
             recommended: t.key === proposal.recommended,
           })),
         }
