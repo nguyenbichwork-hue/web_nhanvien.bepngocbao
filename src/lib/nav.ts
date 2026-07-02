@@ -49,6 +49,13 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Thiết kế bếp (Web tư vấn)",
+    items: [
+      { href: "/tkb", label: "Quản trị Thiết kế bếp", icon: "sparkle", perm: "tkb.read" },
+      { href: "/tkb/products", label: "Sản phẩm web tư vấn", icon: "box", perm: "tkb.read" },
+    ],
+  },
+  {
     label: "Kho & Mua hàng",
     items: [
       { href: "/inventory", label: "Tồn kho", icon: "box", perm: "order.read" },

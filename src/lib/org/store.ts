@@ -132,6 +132,8 @@ export const PERMISSIONS: Permission[] = [
   { code: "review.manage", module: "review", action: "manage", description: "Phản hồi & xử lý đánh giá" },
   { code: "inbox.read", module: "inbox", action: "read", description: "Xem hộp thoại Zalo OA" },
   { code: "inbox.manage", module: "inbox", action: "manage", description: "Trả lời & xử lý hội thoại Zalo OA" },
+  { code: "tkb.read", module: "tkb", action: "read", description: "Xem hệ quản trị web Thiết kế bếp" },
+  { code: "tkb.manage", module: "tkb", action: "manage", description: "Sửa & xuất bản nội dung web Thiết kế bếp" },
 ];
 
 export const MODULE_LABEL: Record<string, string> = {
@@ -168,6 +170,7 @@ export const MODULE_LABEL: Record<string, string> = {
   finance: "Tài chính – Kế toán",
   review: "Đánh giá khách hàng",
   inbox: "Hộp thoại Zalo OA",
+  tkb: "Thiết kế bếp (web tư vấn)",
 };
 
 const ALL = PERMISSIONS.map((p) => p.code);
